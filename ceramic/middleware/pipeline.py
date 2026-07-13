@@ -177,9 +177,7 @@ class MiddlewarePipeline:
         next_fn = await _build_next(0)
         return await next_fn()
 
-    async def _run_after_hooks(
-        self, ctx: RequestContext, response: Any
-    ) -> Any:
+    async def _run_after_hooks(self, ctx: RequestContext, response: Any) -> Any:
         """Execute after-hooks in reverse registration order.
 
         Each after-hook receives ctx and a next() that simply returns the

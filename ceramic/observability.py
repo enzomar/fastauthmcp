@@ -24,7 +24,9 @@ class TelemetryServiceProtocol(Protocol):
     def start_span(self, tool_name: str, request_id: str) -> Any: ...
     def end_span(self, span: Any, outcome: str, duration_ms: float) -> None: ...
     def emit_log(self, entry: LogEntry) -> None: ...
-    def record_metric(self, tool_name: str, duration_ms: float, error: bool) -> None: ...
+    def record_metric(
+        self, tool_name: str, duration_ms: float, error: bool
+    ) -> None: ...
 
 
 class NullSpan:
@@ -235,9 +237,7 @@ class TelemetryService:
                 self._error_counter.labels(tool_name=tool_name).inc()
             self._latency_histogram.labels(tool_name=tool_name).observe(duration_ms)
         except Exception as exc:
-            logger.warning(
-                "Failed to record metric for tool '%s': %s", tool_name, exc
-            )
+            logger.warning("Failed to record metric for tool '%s': %s", tool_name, exc)
 
 
 def get_telemetry_service(

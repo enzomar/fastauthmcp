@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import time
 from types import MappingProxyType
 from unittest.mock import patch
@@ -10,8 +9,8 @@ from unittest.mock import patch
 import pytest
 
 from ceramic.authorization import require_group, require_role
-from ceramic.config import AuthorizationConfig, AuthorizationPolicy
-from ceramic.identity import IdentityContext, _identity_context_var, identity
+from ceramic.config import AuthorizationConfig
+from ceramic.identity import identity
 from ceramic.testing import CeramicTestClient, MockIdentityProvider
 
 
@@ -23,7 +22,6 @@ from ceramic.testing import CeramicTestClient, MockIdentityProvider
 @pytest.fixture
 def mock_app():
     """Create a minimal mock CeramicFastMCP app with authorization pipeline."""
-    from ceramic.middleware.authorization import AuthorizationMiddleware
     from ceramic.middleware.pipeline import MiddlewarePipeline
 
     class FakeApp:
@@ -133,7 +131,9 @@ class TestCeramicTestClientCallTool:
             return {"status": "ok"}
 
         mock_app_with_authz._tool_functions["admin_tool"] = admin_tool
-        mock_app_with_authz._authz_mw._tool_functions = mock_app_with_authz._tool_functions
+        mock_app_with_authz._authz_mw._tool_functions = (
+            mock_app_with_authz._tool_functions
+        )
 
         client = CeramicTestClient(
             mock_app_with_authz, email="admin@example.com", roles=["admin"]
@@ -151,7 +151,9 @@ class TestCeramicTestClientCallTool:
             return {"status": "ok"}
 
         mock_app_with_authz._tool_functions["admin_tool"] = admin_tool
-        mock_app_with_authz._authz_mw._tool_functions = mock_app_with_authz._tool_functions
+        mock_app_with_authz._authz_mw._tool_functions = (
+            mock_app_with_authz._tool_functions
+        )
 
         client = CeramicTestClient(
             mock_app_with_authz, email="user@example.com", roles=["viewer"]
@@ -169,7 +171,9 @@ class TestCeramicTestClientCallTool:
             return {"deployed": True}
 
         mock_app_with_authz._tool_functions["deploy_tool"] = deploy_tool
-        mock_app_with_authz._authz_mw._tool_functions = mock_app_with_authz._tool_functions
+        mock_app_with_authz._authz_mw._tool_functions = (
+            mock_app_with_authz._tool_functions
+        )
 
         client = CeramicTestClient(
             mock_app_with_authz, email="dev@example.com", groups=["ops-team"]
@@ -187,7 +191,9 @@ class TestCeramicTestClientCallTool:
             return {"deployed": True}
 
         mock_app_with_authz._tool_functions["deploy_tool"] = deploy_tool
-        mock_app_with_authz._authz_mw._tool_functions = mock_app_with_authz._tool_functions
+        mock_app_with_authz._authz_mw._tool_functions = (
+            mock_app_with_authz._tool_functions
+        )
 
         client = CeramicTestClient(
             mock_app_with_authz, email="dev@example.com", groups=["dev-team"]
@@ -206,7 +212,9 @@ class TestCeramicTestClientCallTool:
             return {"critical": True}
 
         mock_app_with_authz._tool_functions["critical_tool"] = critical_tool
-        mock_app_with_authz._authz_mw._tool_functions = mock_app_with_authz._tool_functions
+        mock_app_with_authz._authz_mw._tool_functions = (
+            mock_app_with_authz._tool_functions
+        )
 
         # Has role but not group
         client = CeramicTestClient(
@@ -234,9 +242,7 @@ class TestCeramicTestClientCallTool:
             return {"captured": True}
 
         mock_app._tool_functions["capture_tool"] = capture_tool
-        client = CeramicTestClient(
-            mock_app, email="test@example.com", roles=["tester"]
-        )
+        client = CeramicTestClient(mock_app, email="test@example.com", roles=["tester"])
 
         result = await client.call_tool("capture_tool")
         assert result == {"captured": True}

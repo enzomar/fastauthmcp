@@ -176,9 +176,7 @@ class TestAuthorizationMiddleware:
         middleware = AuthorizationMiddleware(
             empty_config, tool_functions={"admin_tool": admin_tool}
         )
-        ctx = make_ctx(
-            tool_name="admin_tool", identity=make_identity(roles=["admin"])
-        )
+        ctx = make_ctx(tool_name="admin_tool", identity=make_identity(roles=["admin"]))
 
         result = await middleware(ctx, next_fn)
 
@@ -197,9 +195,7 @@ class TestAuthorizationMiddleware:
         middleware = AuthorizationMiddleware(
             empty_config, tool_functions={"admin_tool": admin_tool}
         )
-        ctx = make_ctx(
-            tool_name="admin_tool", identity=make_identity(roles=["viewer"])
-        )
+        ctx = make_ctx(tool_name="admin_tool", identity=make_identity(roles=["viewer"]))
 
         result = await middleware(ctx, next_fn)
 
@@ -365,9 +361,7 @@ class TestAuthorizationMiddleware:
         """YAML policy with matching group grants access."""
         next_fn, state = next_called
         config = AuthorizationConfig(
-            policies=[
-                AuthorizationPolicy(tool="deploy_*", require_group="ops-team")
-            ]
+            policies=[AuthorizationPolicy(tool="deploy_*", require_group="ops-team")]
         )
         middleware = AuthorizationMiddleware(config)
         ctx = make_ctx(
@@ -375,7 +369,7 @@ class TestAuthorizationMiddleware:
             identity=make_identity(groups=["ops-team"]),
         )
 
-        result = await middleware(ctx, next_fn)
+        await middleware(ctx, next_fn)
 
         assert state["called"] is True
 
@@ -387,9 +381,7 @@ class TestAuthorizationMiddleware:
             policies=[AuthorizationPolicy(tool="admin_*", require_role="admin")]
         )
         middleware = AuthorizationMiddleware(config)
-        ctx = make_ctx(
-            tool_name="public_info", identity=make_identity(roles=[])
-        )
+        ctx = make_ctx(tool_name="public_info", identity=make_identity(roles=[]))
 
         result = await middleware(ctx, next_fn)
 
@@ -424,9 +416,7 @@ class TestAuthorizationMiddleware:
             pass
 
         config = AuthorizationConfig(
-            policies=[
-                AuthorizationPolicy(tool="deploy_*", require_role="deployer")
-            ]
+            policies=[AuthorizationPolicy(tool="deploy_*", require_role="deployer")]
         )
         middleware = AuthorizationMiddleware(
             config, tool_functions={"deploy_server": deploy_server}
@@ -451,9 +441,7 @@ class TestAuthorizationMiddleware:
             pass
 
         config = AuthorizationConfig(
-            policies=[
-                AuthorizationPolicy(tool="deploy_*", require_role="deployer")
-            ]
+            policies=[AuthorizationPolicy(tool="deploy_*", require_role="deployer")]
         )
         middleware = AuthorizationMiddleware(
             config, tool_functions={"deploy_server": deploy_server}
@@ -484,7 +472,7 @@ class TestAuthorizationMiddleware:
             identity=make_identity(roles=["authenticated"]),
         )
 
-        result = await middleware(ctx, next_fn)
+        await middleware(ctx, next_fn)
 
         assert state["called"] is True
 
@@ -501,7 +489,7 @@ class TestAuthorizationMiddleware:
             identity=make_identity(roles=["admin"]),
         )
 
-        result = await middleware(ctx, next_fn)
+        await middleware(ctx, next_fn)
         assert state["called"] is True
 
     @pytest.mark.asyncio

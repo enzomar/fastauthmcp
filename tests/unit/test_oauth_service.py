@@ -6,15 +6,13 @@ import base64
 import hashlib
 import json
 import urllib.error
-from datetime import datetime, timezone
-from http.server import HTTPServer
+from datetime import datetime
 from io import BytesIO
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ceramic.auth.oauth import (
-    AuthResult,
     OAuthService,
     _CallbackServer,
     _generate_code_challenge,
@@ -88,7 +86,9 @@ class TestPKCE:
         """code_verifier should contain only URL-safe characters."""
         verifier = _generate_code_verifier()
         # URL-safe base64 alphabet: A-Z, a-z, 0-9, -, _
-        allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
+        allowed = set(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        )
         assert all(c in allowed for c in verifier)
 
     def test_code_verifier_uniqueness(self):
@@ -128,7 +128,9 @@ class TestDiscoverEndpoints:
         mock_response.__exit__ = MagicMock(return_value=False)
 
         with patch("urllib.request.urlopen", return_value=mock_response):
-            endpoints = await oauth_service.discover_endpoints("https://idp.example.com")
+            endpoints = await oauth_service.discover_endpoints(
+                "https://idp.example.com"
+            )
 
         assert endpoints.authorization_endpoint == "https://idp.example.com/authorize"
         assert endpoints.token_endpoint == "https://idp.example.com/token"
@@ -147,7 +149,9 @@ class TestDiscoverEndpoints:
             await oauth_service.discover_endpoints("https://idp.example.com")
 
         assert oauth_service._endpoints is not None
-        assert oauth_service._endpoints.token_endpoint == "https://idp.example.com/token"
+        assert (
+            oauth_service._endpoints.token_endpoint == "https://idp.example.com/token"
+        )
 
     @pytest.mark.asyncio
     async def test_discovery_rejects_http_issuer(self, oauth_service):
@@ -218,7 +222,9 @@ class TestExchangeCode:
         mock_response.__enter__ = MagicMock(return_value=mock_response)
         mock_response.__exit__ = MagicMock(return_value=False)
 
-        with patch("urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
+        with patch(
+            "urllib.request.urlopen", return_value=mock_response
+        ) as mock_urlopen:
             token_set = await oauth_service.exchange_code(
                 code="auth-code-123",
                 verifier="test-verifier",
@@ -239,9 +245,13 @@ class TestExchangeCode:
         assert "grant_type=authorization_code" in body
 
     @pytest.mark.asyncio
-    async def test_exchange_includes_client_secret(self, provider_config, token_response):
+    async def test_exchange_includes_client_secret(
+        self, provider_config, token_response
+    ):
         """Should include client_secret when configured."""
-        config_with_secret = provider_config.model_copy(update={"client_secret": "my-secret"})
+        config_with_secret = provider_config.model_copy(
+            update={"client_secret": "my-secret"}
+        )
         service = OAuthService(provider_config=config_with_secret)
         service._endpoints = OIDCEndpoints(
             authorization_endpoint="https://idp.example.com/authorize",
@@ -255,9 +265,13 @@ class TestExchangeCode:
         mock_response.__enter__ = MagicMock(return_value=mock_response)
         mock_response.__exit__ = MagicMock(return_value=False)
 
-        with patch("urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
+        with patch(
+            "urllib.request.urlopen", return_value=mock_response
+        ) as mock_urlopen:
             await service.exchange_code(
-                code="auth-code", verifier="verifier", redirect_uri="http://localhost:1234/callback"
+                code="auth-code",
+                verifier="verifier",
+                redirect_uri="http://localhost:1234/callback",
             )
 
         request_obj = mock_urlopen.call_args[0][0]
@@ -269,7 +283,9 @@ class TestExchangeCode:
         """Should raise AuthenticationError if endpoints not discovered."""
         with pytest.raises(AuthenticationError, match="not discovered"):
             await oauth_service.exchange_code(
-                code="code", verifier="verifier", redirect_uri="http://localhost/callback"
+                code="code",
+                verifier="verifier",
+                redirect_uri="http://localhost/callback",
             )
 
     @pytest.mark.asyncio
@@ -282,7 +298,9 @@ class TestExchangeCode:
             jwks_uri="https://idp.example.com/.well-known/jwks.json",
         )
 
-        error_body = json.dumps({"error": "invalid_grant", "error_description": "Code expired"})
+        error_body = json.dumps(
+            {"error": "invalid_grant", "error_description": "Code expired"}
+        )
         http_error = urllib.error.HTTPError(
             url="https://idp.example.com/token",
             code=400,
@@ -321,8 +339,12 @@ class TestRefreshToken:
         mock_response.__enter__ = MagicMock(return_value=mock_response)
         mock_response.__exit__ = MagicMock(return_value=False)
 
-        with patch("urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
-            token_set = await oauth_service.refresh_token(refresh_token="old-refresh-token")
+        with patch(
+            "urllib.request.urlopen", return_value=mock_response
+        ) as mock_urlopen:
+            token_set = await oauth_service.refresh_token(
+                refresh_token="old-refresh-token"
+            )
 
         assert isinstance(token_set, TokenSet)
         assert token_set.access_token == "eyJhbGciOiJSUzI1NiJ9.test-access"
@@ -377,12 +399,16 @@ class TestRefreshToken:
         }
 
         mock_response = MagicMock()
-        mock_response.read.return_value = json.dumps(no_rotation_response).encode("utf-8")
+        mock_response.read.return_value = json.dumps(no_rotation_response).encode(
+            "utf-8"
+        )
         mock_response.__enter__ = MagicMock(return_value=mock_response)
         mock_response.__exit__ = MagicMock(return_value=False)
 
         with patch("urllib.request.urlopen", return_value=mock_response):
-            token_set = await oauth_service.refresh_token(refresh_token="existing-refresh")
+            token_set = await oauth_service.refresh_token(
+                refresh_token="existing-refresh"
+            )
 
         assert token_set.refresh_token is None
 
@@ -444,10 +470,14 @@ class TestInitiateFlow:
     """Tests for OAuthService.initiate_flow()."""
 
     @pytest.mark.asyncio
-    async def test_flow_opens_browser_with_pkce(self, oauth_service, provider_config, discovery_response):
+    async def test_flow_opens_browser_with_pkce(
+        self, oauth_service, provider_config, discovery_response
+    ):
         """Should open browser with PKCE parameters in the authorization URL."""
         mock_disc_response = MagicMock()
-        mock_disc_response.read.return_value = json.dumps(discovery_response).encode("utf-8")
+        mock_disc_response.read.return_value = json.dumps(discovery_response).encode(
+            "utf-8"
+        )
         mock_disc_response.__enter__ = MagicMock(return_value=mock_disc_response)
         mock_disc_response.__exit__ = MagicMock(return_value=False)
 
@@ -476,7 +506,9 @@ class TestInitiateFlow:
         assert "=" not in challenge
 
     @pytest.mark.asyncio
-    async def test_flow_timeout_raises(self, oauth_service, provider_config, discovery_response):
+    async def test_flow_timeout_raises(
+        self, oauth_service, provider_config, discovery_response
+    ):
         """Should raise AuthenticationError on callback timeout."""
         # Pre-set endpoints to skip discovery
         oauth_service._endpoints = OIDCEndpoints(
@@ -511,7 +543,9 @@ class TestInitiateFlow:
         )
 
         fixed_state = "fixed-state-value"
-        with patch("ceramic.auth.oauth.secrets.token_urlsafe", return_value=fixed_state):
+        with patch(
+            "ceramic.auth.oauth.secrets.token_urlsafe", return_value=fixed_state
+        ):
             with patch("webbrowser.open"):
                 with patch.object(_CallbackServer, "start", return_value=54321):
                     with patch.object(
@@ -524,7 +558,9 @@ class TestInitiateFlow:
                         },
                     ):
                         with patch.object(_CallbackServer, "shutdown"):
-                            with pytest.raises(AuthenticationError, match="authorization denied"):
+                            with pytest.raises(
+                                AuthenticationError, match="authorization denied"
+                            ):
                                 await oauth_service.initiate_flow(provider_config)
 
 

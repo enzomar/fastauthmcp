@@ -78,7 +78,9 @@ class ObservabilityMiddleware:
         from ceramic.observability import NullSpan
 
         try:
-            span = self._telemetry.start_span(tool_name=tool_name, request_id=ctx.request_id)
+            span = self._telemetry.start_span(
+                tool_name=tool_name, request_id=ctx.request_id
+            )
         except Exception as exc:
             logger.warning("Failed to start observability span: %s", exc)
             span = NullSpan()

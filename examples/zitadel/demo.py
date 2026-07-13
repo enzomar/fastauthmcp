@@ -30,7 +30,7 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from server import mcp
+from server import mcp  # noqa: E402
 
 # --- Configuration ---
 WEB_PORT = int(os.environ.get("DEMO_WEB_PORT", "3000"))
@@ -147,6 +147,7 @@ def ai_decide_tool(user_message: str) -> tuple[str, dict]:
 
 # --- Tool execution through Ceramic pipeline ---
 
+
 async def call_tool_via_ceramic(tool_name: str, args: dict):
     """Call a tool through Ceramic's full middleware pipeline.
 
@@ -165,7 +166,10 @@ async def call_tool_via_ceramic(tool_name: str, args: dict):
 
     async def handler():
         if tool_func is None:
-            return {"error": "tool_not_found", "message": f"Tool '{tool_name}' not found"}
+            return {
+                "error": "tool_not_found",
+                "message": f"Tool '{tool_name}' not found",
+            }
         result = tool_func(**args)
         if inspect.isawaitable(result):
             return await result
@@ -177,6 +181,7 @@ async def call_tool_via_ceramic(tool_name: str, args: dict):
 
 
 # --- HTTP API handler for the chat UI ---
+
 
 class DemoHandler(SimpleHTTPRequestHandler):
     """Serves the chat HTML and handles API requests for tool calling."""
@@ -212,40 +217,55 @@ class DemoHandler(SimpleHTTPRequestHandler):
             if isinstance(result, dict) and "error" in result:
                 error_type = result.get("error", "")
                 if error_type in ("authentication_required", "authentication_failed"):
-                    self._json_response({
-                        "type": "auth_required",
-                        "message": (
-                            "Authentication required. A browser window should have opened "
-                            "for login. Please complete the sign-in and try again."
-                        ),
-                    })
+                    self._json_response(
+                        {
+                            "type": "auth_required",
+                            "message": (
+                                "Authentication required. A browser window should have opened "
+                                "for login. Please complete the sign-in and try again."
+                            ),
+                        }
+                    )
                 elif error_type == "authorization_denied":
-                    self._json_response({
-                        "type": "tool_result",
-                        "tool": tool_name,
-                        "args": tool_args,
-                        "result": {"error": "Access denied", "detail": result.get("message", "Insufficient permissions")},
-                    })
+                    self._json_response(
+                        {
+                            "type": "tool_result",
+                            "tool": tool_name,
+                            "args": tool_args,
+                            "result": {
+                                "error": "Access denied",
+                                "detail": result.get(
+                                    "message", "Insufficient permissions"
+                                ),
+                            },
+                        }
+                    )
                 else:
-                    self._json_response({
-                        "type": "error",
-                        "tool": tool_name,
-                        "message": result.get("message", str(result)),
-                    })
+                    self._json_response(
+                        {
+                            "type": "error",
+                            "tool": tool_name,
+                            "message": result.get("message", str(result)),
+                        }
+                    )
                 return
 
-            self._json_response({
-                "type": "tool_result",
-                "tool": tool_name,
-                "args": tool_args,
-                "result": result,
-            })
+            self._json_response(
+                {
+                    "type": "tool_result",
+                    "tool": tool_name,
+                    "args": tool_args,
+                    "result": result,
+                }
+            )
         except Exception as exc:
-            self._json_response({
-                "type": "error",
-                "tool": tool_name,
-                "message": str(exc),
-            })
+            self._json_response(
+                {
+                    "type": "error",
+                    "tool": tool_name,
+                    "message": str(exc),
+                }
+            )
 
     def _serve_chat_html(self):
         """Serve the chat UI HTML file."""
@@ -294,7 +314,10 @@ def ensure_authenticated():
             if roles:
                 print(f"    Roles: {', '.join(roles)}")
             return True
-        elif isinstance(result, dict) and result.get("error") == "authentication_required":
+        elif (
+            isinstance(result, dict)
+            and result.get("error") == "authentication_required"
+        ):
             print("  ⚠ Authentication required — browser should have opened for login.")
             print("    Complete the sign-in, then refresh the chat UI.")
             return False
@@ -335,7 +358,9 @@ def main():
     print("│                                                              │")
     print("├──────────────────────────────────────────────────────────────┤")
     print(f"│  Chat UI:    http://localhost:{WEB_PORT:<39}│")
-    print(f"│  MCP Server: http://{MCP_HOST}:{MCP_PORT} (SSE){' ' * (39 - len(f'{MCP_HOST}:{MCP_PORT} (SSE)'))}│")
+    print(
+        f"│  MCP Server: http://{MCP_HOST}:{MCP_PORT} (SSE){' ' * (39 - len(f'{MCP_HOST}:{MCP_PORT} (SSE)'))}│"
+    )
     print("│  IDP:        Zitadel Cloud (ceramic-oss)                     │")
     print("└──────────────────────────────────────────────────────────────┘")
     print()
@@ -355,6 +380,7 @@ def main():
     # Auto-open the browser
     def _open_browser():
         import time
+
         time.sleep(1)
         webbrowser.open(f"http://localhost:{WEB_PORT}")
 

@@ -31,19 +31,25 @@ def token_set() -> TokenSet:
 
 
 class TestCreate:
-    async def test_returns_unique_session_id(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_returns_unique_session_id(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         id1 = await store.create("user-1", token_set, ttl=3600)
         id2 = await store.create("user-2", token_set, ttl=3600)
         assert id1 != id2
 
-    async def test_returns_string_uuid(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_returns_string_uuid(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         import uuid
 
         session_id = await store.create("user-1", token_set, ttl=3600)
         # Should be a valid UUID string
         uuid.UUID(session_id)
 
-    async def test_session_retrievable_after_creation(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_session_retrievable_after_creation(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         session_id = await store.create("user-1", token_set, ttl=3600)
         session = await store.get(session_id)
         assert session is not None
@@ -52,7 +58,9 @@ class TestCreate:
         assert session.token_set is token_set
         assert session.ttl == 3600
 
-    async def test_created_at_is_utc(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_created_at_is_utc(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         session_id = await store.create("user-1", token_set, ttl=3600)
         session = await store.get(session_id)
         assert session is not None
@@ -60,17 +68,23 @@ class TestCreate:
 
 
 class TestGet:
-    async def test_returns_none_for_nonexistent(self, store: InMemorySessionStore) -> None:
+    async def test_returns_none_for_nonexistent(
+        self, store: InMemorySessionStore
+    ) -> None:
         result = await store.get("nonexistent-id")
         assert result is None
 
-    async def test_returns_session_when_valid(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_returns_session_when_valid(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         session_id = await store.create("user-1", token_set, ttl=3600)
         session = await store.get(session_id)
         assert session is not None
         assert isinstance(session, Session)
 
-    async def test_returns_none_for_expired_session(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_returns_none_for_expired_session(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         session_id = await store.create("user-1", token_set, ttl=3600)
         # Manually backdate the session to simulate expiration
         session = store._sessions[session_id]
@@ -79,10 +93,14 @@ class TestGet:
         result = await store.get(session_id)
         assert result is None
 
-    async def test_expired_session_is_invalidated(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_expired_session_is_invalidated(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         session_id = await store.create("user-1", token_set, ttl=60)
         # Backdate to expire
-        store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(seconds=61)
+        store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(
+            seconds=61
+        )
 
         await store.get(session_id)
         # Session should be removed from storage
@@ -93,14 +111,18 @@ class TestGet:
     ) -> None:
         session_id = await store.create("user-1", token_set, ttl=100)
         # Set created_at to just under TTL (99 seconds ago) — should still be valid
-        store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(seconds=99)
+        store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(
+            seconds=99
+        )
 
         result = await store.get(session_id)
         assert result is not None
 
 
 class TestUpdate:
-    async def test_updates_token_set(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_updates_token_set(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         session_id = await store.create("user-1", token_set, ttl=3600)
         new_token_set = _make_token_set(access="new-access-789")
 
@@ -111,12 +133,16 @@ class TestUpdate:
         assert session.token_set is new_token_set
         assert session.token_set.access_token == "new-access-789"
 
-    async def test_raises_session_error_for_nonexistent(self, store: InMemorySessionStore) -> None:
+    async def test_raises_session_error_for_nonexistent(
+        self, store: InMemorySessionStore
+    ) -> None:
         new_token_set = _make_token_set()
         with pytest.raises(SessionError):
             await store.update("nonexistent-id", new_token_set)
 
-    async def test_preserves_other_session_fields(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_preserves_other_session_fields(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         session_id = await store.create("user-1", token_set, ttl=3600)
         session_before = await store.get(session_id)
         assert session_before is not None
@@ -132,18 +158,24 @@ class TestUpdate:
 
 
 class TestInvalidate:
-    async def test_removes_existing_session(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_removes_existing_session(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         session_id = await store.create("user-1", token_set, ttl=3600)
         await store.invalidate(session_id)
 
         result = await store.get(session_id)
         assert result is None
 
-    async def test_silently_succeeds_for_nonexistent(self, store: InMemorySessionStore) -> None:
+    async def test_silently_succeeds_for_nonexistent(
+        self, store: InMemorySessionStore
+    ) -> None:
         # Should not raise
         await store.invalidate("nonexistent-id")
 
-    async def test_does_not_affect_other_sessions(self, store: InMemorySessionStore, token_set: TokenSet) -> None:
+    async def test_does_not_affect_other_sessions(
+        self, store: InMemorySessionStore, token_set: TokenSet
+    ) -> None:
         id1 = await store.create("user-1", token_set, ttl=3600)
         id2 = await store.create("user-2", token_set, ttl=3600)
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -15,7 +14,6 @@ from ceramic.auth.token_storage import (
     CredentialManagerStorage,
     EncryptedFileStorage,
     KeychainTokenStorage,
-    TokenStorage,
     _deserialize_token_set,
     _serialize_token_set,
     get_token_storage,
@@ -151,9 +149,7 @@ class TestKeychainTokenStorage:
     @pytest.mark.asyncio
     async def test_delete_ignores_missing_key(self) -> None:
         mock_keyring = MagicMock()
-        mock_keyring.delete_password = MagicMock(
-            side_effect=Exception("not found")
-        )
+        mock_keyring.delete_password = MagicMock(side_effect=Exception("not found"))
 
         with patch.dict("sys.modules", {"keyring": mock_keyring}):
             storage = KeychainTokenStorage()
@@ -176,9 +172,7 @@ class TestCredentialManagerStorage:
                 CredentialManagerStorage()
 
     @pytest.mark.asyncio
-    async def test_store_and_retrieve(
-        self, sample_token_set: TokenSet
-    ) -> None:
+    async def test_store_and_retrieve(self, sample_token_set: TokenSet) -> None:
         mock_keyring = MagicMock()
         stored_data: dict[str, str] = {}
 
@@ -222,9 +216,7 @@ class TestEncryptedFileStorage:
         assert result.id_token == "id-token-789"
 
     @pytest.mark.asyncio
-    async def test_retrieve_returns_none_for_missing_key(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_retrieve_returns_none_for_missing_key(self, tmp_path: Path) -> None:
         storage = EncryptedFileStorage(storage_dir=tmp_path)
         storage._has_crypto = False
 
@@ -246,9 +238,7 @@ class TestEncryptedFileStorage:
         assert not file_path.exists()
 
     @pytest.mark.asyncio
-    async def test_delete_nonexistent_key_is_noop(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_delete_nonexistent_key_is_noop(self, tmp_path: Path) -> None:
         storage = EncryptedFileStorage(storage_dir=tmp_path)
         storage._has_crypto = False
 
@@ -341,9 +331,7 @@ class TestGetTokenStorage:
         assert isinstance(storage, KeychainTokenStorage)
 
     @patch("ceramic.auth.token_storage.sys")
-    def test_win32_returns_credential_manager(
-        self, mock_sys: MagicMock
-    ) -> None:
+    def test_win32_returns_credential_manager(self, mock_sys: MagicMock) -> None:
         mock_sys.platform = "win32"
         mock_keyring = MagicMock()
         with patch.dict("sys.modules", {"keyring": mock_keyring}):

@@ -14,14 +14,18 @@ import mcp.types as _mcp_types
 from ceramic.config import CeramicConfig, PluginRef
 from ceramic.config_loader import ConfigLoader
 from ceramic.exceptions import ConfigurationError, PluginError
-from ceramic.identity import _identity_context_var
 from ceramic.middleware.builtin import (
     AuthenticationMiddleware,
     AuthorizationMiddleware,
     ObservabilityMiddleware,
     SessionMiddleware,
 )
-from ceramic.middleware.pipeline import HOOK_POINTS, MiddlewarePipeline, MiddlewarePlugin, RequestContext
+from ceramic.middleware.pipeline import (
+    HOOK_POINTS,
+    MiddlewarePipeline,
+    MiddlewarePlugin,
+    RequestContext,
+)
 
 
 class _CeramicBridgeMiddleware(Middleware):
@@ -147,7 +151,10 @@ class CeramicFastMCP:
             tool_name = kwargs.get("name") or func.__name__
             self._tool_functions[tool_name] = func
             # Update authorization middleware if active
-            if hasattr(self, "_authz_middleware") and self._authz_middleware is not None:
+            if (
+                hasattr(self, "_authz_middleware")
+                and self._authz_middleware is not None
+            ):
                 self._authz_middleware.set_tool_functions(self._tool_functions)
             return result
 
@@ -157,7 +164,10 @@ class CeramicFastMCP:
             result = self._app.tool()(func)
             tool_name = func.__name__
             self._tool_functions[tool_name] = func
-            if hasattr(self, "_authz_middleware") and self._authz_middleware is not None:
+            if (
+                hasattr(self, "_authz_middleware")
+                and self._authz_middleware is not None
+            ):
                 self._authz_middleware.set_tool_functions(self._tool_functions)
             return result
 
@@ -213,9 +223,7 @@ class CeramicFastMCP:
         """
         # Validate name attribute
         if not hasattr(plugin, "name") or not isinstance(plugin.name, str):
-            raise PluginError(
-                "Plugin must have a 'name' attribute of type str."
-            )
+            raise PluginError("Plugin must have a 'name' attribute of type str.")
 
         # Validate hooks attribute
         if not hasattr(plugin, "hooks") or not isinstance(plugin.hooks, dict):

@@ -16,7 +16,7 @@ from types import MappingProxyType
 from typing import Any
 
 from ceramic.identity import IdentityContext, _identity_context_var
-from ceramic.middleware.pipeline import MiddlewarePipeline, RequestContext
+from ceramic.middleware.pipeline import MiddlewarePipeline as MiddlewarePipeline, RequestContext
 from ceramic.server import CeramicFastMCP
 
 
@@ -135,6 +135,7 @@ class CeramicTestClient:
                         "message": f"Tool '{tool_name}' not found",
                     }
                 import inspect
+
                 result = tool_func(**kwargs)
                 if inspect.isawaitable(result):
                     return await result
@@ -157,7 +158,10 @@ class CeramicTestClient:
         Raises:
             AssertionError: If the response contains an authorization_denied error.
         """
-        if isinstance(response, dict) and response.get("error") == "authorization_denied":
+        if (
+            isinstance(response, dict)
+            and response.get("error") == "authorization_denied"
+        ):
             raise AssertionError(
                 f"Expected authorized response but got authorization_denied: "
                 f"{response.get('message', '')}"
@@ -173,7 +177,10 @@ class CeramicTestClient:
         Raises:
             AssertionError: If the response does not contain an authorization_denied error.
         """
-        if not isinstance(response, dict) or response.get("error") != "authorization_denied":
+        if (
+            not isinstance(response, dict)
+            or response.get("error") != "authorization_denied"
+        ):
             raise AssertionError(
                 f"Expected authorization_denied error but got: {response!r}"
             )
@@ -245,7 +252,9 @@ class MockIdentityProvider:
     @staticmethod
     def _base64url_encode(data: str) -> str:
         """Base64url-encode a string (no padding)."""
-        return base64.urlsafe_b64encode(data.encode("utf-8")).rstrip(b"=").decode("ascii")
+        return (
+            base64.urlsafe_b64encode(data.encode("utf-8")).rstrip(b"=").decode("ascii")
+        )
 
     @staticmethod
     def _base64url_encode_bytes(data: bytes) -> str:

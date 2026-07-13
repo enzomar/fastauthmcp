@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 import uuid
 from types import MappingProxyType
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -132,7 +131,9 @@ class TestTelemetryService:
             span = service.start_span(tool_name="broken_tool", request_id="req-1")
 
         assert isinstance(span, NullSpan)
-        assert any("Failed to start telemetry span" in r.message for r in caplog.records)
+        assert any(
+            "Failed to start telemetry span" in r.message for r in caplog.records
+        )
 
     def test_end_span_logs_warning_on_failure(
         self, caplog: pytest.LogCaptureFixture
@@ -423,11 +424,9 @@ class TestObservabilityMiddleware:
         await self.middleware(ctx, handler)
 
         # Verify counter was incremented (sample value > 0)
-        counter_value = (
-            self.middleware.telemetry._request_counter.labels(
-                tool_name="metric_tool", status="success"
-            )._value.get()
-        )
+        counter_value = self.middleware.telemetry._request_counter.labels(
+            tool_name="metric_tool", status="success"
+        )._value.get()
         assert counter_value >= 1.0
 
     @pytest.mark.asyncio
@@ -447,9 +446,7 @@ class TestObservabilityMiddleware:
         assert log_data["tool_name"] == "unknown"
 
     @pytest.mark.asyncio
-    async def test_duration_is_measured(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    async def test_duration_is_measured(self, caplog: pytest.LogCaptureFixture) -> None:
         """Middleware should measure non-zero duration for handler execution."""
         import asyncio
 
@@ -515,5 +512,7 @@ class TestObservabilityMiddleware:
         # Request should succeed despite telemetry failures
         assert result == "success"
         # Warnings should have been logged
-        warning_messages = [r.message for r in caplog.records if r.levelno == logging.WARNING]
+        warning_messages = [
+            r.message for r in caplog.records if r.levelno == logging.WARNING
+        ]
         assert len(warning_messages) > 0

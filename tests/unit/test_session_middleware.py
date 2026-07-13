@@ -97,7 +97,10 @@ class TestSessionRestoration:
 
     @pytest.mark.asyncio
     async def test_valid_session_restores_identity(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should restore identity from a valid session without re-auth."""
         token_set = _make_token_set(sub="user-456", email="restored@example.com")
@@ -112,7 +115,10 @@ class TestSessionRestoration:
 
     @pytest.mark.asyncio
     async def test_valid_session_sets_contextvar(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should set the _identity_context_var when restoring from session."""
         token_set = _make_token_set(sub="ctx-user")
@@ -126,7 +132,10 @@ class TestSessionRestoration:
 
     @pytest.mark.asyncio
     async def test_valid_session_sets_ctx_session(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should populate ctx.session when a valid session is restored."""
         token_set = _make_token_set()
@@ -140,7 +149,10 @@ class TestSessionRestoration:
 
     @pytest.mark.asyncio
     async def test_valid_session_restores_roles_and_groups(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should restore roles and groups from stored token claims."""
         token_set = _make_token_set(roles=["admin", "editor"], groups=["team-a"])
@@ -155,7 +167,10 @@ class TestSessionRestoration:
 
     @pytest.mark.asyncio
     async def test_valid_session_calls_next(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should still call next() after restoring session."""
         token_set = _make_token_set()
@@ -176,29 +191,38 @@ class TestInvalidSession:
 
     @pytest.mark.asyncio
     async def test_unknown_session_id_treated_as_unauthenticated(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should clear session_id and proceed as unauthenticated."""
         request_ctx.metadata["session_id"] = "nonexistent-session-id"
         await middleware(request_ctx, next_fn)
 
         # session_id should be removed from metadata
-        assert "session_id" not in request_ctx.metadata or request_ctx.metadata.get("session_id") != "nonexistent-session-id"
+        assert (
+            "session_id" not in request_ctx.metadata
+            or request_ctx.metadata.get("session_id") != "nonexistent-session-id"
+        )
         # Identity should not be set by session middleware
         # (downstream auth may set it)
         next_fn.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_expired_session_treated_as_unauthenticated(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should treat expired session as unauthenticated."""
         token_set = _make_token_set()
         session_id = await middleware.store.create("user-123", token_set, ttl=60)
         # Backdate session to simulate expiration
-        middleware.store._sessions[session_id].created_at = (
-            datetime.now(timezone.utc) - timedelta(seconds=61)
-        )
+        middleware.store._sessions[session_id].created_at = datetime.now(
+            timezone.utc
+        ) - timedelta(seconds=61)
 
         request_ctx.metadata["session_id"] = session_id
         await middleware(request_ctx, next_fn)
@@ -211,7 +235,10 @@ class TestInvalidSession:
 
     @pytest.mark.asyncio
     async def test_session_with_malformed_token_invalidated(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should invalidate session if stored token cannot be parsed."""
         # Create a token with a malformed JWT
@@ -240,7 +267,10 @@ class TestNoSession:
 
     @pytest.mark.asyncio
     async def test_no_session_id_passes_through(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should simply call next() without setting identity."""
         result = await middleware(request_ctx, next_fn)
@@ -293,6 +323,7 @@ class TestSessionCreation:
         self, middleware: SessionMiddleware, request_ctx: RequestContext
     ) -> None:
         """Should not create session if no token_set in metadata."""
+
         async def auth_next() -> dict:
             # Auth populates identity but no token_set
             identity = IdentityContext(
@@ -312,7 +343,10 @@ class TestSessionCreation:
 
     @pytest.mark.asyncio
     async def test_no_session_created_if_auth_fails(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should not create session if identity is not populated."""
         next_fn.return_value = {"error": "authentication_required"}
@@ -383,7 +417,10 @@ class TestSessionUpdate:
 
     @pytest.mark.asyncio
     async def test_no_update_when_token_unchanged(
-        self, middleware: SessionMiddleware, request_ctx: RequestContext, next_fn: AsyncMock
+        self,
+        middleware: SessionMiddleware,
+        request_ctx: RequestContext,
+        next_fn: AsyncMock,
     ) -> None:
         """Should not update session when token_set hasn't changed."""
         token_set = _make_token_set()

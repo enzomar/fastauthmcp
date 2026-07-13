@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -75,9 +72,7 @@ class TestCeramicFastMCPInit:
     def test_init_with_valid_config(self, tmp_path, monkeypatch):
         """With a valid ceramic.yaml, should load config and not be passthrough."""
         config_file = tmp_path / "ceramic.yaml"
-        config_file.write_text(
-            "observability:\n  enabled: true\n  log_level: info\n"
-        )
+        config_file.write_text("observability:\n  enabled: true\n  log_level: info\n")
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
 
@@ -99,9 +94,7 @@ class TestCeramicFastMCPInit:
         assert server._config.sessions is not None
         assert server._config.sessions.ttl == 7200
 
-    def test_init_invalid_yaml_raises_configuration_error(
-        self, tmp_path, monkeypatch
-    ):
+    def test_init_invalid_yaml_raises_configuration_error(self, tmp_path, monkeypatch):
         """Invalid YAML should raise ConfigurationError at startup."""
         config_file = tmp_path / "ceramic.yaml"
         config_file.write_text("auth:\n  provider: [invalid yaml\n")
@@ -111,9 +104,7 @@ class TestCeramicFastMCPInit:
         with pytest.raises(ConfigurationError):
             CeramicFastMCP(name="test-server")
 
-    def test_init_unknown_keys_raises_configuration_error(
-        self, tmp_path, monkeypatch
-    ):
+    def test_init_unknown_keys_raises_configuration_error(self, tmp_path, monkeypatch):
         """Unknown top-level keys should raise ConfigurationError."""
         config_file = tmp_path / "ceramic.yaml"
         config_file.write_text("unknown_section:\n  key: value\n")
@@ -129,9 +120,7 @@ class TestCeramicFastMCPInit:
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
 
         # FastMCP accepts 'instructions' kwarg
-        server = CeramicFastMCP(
-            name="test-server", instructions="Test instructions"
-        )
+        server = CeramicFastMCP(name="test-server", instructions="Test instructions")
 
         assert server._app is not None
 
@@ -144,9 +133,7 @@ class TestCeramicFastMCPInit:
 class TestDelegation:
     """Tests for decorator/method delegation to the internal FastMCP instance."""
 
-    def test_tool_decorator_registers_on_internal_app(
-        self, tmp_path, monkeypatch
-    ):
+    def test_tool_decorator_registers_on_internal_app(self, tmp_path, monkeypatch):
         """tool() should delegate to _app.tool() and register the tool."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -162,9 +149,7 @@ class TestDelegation:
         # FastMCP stores tools internally — verify via the internal app
         assert server._app is not None
 
-    def test_prompt_decorator_registers_on_internal_app(
-        self, tmp_path, monkeypatch
-    ):
+    def test_prompt_decorator_registers_on_internal_app(self, tmp_path, monkeypatch):
         """prompt() should delegate to _app.prompt()."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -178,9 +163,7 @@ class TestDelegation:
 
         assert server._app is not None
 
-    def test_resource_decorator_registers_on_internal_app(
-        self, tmp_path, monkeypatch
-    ):
+    def test_resource_decorator_registers_on_internal_app(self, tmp_path, monkeypatch):
         """resource() should delegate to _app.resource()."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -248,9 +231,7 @@ class TestPluginRegistration:
 class TestEnableCeramic:
     """Tests for the enable_ceramic() migration helper."""
 
-    def test_enable_ceramic_wraps_existing_instance(
-        self, tmp_path, monkeypatch
-    ):
+    def test_enable_ceramic_wraps_existing_instance(self, tmp_path, monkeypatch):
         """enable_ceramic() should wrap an existing FastMCP instance."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -296,9 +277,7 @@ class TestEnableCeramic:
         with pytest.raises(ConfigurationError):
             CeramicFastMCP.enable_ceramic(original, config=str(config_file))
 
-    def test_enable_ceramic_preserves_registered_tools(
-        self, tmp_path, monkeypatch
-    ):
+    def test_enable_ceramic_preserves_registered_tools(self, tmp_path, monkeypatch):
         """Tools registered on the original FastMCP should remain after wrapping."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -348,20 +327,26 @@ class TestPluginValidation:
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
 
         server = CeramicFastMCP(name="test-server")
-        hooks = {hook: lambda ctx, nxt: None for hook in [
-            "before_request", "after_request", "before_tool",
-            "after_tool", "on_authentication", "on_authorization",
-            "on_exception", "on_shutdown",
-        ]}
+        hooks = {
+            hook: lambda ctx, nxt: None
+            for hook in [
+                "before_request",
+                "after_request",
+                "before_tool",
+                "after_tool",
+                "on_authentication",
+                "on_authorization",
+                "on_exception",
+                "on_shutdown",
+            ]
+        }
         plugin = ValidPluginWithHooks(name="full-plugin", hooks=hooks)
 
         server.use(plugin)
 
         assert len(server._plugins) == 1
 
-    def test_use_plugin_invalid_hook_raises_plugin_error(
-        self, tmp_path, monkeypatch
-    ):
+    def test_use_plugin_invalid_hook_raises_plugin_error(self, tmp_path, monkeypatch):
         """use() should raise PluginError when hooks contain invalid names."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -375,9 +360,7 @@ class TestPluginValidation:
         # Plugin should NOT be registered
         assert len(server._plugins) == 0
 
-    def test_use_plugin_missing_name_raises_plugin_error(
-        self, tmp_path, monkeypatch
-    ):
+    def test_use_plugin_missing_name_raises_plugin_error(self, tmp_path, monkeypatch):
         """use() should raise PluginError when plugin lacks a name attribute."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -390,9 +373,7 @@ class TestPluginValidation:
 
         assert len(server._plugins) == 0
 
-    def test_use_plugin_missing_hooks_raises_plugin_error(
-        self, tmp_path, monkeypatch
-    ):
+    def test_use_plugin_missing_hooks_raises_plugin_error(self, tmp_path, monkeypatch):
         """use() should raise PluginError when plugin lacks a hooks attribute."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -423,9 +404,7 @@ class TestPluginValidation:
 
         assert len(server._plugins) == 0
 
-    def test_use_plugin_hooks_not_dict_raises_plugin_error(
-        self, tmp_path, monkeypatch
-    ):
+    def test_use_plugin_hooks_not_dict_raises_plugin_error(self, tmp_path, monkeypatch):
         """use() should raise PluginError when hooks is not a dict."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -503,9 +482,7 @@ class TestEnableCeramicEnhanced:
                 original, config=str(tmp_path / "nonexistent.yaml")
             )
 
-    def test_enable_ceramic_with_plugins_in_config(
-        self, tmp_path, monkeypatch
-    ):
+    def test_enable_ceramic_with_plugins_in_config(self, tmp_path, monkeypatch):
         """enable_ceramic() should load plugins from the YAML config."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -514,12 +491,12 @@ class TestEnableCeramicEnhanced:
         plugin_dir = tmp_path / "my_plugin_pkg"
         plugin_dir.mkdir()
         (plugin_dir / "__init__.py").write_text(
-            'class _Plugin:\n'
+            "class _Plugin:\n"
             '    name = "my-yaml-plugin"\n'
-            '    hooks = {}\n'
-            '\n'
-            'def create_plugin(config):\n'
-            '    return _Plugin()\n'
+            "    hooks = {}\n"
+            "\n"
+            "def create_plugin(config):\n"
+            "    return _Plugin()\n"
         )
 
         # Add plugin dir to path
@@ -527,10 +504,7 @@ class TestEnableCeramicEnhanced:
 
         config_file = tmp_path / "ceramic.yaml"
         config_file.write_text(
-            "plugins:\n"
-            "  - module: my_plugin_pkg\n"
-            "    config:\n"
-            "      max_requests: 10\n"
+            "plugins:\n  - module: my_plugin_pkg\n    config:\n      max_requests: 10\n"
         )
 
         from fastmcp import FastMCP as _FastMCP
@@ -550,10 +524,7 @@ class TestEnableCeramicEnhanced:
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
 
         config_file = tmp_path / "ceramic.yaml"
-        config_file.write_text(
-            "plugins:\n"
-            "  - module: nonexistent_module_xyz\n"
-        )
+        config_file.write_text("plugins:\n  - module: nonexistent_module_xyz\n")
 
         from fastmcp import FastMCP as _FastMCP
 
@@ -580,23 +551,20 @@ class TestPluginLoadingFromConfig:
         plugin_dir = tmp_path / "test_plugin_mod"
         plugin_dir.mkdir()
         (plugin_dir / "__init__.py").write_text(
-            'class TestPlugin:\n'
-            '    def __init__(self, config):\n'
+            "class TestPlugin:\n"
+            "    def __init__(self, config):\n"
             '        self.name = "test-loaded"\n'
-            '        self.hooks = {}\n'
-            '        self.received_config = config\n'
-            '\n'
-            'def create_plugin(config):\n'
-            '    return TestPlugin(config)\n'
+            "        self.hooks = {}\n"
+            "        self.received_config = config\n"
+            "\n"
+            "def create_plugin(config):\n"
+            "    return TestPlugin(config)\n"
         )
         monkeypatch.syspath_prepend(str(tmp_path))
 
         config_file = tmp_path / "ceramic.yaml"
         config_file.write_text(
-            "plugins:\n"
-            "  - module: test_plugin_mod\n"
-            "    config:\n"
-            "      key: value\n"
+            "plugins:\n  - module: test_plugin_mod\n    config:\n      key: value\n"
         )
 
         server = CeramicFastMCP(name="test-server", config=str(config_file))
@@ -612,17 +580,11 @@ class TestPluginLoadingFromConfig:
         # Create a module without create_plugin
         plugin_dir = tmp_path / "no_factory_mod"
         plugin_dir.mkdir()
-        (plugin_dir / "__init__.py").write_text(
-            '# No create_plugin here\n'
-            'x = 1\n'
-        )
+        (plugin_dir / "__init__.py").write_text("# No create_plugin here\nx = 1\n")
         monkeypatch.syspath_prepend(str(tmp_path))
 
         config_file = tmp_path / "ceramic.yaml"
-        config_file.write_text(
-            "plugins:\n"
-            "  - module: no_factory_mod\n"
-        )
+        config_file.write_text("plugins:\n  - module: no_factory_mod\n")
 
         with pytest.raises(ConfigurationError, match="create_plugin"):
             CeramicFastMCP(name="test-server", config=str(config_file))
@@ -634,16 +596,13 @@ class TestPluginLoadingFromConfig:
 
         config_file = tmp_path / "ceramic.yaml"
         config_file.write_text(
-            "plugins:\n"
-            "  - module: this_module_does_not_exist_anywhere\n"
+            "plugins:\n  - module: this_module_does_not_exist_anywhere\n"
         )
 
         with pytest.raises(ConfigurationError, match="Cannot import plugin module"):
             CeramicFastMCP(name="test-server", config=str(config_file))
 
-    def test_load_plugin_with_invalid_hooks_raises(
-        self, tmp_path, monkeypatch
-    ):
+    def test_load_plugin_with_invalid_hooks_raises(self, tmp_path, monkeypatch):
         """Should raise ConfigurationError if loaded plugin has invalid hooks."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -651,27 +610,22 @@ class TestPluginLoadingFromConfig:
         plugin_dir = tmp_path / "bad_hook_mod"
         plugin_dir.mkdir()
         (plugin_dir / "__init__.py").write_text(
-            'class BadPlugin:\n'
+            "class BadPlugin:\n"
             '    name = "bad-hook"\n'
             '    hooks = {"invalid_hook_name": lambda ctx, nxt: None}\n'
-            '\n'
-            'def create_plugin(config):\n'
-            '    return BadPlugin()\n'
+            "\n"
+            "def create_plugin(config):\n"
+            "    return BadPlugin()\n"
         )
         monkeypatch.syspath_prepend(str(tmp_path))
 
         config_file = tmp_path / "ceramic.yaml"
-        config_file.write_text(
-            "plugins:\n"
-            "  - module: bad_hook_mod\n"
-        )
+        config_file.write_text("plugins:\n  - module: bad_hook_mod\n")
 
         with pytest.raises(ConfigurationError, match="invalid hook names"):
             CeramicFastMCP(name="test-server", config=str(config_file))
 
-    def test_load_plugin_factory_raises_exception(
-        self, tmp_path, monkeypatch
-    ):
+    def test_load_plugin_factory_raises_exception(self, tmp_path, monkeypatch):
         """Should raise ConfigurationError if create_plugin raises."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -679,16 +633,12 @@ class TestPluginLoadingFromConfig:
         plugin_dir = tmp_path / "exploding_mod"
         plugin_dir.mkdir()
         (plugin_dir / "__init__.py").write_text(
-            'def create_plugin(config):\n'
-            '    raise RuntimeError("boom")\n'
+            'def create_plugin(config):\n    raise RuntimeError("boom")\n'
         )
         monkeypatch.syspath_prepend(str(tmp_path))
 
         config_file = tmp_path / "ceramic.yaml"
-        config_file.write_text(
-            "plugins:\n"
-            "  - module: exploding_mod\n"
-        )
+        config_file.write_text("plugins:\n  - module: exploding_mod\n")
 
         with pytest.raises(ConfigurationError, match="Failed to create plugin"):
             CeramicFastMCP(name="test-server", config=str(config_file))
@@ -717,9 +667,7 @@ class TestMiddlewarePipelineWiring:
         assert server._pipeline._before == []
         assert server._pipeline._after == []
 
-    def test_observability_section_activates_middleware(
-        self, tmp_path, monkeypatch
-    ):
+    def test_observability_section_activates_middleware(self, tmp_path, monkeypatch):
         """Config with observability section should add observability middleware."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -732,9 +680,7 @@ class TestMiddlewarePipelineWiring:
         assert "observability" in server._middleware_layers
         assert len(server._pipeline._before) == 1
 
-    def test_sessions_section_activates_middleware(
-        self, tmp_path, monkeypatch
-    ):
+    def test_sessions_section_activates_middleware(self, tmp_path, monkeypatch):
         """Config with sessions section should add session middleware."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -765,9 +711,7 @@ class TestMiddlewarePipelineWiring:
         assert "authentication" in server._middleware_layers
         assert len(server._pipeline._before) == 1
 
-    def test_authorization_section_activates_middleware(
-        self, tmp_path, monkeypatch
-    ):
+    def test_authorization_section_activates_middleware(self, tmp_path, monkeypatch):
         """Config with authorization section should add authorization middleware."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
@@ -863,11 +807,7 @@ class TestMiddlewarePipelineWiring:
 
         config_file = tmp_path / "ceramic.yaml"
         config_file.write_text(
-            "observability:\n"
-            "  enabled: true\n"
-            "sessions:\n"
-            "  enabled: true\n"
-            "  ttl: 3600\n"
+            "observability:\n  enabled: true\nsessions:\n  enabled: true\n  ttl: 3600\n"
         )
 
         from fastmcp import FastMCP as _FastMCP
@@ -878,9 +818,7 @@ class TestMiddlewarePipelineWiring:
         assert wrapped._middleware_layers == ["observability", "session"]
         assert len(wrapped._pipeline._before) == 2
 
-    def test_pipeline_middleware_types_match_config(
-        self, tmp_path, monkeypatch
-    ):
+    def test_pipeline_middleware_types_match_config(self, tmp_path, monkeypatch):
         """The middleware instances in the pipeline should be the correct types."""
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("CERAMIC_CONFIG", raising=False)

@@ -12,7 +12,6 @@ Tests cover:
 from __future__ import annotations
 
 import logging
-import os
 import time
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -21,13 +20,7 @@ import pytest
 import yaml
 
 from ceramic.config import (
-    AuthConfig,
-    AuthorizationConfig,
-    AuthorizationPolicy,
     CeramicConfig,
-    HotReloadConfig,
-    ObservabilityConfig,
-    SessionsConfig,
 )
 from ceramic.config_loader import ConfigLoader
 

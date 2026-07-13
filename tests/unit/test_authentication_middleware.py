@@ -6,14 +6,14 @@ import base64
 import json
 from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from ceramic.auth.oauth import AuthResult, OAuthService
 from ceramic.config import AuthConfig
 from ceramic.exceptions import AuthenticationError, ProviderError
-from ceramic.identity import IdentityContext, _identity_context_var
+from ceramic.identity import _identity_context_var
 from ceramic.middleware.authentication import (
     AuthenticationMiddleware,
     _build_identity_context,
@@ -30,12 +30,14 @@ from ceramic.models import TokenSet
 
 def _make_jwt(claims: dict) -> str:
     """Create a structurally valid JWT (unsigned) with given claims."""
-    header = base64.urlsafe_b64encode(
-        json.dumps({"alg": "none", "typ": "JWT"}).encode()
-    ).rstrip(b"=").decode()
-    payload = base64.urlsafe_b64encode(
-        json.dumps(claims).encode()
-    ).rstrip(b"=").decode()
+    header = (
+        base64.urlsafe_b64encode(json.dumps({"alg": "none", "typ": "JWT"}).encode())
+        .rstrip(b"=")
+        .decode()
+    )
+    payload = (
+        base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+    )
     signature = ""
     return f"{header}.{payload}.{signature}"
 
@@ -405,7 +407,9 @@ class TestMiddlewareOAuthFlow:
         mock_token_storage.retrieve.return_value = None
         new_token = _make_token_set()
         mock_oauth_service.initiate_flow.return_value = AuthResult(
-            code="auth-code", verifier="verifier-123", redirect_uri="http://localhost:1234/callback"
+            code="auth-code",
+            verifier="verifier-123",
+            redirect_uri="http://localhost:1234/callback",
         )
         mock_oauth_service.exchange_code.return_value = new_token
 
@@ -429,7 +433,9 @@ class TestMiddlewareOAuthFlow:
         mock_token_storage.retrieve.return_value = None
         new_token = _make_token_set()
         mock_oauth_service.initiate_flow.return_value = AuthResult(
-            code="auth-code", verifier="verifier", redirect_uri="http://localhost:1234/callback"
+            code="auth-code",
+            verifier="verifier",
+            redirect_uri="http://localhost:1234/callback",
         )
         mock_oauth_service.exchange_code.return_value = new_token
 
@@ -487,7 +493,9 @@ class TestMiddlewareExpiredNoRefresh:
         new_token = _make_token_set()
         mock_token_storage.retrieve.return_value = expired_token
         mock_oauth_service.initiate_flow.return_value = AuthResult(
-            code="code", verifier="verifier", redirect_uri="http://localhost:1234/callback"
+            code="code",
+            verifier="verifier",
+            redirect_uri="http://localhost:1234/callback",
         )
         mock_oauth_service.exchange_code.return_value = new_token
 

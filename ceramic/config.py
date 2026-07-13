@@ -18,7 +18,9 @@ class AuthConfig(BaseModel):
     client_id: str
     client_secret: str | None = None
     scopes: list[str] = ["openid", "profile", "email"]
-    grant_type: Literal["authorization_code", "client_credentials"] = "authorization_code"
+    grant_type: Literal["authorization_code", "client_credentials"] = (
+        "authorization_code"
+    )
     callback_port: int = Field(default=9876, ge=1, le=65535)
     callback_timeout: int = Field(default=120, ge=1, le=600)
     token_exchange_timeout: int = Field(default=30, ge=1, le=120)

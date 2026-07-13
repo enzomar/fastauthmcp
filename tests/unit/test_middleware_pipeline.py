@@ -70,7 +70,15 @@ async def test_before_hooks_execute_in_registration_order():
     result = await pipeline.execute(ctx, handler)
 
     assert result == "result"
-    assert log == ["A:before", "B:before", "C:before", "handler", "C:after", "B:after", "A:after"]
+    assert log == [
+        "A:before",
+        "B:before",
+        "C:before",
+        "handler",
+        "C:after",
+        "B:after",
+        "A:after",
+    ]
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,5 @@
 """Unit tests for ConfigLoader."""
 
-import os
-from pathlib import Path
-
 import pytest
 
 from ceramic.config import CeramicConfig
@@ -152,7 +149,9 @@ class TestConfigLoaderYAMLParsing:
         captured = capsys.readouterr()
         assert "Invalid YAML" in captured.err
 
-    def test_stderr_output_on_missing_env_path(self, loader, tmp_path, monkeypatch, capsys):
+    def test_stderr_output_on_missing_env_path(
+        self, loader, tmp_path, monkeypatch, capsys
+    ):
         monkeypatch.setenv("CERAMIC_CONFIG", str(tmp_path / "gone.yaml"))
         with pytest.raises(ConfigurationError):
             loader.load()
@@ -219,7 +218,9 @@ auth:
         # scopes should remain unchanged (list not overridden)
         assert config.auth.scopes == ["openid", "profile"]
 
-    def test_ceramic_config_env_not_treated_as_override(self, loader, valid_yaml, monkeypatch):
+    def test_ceramic_config_env_not_treated_as_override(
+        self, loader, valid_yaml, monkeypatch
+    ):
         """CERAMIC_CONFIG env var should not be treated as a config override."""
         monkeypatch.setenv("CERAMIC_CONFIG", str(valid_yaml))
         config = loader.load()

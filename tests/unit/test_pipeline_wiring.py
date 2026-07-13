@@ -10,7 +10,6 @@ Verifies that:
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Awaitable, Callable
 from unittest.mock import patch
 
@@ -283,8 +282,14 @@ class TestPipelineExecution:
 
         # Create a valid (non-expired) token so AuthenticationMiddleware passes through
         claims = {"sub": "user-123", "email": "test@example.com"}
-        header = base64.urlsafe_b64encode(json.dumps({"alg": "none"}).encode()).rstrip(b"=").decode()
-        payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+        header = (
+            base64.urlsafe_b64encode(json.dumps({"alg": "none"}).encode())
+            .rstrip(b"=")
+            .decode()
+        )
+        payload = (
+            base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+        )
         jwt_token = f"{header}.{payload}."
         valid_token = TokenSet(
             access_token=jwt_token,

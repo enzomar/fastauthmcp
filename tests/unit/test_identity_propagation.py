@@ -22,7 +22,6 @@ from unittest.mock import AsyncMock
 import pytest
 
 import ceramic
-from ceramic.auth.oauth import AuthResult
 from ceramic.config import AuthConfig
 from ceramic.identity import IdentityContext, _identity_context_var, identity
 from ceramic.middleware.authentication import AuthenticationMiddleware
@@ -73,7 +72,9 @@ class TestIdentityOutsideContext:
         """Calling identity() in a fresh context (no contextvar set) raises RuntimeError."""
 
         def _run():
-            with pytest.raises(RuntimeError, match="outside of an active request context"):
+            with pytest.raises(
+                RuntimeError, match="outside of an active request context"
+            ):
                 identity()
 
         # Run in a fresh copy_context to ensure no leaked state
@@ -84,7 +85,9 @@ class TestIdentityOutsideContext:
         """The module-level ceramic.identity() also raises RuntimeError."""
 
         def _run():
-            with pytest.raises(RuntimeError, match="outside of an active request context"):
+            with pytest.raises(
+                RuntimeError, match="outside of an active request context"
+            ):
                 ceramic.identity()
 
         ctx = contextvars.copy_context()
@@ -215,8 +218,16 @@ class TestDualIdentityAccessEquivalence:
 
         assert request_ctx.identity.email == captured_identity.email == "dual@test.com"
         assert request_ctx.identity.subject == captured_identity.subject == "user-99"
-        assert request_ctx.identity.roles == captured_identity.roles == frozenset({"manager"})
-        assert request_ctx.identity.groups == captured_identity.groups == frozenset({"finance"})
+        assert (
+            request_ctx.identity.roles
+            == captured_identity.roles
+            == frozenset({"manager"})
+        )
+        assert (
+            request_ctx.identity.groups
+            == captured_identity.groups
+            == frozenset({"finance"})
+        )
 
 
 # --- Test: IdentityContext is immutable ---

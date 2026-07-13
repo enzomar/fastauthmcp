@@ -121,7 +121,9 @@ async def main() -> None:
     remaining = sys.argv[1:]
 
     print(f"Connecting to {server_url}...")
-    print("(If this is your first call, a browser window will open for authentication)\n")
+    print(
+        "(If this is your first call, a browser window will open for authentication)\n"
+    )
 
     async with Client(server_url) as client:
         if remaining:

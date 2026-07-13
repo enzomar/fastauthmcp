@@ -341,7 +341,9 @@ class AuthenticationMiddleware:
             return await next()
 
         except ProviderError as exc:
-            logger.warning("Client credentials flow failed due to provider error: %s", exc)
+            logger.warning(
+                "Client credentials flow failed due to provider error: %s", exc
+            )
             return {
                 "error": "provider_error",
                 "message": f"Identity provider unavailable: {exc}",

@@ -6,7 +6,6 @@ import base64
 import hashlib
 import json
 import secrets
-import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -70,9 +69,16 @@ class OAuthService:
                 discovery_url,
                 headers={"Accept": "application/json"},
             )
-            with urllib.request.urlopen(request, context=ssl_context, timeout=30) as response:
+            with urllib.request.urlopen(
+                request, context=ssl_context, timeout=30
+            ) as response:
                 data = json.loads(response.read().decode("utf-8"))
-        except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError) as exc:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            json.JSONDecodeError,
+            OSError,
+        ) as exc:
             raise ProviderError(
                 f"Failed to fetch OIDC discovery document from {discovery_url}: {exc}"
             ) from exc
@@ -148,7 +154,9 @@ class OAuthService:
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
         }
-        auth_url = f"{self._endpoints.authorization_endpoint}?{urllib.parse.urlencode(params)}"
+        auth_url = (
+            f"{self._endpoints.authorization_endpoint}?{urllib.parse.urlencode(params)}"
+        )
 
         # Open system browser
         webbrowser.open(auth_url)
@@ -164,9 +172,7 @@ class OAuthService:
             ) from exc
         except Exception as exc:
             callback_server.shutdown()
-            raise AuthenticationError(
-                f"OAuth2 callback failed: {exc}"
-            ) from exc
+            raise AuthenticationError(f"OAuth2 callback failed: {exc}") from exc
 
         # Validate state
         if result.get("state") != state:
@@ -182,7 +188,9 @@ class OAuthService:
         code = result.get("code")
         if not code:
             callback_server.shutdown()
-            raise AuthenticationError("OAuth2 callback did not contain an authorization code")
+            raise AuthenticationError(
+                "OAuth2 callback did not contain an authorization code"
+            )
 
         callback_server.shutdown()
 
@@ -212,7 +220,9 @@ class OAuthService:
         """
         config = provider_config or self._provider_config
         if config is None:
-            raise AuthenticationError("No provider configuration available for token exchange")
+            raise AuthenticationError(
+                "No provider configuration available for token exchange"
+            )
 
         if self._endpoints is None:
             raise AuthenticationError(
@@ -225,7 +235,7 @@ class OAuthService:
         body = {
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": redirect_uri or f"http://localhost/callback",
+            "redirect_uri": redirect_uri or "http://localhost/callback",
             "client_id": config.client_id,
             "code_verifier": verifier,
         }
@@ -256,7 +266,9 @@ class OAuthService:
         """
         config = provider_config or self._provider_config
         if config is None:
-            raise AuthenticationError("No provider configuration available for token refresh")
+            raise AuthenticationError(
+                "No provider configuration available for token refresh"
+            )
 
         if self._endpoints is None:
             raise AuthenticationError(
@@ -358,19 +370,25 @@ class OAuthService:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(request, context=ssl_context, timeout=timeout) as response:
+            with urllib.request.urlopen(
+                request, context=ssl_context, timeout=timeout
+            ) as response:
                 data = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             try:
                 error_body = json.loads(exc.read().decode("utf-8"))
-                error_msg = error_body.get("error_description", error_body.get("error", str(exc)))
+                error_msg = error_body.get(
+                    "error_description", error_body.get("error", str(exc))
+                )
             except (json.JSONDecodeError, AttributeError):
                 error_msg = str(exc)
             raise ProviderError(f"Token endpoint error: {error_msg}") from exc
         except (urllib.error.URLError, OSError) as exc:
             raise ProviderError(f"Failed to reach token endpoint: {exc}") from exc
         except json.JSONDecodeError as exc:
-            raise ProviderError(f"Invalid JSON response from token endpoint: {exc}") from exc
+            raise ProviderError(
+                f"Invalid JSON response from token endpoint: {exc}"
+            ) from exc
 
         return _parse_token_response(data)
 

@@ -45,14 +45,18 @@ def get_test_client(
     )
 
 
-async def call_tool(client: CeramicTestClient, tool_name: str, args: dict | None = None) -> None:
+async def call_tool(
+    client: CeramicTestClient, tool_name: str, args: dict | None = None
+) -> None:
     """Call a tool and print the result."""
     try:
         result = await client.call_tool(tool_name, **(args or {}))
 
         # Check for authorization denial
         if isinstance(result, dict) and result.get("error") == "authorization_denied":
-            print(f"\n✗ {tool_name}: Access denied — {result.get('message', 'insufficient permissions')}")
+            print(
+                f"\n✗ {tool_name}: Access denied — {result.get('message', 'insufficient permissions')}"
+            )
             return
 
         print(f"\n✓ {tool_name}:")
@@ -83,7 +87,11 @@ async def interactive(client: CeramicTestClient) -> None:
         ("get_projects", "viewer", "List all projects"),
         ("get_project_details", "viewer", "Get project (needs project_id=)"),
         ("create_project", "editor", "Create project (needs name=, description=)"),
-        ("update_project_status", "editor", "Update status (needs project_id=, status=)"),
+        (
+            "update_project_status",
+            "editor",
+            "Update status (needs project_id=, status=)",
+        ),
         ("delete_project", "admin", "Delete project (needs project_id=)"),
         ("get_audit_log", "admin", "View audit trail (optional limit=)"),
     ]
@@ -136,7 +144,9 @@ async def interactive(client: CeramicTestClient) -> None:
         print()
 
 
-def parse_cli_args() -> tuple[str | None, list[str] | None, list[str] | None, list[str]]:
+def parse_cli_args() -> tuple[
+    str | None, list[str] | None, list[str] | None, list[str]
+]:
     """Parse --email, --roles, --groups flags from sys.argv. Return remaining args."""
     email = None
     roles = None

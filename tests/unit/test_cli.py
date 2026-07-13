@@ -11,7 +11,7 @@ import pytest
 from click.testing import CliRunner
 
 from ceramic.cli import cli
-from ceramic.exceptions import AuthenticationError, ConfigurationError, ProviderError
+from ceramic.exceptions import ConfigurationError, ProviderError
 from ceramic.models import TokenSet
 
 
@@ -57,12 +57,14 @@ observability:
 
 def _make_jwt(claims: dict) -> str:
     """Create a fake JWT with given claims (no signature verification)."""
-    header = base64.urlsafe_b64encode(
-        json.dumps({"alg": "RS256", "typ": "JWT"}).encode()
-    ).rstrip(b"=").decode()
-    payload = base64.urlsafe_b64encode(
-        json.dumps(claims).encode()
-    ).rstrip(b"=").decode()
+    header = (
+        base64.urlsafe_b64encode(json.dumps({"alg": "RS256", "typ": "JWT"}).encode())
+        .rstrip(b"=")
+        .decode()
+    )
+    payload = (
+        base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+    )
     signature = base64.urlsafe_b64encode(b"fake-signature").rstrip(b"=").decode()
     return f"{header}.{payload}.{signature}"
 
@@ -104,7 +106,9 @@ class TestRunCommand:
         bad_path = str(tmp_path / "nonexistent.yaml")
         result = runner.invoke(cli, ["run", "--config", bad_path])
         assert result.exit_code != 0
-        assert "Error" in result.output or "Error" in (result.output + (result.output or ""))
+        assert "Error" in result.output or "Error" in (
+            result.output + (result.output or "")
+        )
 
     def test_run_exits_error_on_invalid_yaml(self, runner, tmp_path):
         """Test that `run` exits with error on invalid YAML."""
@@ -115,7 +119,9 @@ class TestRunCommand:
 
     @patch("ceramic.cli.CeramicFastMCP")
     @patch("ceramic.cli.ConfigLoader")
-    def test_run_prints_ready_message(self, mock_loader_cls, mock_server_cls, runner, tmp_path):
+    def test_run_prints_ready_message(
+        self, mock_loader_cls, mock_server_cls, runner, tmp_path
+    ):
         """Test that `run` prints a ready message on success."""
         mock_loader = MagicMock()
         mock_config = MagicMock()
@@ -323,7 +329,9 @@ class TestDoctorCommand:
 
     @patch("ceramic.cli.get_token_storage")
     @patch("ceramic.cli.ConfigLoader")
-    def test_doctor_reports_expired_token(self, mock_loader_cls, mock_storage_fn, runner):
+    def test_doctor_reports_expired_token(
+        self, mock_loader_cls, mock_storage_fn, runner
+    ):
         """Test doctor reports expired token."""
         mock_loader = MagicMock()
         mock_config = MagicMock()
@@ -342,7 +350,9 @@ class TestDoctorCommand:
 
     @patch("ceramic.cli.get_token_storage")
     @patch("ceramic.cli.ConfigLoader")
-    def test_doctor_reports_config_error(self, mock_loader_cls, mock_storage_fn, runner):
+    def test_doctor_reports_config_error(
+        self, mock_loader_cls, mock_storage_fn, runner
+    ):
         """Test doctor reports config error."""
         mock_loader = MagicMock()
         mock_loader.load.side_effect = ConfigurationError("Invalid YAML")
@@ -383,7 +393,10 @@ class TestDoctorCommand:
 
         result = runner.invoke(cli, ["doctor"])
         assert result.exit_code != 0
-        assert "Identity provider" in result.output or "Connection refused" in result.output
+        assert (
+            "Identity provider" in result.output
+            or "Connection refused" in result.output
+        )
 
 
 class TestConfigValidateCommand:
@@ -412,7 +425,9 @@ class TestConfigValidateCommand:
         assert result.exit_code != 0
         assert "Error" in result.output
 
-    def test_config_validate_warnings_for_client_secret(self, runner, tmp_path, monkeypatch):
+    def test_config_validate_warnings_for_client_secret(
+        self, runner, tmp_path, monkeypatch
+    ):
         """Test validate shows warning when client_secret is in config."""
         content = """\
 auth:

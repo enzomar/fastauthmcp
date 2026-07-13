@@ -28,15 +28,25 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option("--config", "config_path", default=None, type=click.Path(), help="Path to ceramic.yaml")
+@click.option(
+    "--config",
+    "config_path",
+    default=None,
+    type=click.Path(),
+    help="Path to ceramic.yaml",
+)
 @click.option(
     "--transport",
     type=click.Choice(["stdio", "sse", "http", "streamable-http"]),
     default="stdio",
     help="Transport protocol (default: stdio)",
 )
-@click.option("--host", default="localhost", help="Host to bind to (for HTTP transports)")
-@click.option("--port", default=8000, type=int, help="Port to bind to (for HTTP transports)")
+@click.option(
+    "--host", default="localhost", help="Host to bind to (for HTTP transports)"
+)
+@click.option(
+    "--port", default=8000, type=int, help="Port to bind to (for HTTP transports)"
+)
 def run(config_path: str | None, transport: str, host: str, port: int) -> None:
     """Start the Ceramic server."""
     try:
@@ -49,7 +59,9 @@ def run(config_path: str | None, transport: str, host: str, port: int) -> None:
         if transport == "stdio":
             click.echo("Ceramic server starting (stdio transport)")
         else:
-            click.echo(f"Ceramic server ready on http://{host}:{port} ({transport} transport)")
+            click.echo(
+                f"Ceramic server ready on http://{host}:{port} ({transport} transport)"
+            )
 
         server.run(transport=transport, host=host, port=port)
     except ConfigurationError as exc:
@@ -245,11 +257,12 @@ def config_validate() -> None:
                 "Consider using environment variable CERAMIC_AUTH_CLIENT_SECRET instead."
             )
 
-        if loaded_config.observability and loaded_config.observability.exporter == "otlp":
+        if (
+            loaded_config.observability
+            and loaded_config.observability.exporter == "otlp"
+        ):
             if loaded_config.observability.otlp_endpoint.startswith("http://"):
-                warnings.append(
-                    "Warning: OTLP endpoint uses HTTP instead of HTTPS."
-                )
+                warnings.append("Warning: OTLP endpoint uses HTTP instead of HTTPS.")
 
         click.echo("Configuration is valid.")
         for warning in warnings:

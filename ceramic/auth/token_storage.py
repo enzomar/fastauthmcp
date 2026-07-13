@@ -9,14 +9,13 @@ Provides TokenStorage protocol and platform-specific implementations:
 from __future__ import annotations
 
 import asyncio
-import base64
 import hashlib
 import json
 import logging
 import os
 import platform
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Protocol
 
@@ -84,15 +83,11 @@ class KeychainTokenStorage:
     async def store(self, key: str, token_set: TokenSet) -> None:
         """Store token set in macOS Keychain."""
         data = _serialize_token_set(token_set)
-        await asyncio.to_thread(
-            self._keyring.set_password, SERVICE_NAME, key, data
-        )
+        await asyncio.to_thread(self._keyring.set_password, SERVICE_NAME, key, data)
 
     async def retrieve(self, key: str) -> TokenSet | None:
         """Retrieve token set from macOS Keychain."""
-        raw = await asyncio.to_thread(
-            self._keyring.get_password, SERVICE_NAME, key
-        )
+        raw = await asyncio.to_thread(self._keyring.get_password, SERVICE_NAME, key)
         if raw is None:
             return None
         return _deserialize_token_set(raw)
@@ -100,9 +95,7 @@ class KeychainTokenStorage:
     async def delete(self, key: str) -> None:
         """Delete token set from macOS Keychain."""
         try:
-            await asyncio.to_thread(
-                self._keyring.delete_password, SERVICE_NAME, key
-            )
+            await asyncio.to_thread(self._keyring.delete_password, SERVICE_NAME, key)
         except Exception:
             # Key may not exist; ignore deletion errors
             pass
@@ -125,15 +118,11 @@ class CredentialManagerStorage:
     async def store(self, key: str, token_set: TokenSet) -> None:
         """Store token set in Windows Credential Manager."""
         data = _serialize_token_set(token_set)
-        await asyncio.to_thread(
-            self._keyring.set_password, SERVICE_NAME, key, data
-        )
+        await asyncio.to_thread(self._keyring.set_password, SERVICE_NAME, key, data)
 
     async def retrieve(self, key: str) -> TokenSet | None:
         """Retrieve token set from Windows Credential Manager."""
-        raw = await asyncio.to_thread(
-            self._keyring.get_password, SERVICE_NAME, key
-        )
+        raw = await asyncio.to_thread(self._keyring.get_password, SERVICE_NAME, key)
         if raw is None:
             return None
         return _deserialize_token_set(raw)
@@ -141,9 +130,7 @@ class CredentialManagerStorage:
     async def delete(self, key: str) -> None:
         """Delete token set from Windows Credential Manager."""
         try:
-            await asyncio.to_thread(
-                self._keyring.delete_password, SERVICE_NAME, key
-            )
+            await asyncio.to_thread(self._keyring.delete_password, SERVICE_NAME, key)
         except Exception:
             # Key may not exist; ignore deletion errors
             pass

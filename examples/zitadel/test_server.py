@@ -110,9 +110,7 @@ class TestViewerAccess:
 
     @pytest.mark.asyncio
     async def test_viewer_cannot_delete_project(self, viewer_client):
-        result = await viewer_client.call_tool(
-            "delete_project", project_id="proj-001"
-        )
+        result = await viewer_client.call_tool("delete_project", project_id="proj-001")
         CeramicTestClient.assert_unauthorized(result)
 
 
@@ -141,9 +139,7 @@ class TestEditorAccess:
 
     @pytest.mark.asyncio
     async def test_editor_cannot_delete_project(self, editor_client):
-        result = await editor_client.call_tool(
-            "delete_project", project_id="proj-003"
-        )
+        result = await editor_client.call_tool("delete_project", project_id="proj-003")
         CeramicTestClient.assert_unauthorized(result)
 
     @pytest.mark.asyncio
@@ -160,9 +156,7 @@ class TestEditorAccess:
 class TestAdminAccess:
     @pytest.mark.asyncio
     async def test_admin_can_delete_project(self, admin_client):
-        result = await admin_client.call_tool(
-            "delete_project", project_id="proj-003"
-        )
+        result = await admin_client.call_tool("delete_project", project_id="proj-003")
         CeramicTestClient.assert_authorized(result)
         assert result["deleted"]["name"] == "Auth Service Migration"
 

@@ -186,7 +186,9 @@ def update_project_status(project_id: str, status: str) -> dict[str, Any]:
         user.email or "unknown",
         f"Project {project_id}: {old_status} → {status}",
     )
-    return {"updated": {"id": project_id, "old_status": old_status, "new_status": status}}
+    return {
+        "updated": {"id": project_id, "old_status": old_status, "new_status": status}
+    }
 
 
 # --- Admin role ---
@@ -234,6 +236,7 @@ def get_audit_log(limit: int = 20) -> list[dict[str, Any]]:
 
 if __name__ == "__main__":
     import os
+
     transport = os.environ.get("CERAMIC_TRANSPORT", "stdio")
     host = os.environ.get("CERAMIC_HOST", "localhost")
     port = int(os.environ.get("CERAMIC_PORT", "8000"))
