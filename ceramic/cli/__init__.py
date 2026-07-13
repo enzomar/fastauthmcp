@@ -29,20 +29,29 @@ def cli() -> None:
 
 @cli.command()
 @click.option("--config", "config_path", default=None, type=click.Path(), help="Path to ceramic.yaml")
-def run(config_path: str | None) -> None:
+@click.option(
+    "--transport",
+    type=click.Choice(["stdio", "sse", "http", "streamable-http"]),
+    default="stdio",
+    help="Transport protocol (default: stdio)",
+)
+@click.option("--host", default="localhost", help="Host to bind to (for HTTP transports)")
+@click.option("--port", default=8000, type=int, help="Port to bind to (for HTTP transports)")
+def run(config_path: str | None, transport: str, host: str, port: int) -> None:
     """Start the Ceramic server."""
     try:
         path = Path(config_path) if config_path else None
         loader = ConfigLoader()
-        config = loader.load(path=path)
-
-        # Determine host and port from config or defaults
-        host = "localhost"
-        port = 8000
+        loader.load(path=path)
 
         server = CeramicFastMCP(name="ceramic", config=config_path)
-        click.echo(f"Ceramic server ready on {host}:{port}")
-        server.run()
+
+        if transport == "stdio":
+            click.echo("Ceramic server starting (stdio transport)")
+        else:
+            click.echo(f"Ceramic server ready on http://{host}:{port} ({transport} transport)")
+
+        server.run(transport=transport, host=host, port=port)
     except ConfigurationError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)

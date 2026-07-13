@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../ceramic.schema.json
 # Ceramic configuration for the Zitadel example
-# Copy to ceramic.yaml and fill in your Zitadel details.
 
 auth:
   provider: oidc

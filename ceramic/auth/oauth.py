@@ -133,9 +133,9 @@ class OAuthService:
         # Generate state for CSRF protection
         state = secrets.token_urlsafe(32)
 
-        # Start local callback server on a random port
+        # Start local callback server on the configured port (fixed for IDP redirect URI registration)
         callback_server = _CallbackServer()
-        port = callback_server.start()
+        port = callback_server.start(provider_config.callback_port)
         redirect_uri = f"http://localhost:{port}/callback"
 
         # Build authorization URL
@@ -275,6 +275,60 @@ class OAuthService:
 
         return self._post_token_request(body, timeout=30)
 
+    async def client_credentials(
+        self,
+        provider_config: AuthConfig | None = None,
+    ) -> TokenSet:
+        """Obtain an access token using the OAuth2 client_credentials grant.
+
+        This is the M2M (machine-to-machine) flow — no browser or user
+        interaction required. Suitable for remote/headless server deployments.
+
+        Args:
+            provider_config: Optional config override; falls back to instance config.
+
+        Returns:
+            TokenSet with access_token (no refresh_token in client_credentials).
+
+        Raises:
+            ProviderError: If the token endpoint returns an error or is unreachable.
+            AuthenticationError: If endpoints have not been discovered or
+                client_secret is not configured.
+        """
+        config = provider_config or self._provider_config
+        if config is None:
+            raise AuthenticationError(
+                "No provider configuration available for client credentials flow"
+            )
+
+        if not config.client_secret:
+            raise AuthenticationError(
+                "client_credentials grant requires a client_secret. "
+                "Set it in ceramic.yaml or via CERAMIC_AUTH_CLIENT_SECRET env var."
+            )
+
+        # Discover endpoints if not already cached
+        if self._endpoints is None:
+            issuer_url = str(config.issuer).rstrip("/")
+            await self.discover_endpoints(issuer_url)
+
+        assert self._endpoints is not None
+
+        body = {
+            "grant_type": "client_credentials",
+            "client_id": config.client_id,
+            "client_secret": config.client_secret,
+        }
+
+        # Include scopes if configured (excluding openid which isn't valid for client_credentials
+        # with some providers, but we include it if the user explicitly configured it)
+        scopes = config.scopes
+        if scopes:
+            body["scope"] = " ".join(scopes)
+
+        timeout = config.token_exchange_timeout
+        return self._post_token_request(body, timeout=timeout)
+
     def _post_token_request(self, body: dict[str, str], timeout: int) -> TokenSet:
         """POST to the token endpoint and parse the response into a TokenSet.
 
@@ -383,11 +437,102 @@ class _CallbackHandler(BaseHTTPRequestHandler):
 
             # Send success response to browser
             self.send_response(200)
-            self.send_header("Content-Type", "text/html")
+            self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(
-                b"<html><body><h1>Authentication successful</h1>"
-                b"<p>You can close this window.</p></body></html>"
+                b"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ceramic \xe2\x80\x94 Authenticated</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+    background: #050709;
+    color: #e7e9ee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    text-align: center;
+    padding: 3.5rem 3rem;
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 60px -20px rgba(34,211,238,0.15);
+    animation: fadeUp 0.5s cubic-bezier(0.2,0.8,0.2,1);
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(139,92,246,0.15));
+    border: 1px solid rgba(34,211,238,0.3);
+    display: flex; align-items: center; justify-content: center;
+    animation: scaleIn 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.15s both;
+  }
+  @keyframes scaleIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .icon svg { width: 28px; height: 28px; }
+  h1 {
+    font-size: 1.5rem; font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(90deg, #7dd3fc, #a78bfa);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  p { color: rgba(255,255,255,0.55); font-size: 0.92rem; line-height: 1.6; }
+  .hint {
+    margin-top: 1.5rem;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.35);
+  }
+  .logo {
+    margin-top: 2rem;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    opacity: 0.5;
+  }
+  .logo-mark {
+    width: 20px; height: 20px; border-radius: 5px;
+    background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-mark span { width: 7px; height: 7px; border-radius: 2px; background: #050709; }
+  .logo-text { font-size: 0.8rem; font-weight: 500; letter-spacing: -0.02em; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+  </div>
+  <h1>Authentication Successful</h1>
+  <p>Your identity has been verified and a secure session has been established. You can return to your application.</p>
+  <p class="hint">This window will close automatically.</p>
+  <div class="logo">
+    <div class="logo-mark"><span></span></div>
+    <span class="logo-text">Ceramic</span>
+  </div>
+</div>
+<script>setTimeout(function(){ window.close(); }, 3000);</script>
+</body>
+</html>"""
             )
         else:
             self.send_response(404)
@@ -405,8 +550,11 @@ class _CallbackServer:
         self._server: HTTPServer | None = None
         self._thread: Thread | None = None
 
-    def start(self) -> int:
-        """Start the callback server on a random available port.
+    def start(self, port: int = 0) -> int:
+        """Start the callback server on the specified port.
+
+        Args:
+            port: The port to bind to. Defaults to 0 (random available port).
 
         Returns:
             The port number the server is listening on.
@@ -415,15 +563,15 @@ class _CallbackServer:
             AuthenticationError: If the server cannot be started.
         """
         try:
-            self._server = HTTPServer(("127.0.0.1", 0), _CallbackHandler)
+            self._server = HTTPServer(("127.0.0.1", port), _CallbackHandler)
             self._server._callback_result = None  # type: ignore[attr-defined]
-            port = self._server.server_address[1]
+            actual_port = self._server.server_address[1]
             self._thread = Thread(target=self._server.serve_forever, daemon=True)
             self._thread.start()
-            return port
+            return actual_port
         except OSError as exc:
             raise AuthenticationError(
-                f"Failed to start local callback server: {exc}"
+                f"Failed to start local callback server on port {port}: {exc}"
             ) from exc
 
     def wait_for_callback(self, timeout: float) -> dict[str, Any]:

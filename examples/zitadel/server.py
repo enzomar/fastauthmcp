@@ -233,4 +233,8 @@ def get_audit_log(limit: int = 20) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    mcp.run()
+    import os
+    transport = os.environ.get("CERAMIC_TRANSPORT", "stdio")
+    host = os.environ.get("CERAMIC_HOST", "localhost")
+    port = int(os.environ.get("CERAMIC_PORT", "8000"))
+    mcp.run(transport=transport, host=host, port=port)

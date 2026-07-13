@@ -79,13 +79,22 @@ class AuthenticationMiddleware:
     from config sections (which pass a single `config` argument).
     """
 
-    def __init__(self, config: Any) -> None:
+    def __init__(
+        self,
+        config: Any,
+        role_claim_path: str = "realm_access.roles",
+        group_claim_path: str = "groups",
+    ) -> None:
         from ceramic.middleware.authentication import (
             AuthenticationMiddleware as _RealAuthMiddleware,
         )
 
         self.config = config
-        self._impl = _RealAuthMiddleware(auth_config=config)
+        self._impl = _RealAuthMiddleware(
+            auth_config=config,
+            role_claim_path=role_claim_path,
+            group_claim_path=group_claim_path,
+        )
 
     async def __call__(
         self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]

@@ -7,17 +7,66 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP as _FastMCP
+from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
+from fastmcp.tools.base import ToolResult
+import mcp.types as _mcp_types
 
 from ceramic.config import CeramicConfig, PluginRef
 from ceramic.config_loader import ConfigLoader
 from ceramic.exceptions import ConfigurationError, PluginError
+from ceramic.identity import _identity_context_var
 from ceramic.middleware.builtin import (
     AuthenticationMiddleware,
     AuthorizationMiddleware,
     ObservabilityMiddleware,
     SessionMiddleware,
 )
-from ceramic.middleware.pipeline import HOOK_POINTS, MiddlewarePipeline, MiddlewarePlugin
+from ceramic.middleware.pipeline import HOOK_POINTS, MiddlewarePipeline, MiddlewarePlugin, RequestContext
+
+
+class _CeramicBridgeMiddleware(Middleware):
+    """FastMCP-native middleware that bridges to the Ceramic pipeline.
+
+    Intercepts tool calls (on_call_tool) and runs the Ceramic middleware
+    pipeline before letting FastMCP execute the tool. This ensures
+    IdentityContext is set via contextvars before tool functions run.
+    """
+
+    def __init__(self, ceramic_server: "CeramicFastMCP") -> None:
+        self._ceramic = ceramic_server
+
+    async def on_call_tool(
+        self,
+        context: MiddlewareContext[_mcp_types.CallToolRequestParams],
+        call_next: CallNext[_mcp_types.CallToolRequestParams, ToolResult],
+    ) -> ToolResult:
+        """Run Ceramic pipeline before tool execution."""
+        pipeline = self._ceramic._pipeline
+        tool_name = context.message.name
+
+        # Build a Ceramic RequestContext for this tool call
+        ctx = RequestContext(tool_name=tool_name)
+
+        # The handler at the end of the Ceramic pipeline delegates back to
+        # FastMCP's call_next, which actually executes the tool function.
+        async def fastmcp_handler() -> Any:
+            return await call_next(context)
+
+        # Execute the Ceramic pipeline (auth, authz, observability, etc.)
+        result = await pipeline.execute(ctx, fastmcp_handler)
+
+        # If the pipeline returned a dict (e.g. error from auth/authz middleware),
+        # convert it to a ToolResult so FastMCP can handle it properly.
+        if isinstance(result, dict):
+            import json
+            from mcp.types import TextContent
+
+            return ToolResult(
+                content=[TextContent(type="text", text=json.dumps(result))],
+                is_error=True,
+            )
+
+        return result
 
 
 class CeramicFastMCP:
@@ -73,6 +122,11 @@ class CeramicFastMCP:
         # Build the middleware pipeline based on config sections and plugins
         self._pipeline: MiddlewarePipeline = self._build_pipeline()
 
+        # Register the bridge middleware on the FastMCP instance so that
+        # tool calls are intercepted and routed through the Ceramic pipeline.
+        if not self._passthrough:
+            self._app.add_middleware(_CeramicBridgeMiddleware(self))
+
     # ------------------------------------------------------------------
     # Delegated decorators (signature-compatible with FastMCP)
     # ------------------------------------------------------------------
@@ -125,9 +179,14 @@ class CeramicFastMCP:
         """Run the server. Delegates to the internal FastMCP instance.
 
         Args:
-            transport: Transport type (e.g., "stdio", "sse").
+            transport: Transport type ("stdio", "sse", "http", or "streamable-http").
             **kwargs: Additional kwargs forwarded to FastMCP.run().
+                For HTTP transports, supports host, port, log_level, etc.
         """
+        # Filter out host/port for stdio since it doesn't use them
+        if transport == "stdio":
+            kwargs.pop("host", None)
+            kwargs.pop("port", None)
         self._app.run(transport=transport, **kwargs)
 
     # ------------------------------------------------------------------
@@ -222,6 +281,10 @@ class CeramicFastMCP:
         instance._plugins = plugins
         instance._tool_functions = {}
         instance._pipeline = instance._build_pipeline()
+
+        # Register the bridge middleware on the FastMCP instance
+        if not instance._passthrough:
+            instance._app.add_middleware(_CeramicBridgeMiddleware(instance))
 
         return instance
 
@@ -351,7 +414,19 @@ class CeramicFastMCP:
             layers.append("session")
 
         if self._config.auth is not None:
-            pipeline.add_before(AuthenticationMiddleware(self._config.auth))
+            # Pass role/group claim paths from authorization config if available
+            role_claim = "realm_access.roles"
+            group_claim = "groups"
+            if self._config.authorization is not None:
+                role_claim = self._config.authorization.role_claim
+                group_claim = self._config.authorization.group_claim
+            pipeline.add_before(
+                AuthenticationMiddleware(
+                    self._config.auth,
+                    role_claim_path=role_claim,
+                    group_claim_path=group_claim,
+                )
+            )
             layers.append("authentication")
 
         if self._config.authorization is not None:

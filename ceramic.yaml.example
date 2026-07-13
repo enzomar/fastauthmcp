@@ -9,11 +9,12 @@ auth:
   issuer: https://your-idp.example.com
   client_id: your-client-id
   # client_secret: ${CLIENT_SECRET}  # Use env var for secrets
+  # grant_type: authorization_code   # authorization_code (browser login) or client_credentials (M2M)
   scopes:
     - openid
     - profile
     - email
-  callback_timeout: 120    # Seconds to wait for browser callback
+  callback_timeout: 120    # Seconds to wait for browser callback (authorization_code only)
   token_exchange_timeout: 30
 
 # Authorization (role/group-based access control)

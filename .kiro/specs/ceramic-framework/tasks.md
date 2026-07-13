@@ -256,8 +256,8 @@ This plan implements the Ceramic framework as a Python package that wraps FastMC
     - Test `config validate` reports errors
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 10.10_
 
-- [ ] 14. Testing utilities
-  - [-] 14.1 Implement CeramicTestClient and MockIdentityProvider
+- [x] 14. Testing utilities
+  - [x] 14.1 Implement CeramicTestClient and MockIdentityProvider
     - Create `ceramic/testing/__init__.py` with `CeramicTestClient` class
     - Accept `email`, `subject`, `claims`, `roles`, `groups` as constructor parameters
     - Bypass OAuth flows, inject identity directly into middleware pipeline
@@ -266,19 +266,19 @@ This plan implements the Ceramic framework as a Python package that wraps FastMC
     - Create `MockIdentityProvider` that generates structurally valid JWTs without network calls
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
 
-  - [ ]* 14.2 Write property tests for testing utilities
+  - [x]* 14.2 Write property tests for testing utilities
     - **Property 24: Test Client Fidelity** — test client identity matches configured params, authz enforced identically to production
     - **Property 25: Mock JWT Structural Validity** — issued tokens are decodable JWTs with correct header and payload
     - **Validates: Requirements 13.1, 13.2, 13.3, 13.5**
 
-- [ ] 15. Integration wiring and package exports
-  - [ ] 15.1 Wire all components in `ceramic/__init__.py` and finalize public API
+- [x] 15. Integration wiring and package exports
+  - [x] 15.1 Wire all components in `ceramic/__init__.py` and finalize public API
     - Export `FastMCP` (alias for `CeramicFastMCP`), `require_role`, `require_group`, `identity`, `CeramicTestClient`
     - Ensure `from ceramic import FastMCP` works as drop-in replacement
     - Register CLI entry point in `pyproject.toml` (`[project.scripts] ceramic = "ceramic.cli:cli"`)
     - _Requirements: 1.1, 1.2, 9.1_
 
-  - [ ]* 15.2 Write integration tests
+  - [x]* 15.2 Write integration tests
     - Test full import-replacement migration: register tool on `ceramic.FastMCP`, call it, verify response
     - Test middleware-attachment: `enable_ceramic()` on existing FastMCP instance
     - Test end-to-end auth + authz flow with `CeramicTestClient`
@@ -286,7 +286,7 @@ This plan implements the Ceramic framework as a Python package that wraps FastMC
     - Test hot-reload updates active config
     - _Requirements: 1.2, 9.1, 9.2, 9.3, 6.4, 12.2_
 
-- [ ] 16. Final checkpoint
+- [x] 16. Final checkpoint
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

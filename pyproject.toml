@@ -21,12 +21,6 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-[project.urls]
-Homepage = "https://github.com/vincenzo/ceramic-fwk"
-Documentation = "https://vincenzo.github.io/ceramic-fwk/"
-Repository = "https://github.com/vincenzo/ceramic-fwk"
-Issues = "https://github.com/vincenzo/ceramic-fwk/issues"
-Changelog = "https://github.com/vincenzo/ceramic-fwk/releases"
 dependencies = [
     "fastmcp>=2.0.0",
     "pydantic>=2.0.0",
@@ -35,7 +29,15 @@ dependencies = [
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
     "prometheus-client>=0.20.0",
+    "certifi>=2024.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/vincenzo/ceramic-fwk"
+Documentation = "https://vincenzo.github.io/ceramic-fwk/"
+Repository = "https://github.com/vincenzo/ceramic-fwk"
+Issues = "https://github.com/vincenzo/ceramic-fwk/issues"
+Changelog = "https://github.com/vincenzo/ceramic-fwk/releases"
 
 [project.optional-dependencies]
 keyring = [

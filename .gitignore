@@ -10,6 +10,7 @@ build/
 
 # Virtual environments
 .venv/
+.venv-demo/
 venv/
 env/
 
@@ -32,3 +33,4 @@ Thumbs.db
 # Ceramic
 ceramic.yaml
 !ceramic.yaml.example
+!examples/zitadel/ceramic.yaml

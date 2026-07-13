@@ -135,15 +135,21 @@ def _build_identity_context(
 class AuthenticationMiddleware:
     """Middleware that handles authentication: token validation, refresh, and OAuth flow.
 
+    Supports two grant types:
+
+    1. **authorization_code** (default) — Interactive OAuth2 + PKCE flow that opens
+       a browser for user login. Suitable for CLI/desktop apps running locally (stdio).
+
+    2. **client_credentials** — M2M (machine-to-machine) flow that authenticates
+       using client_id + client_secret without user interaction. Suitable for
+       remote/headless server deployments where a browser can't be opened.
+
     On before_request:
     1. Try to get token from storage
     2. If token exists and valid → populate identity → call next
-    3. If token exists but expired → attempt refresh
-       - On refresh success → update storage, populate identity → call next
-       - On refresh failure → invalidate session, discard tokens, return auth error
-    4. If no token → initiate OAuth flow
-       - On success → store token, populate identity → call next
-       - On failure → return auth error
+    3. If token exists but expired → attempt refresh (authorization_code) or
+       re-acquire (client_credentials)
+    4. If no token → initiate appropriate flow based on grant_type
     5. On transient provider errors → preserve stored tokens, return auth error
     """
 
@@ -161,6 +167,7 @@ class AuthenticationMiddleware:
         self._storage_key = _derive_storage_key(auth_config)
         self._role_claim_path = role_claim_path
         self._group_claim_path = group_claim_path
+        self._is_m2m = auth_config.grant_type == "client_credentials"
 
     async def __call__(
         self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
@@ -176,7 +183,13 @@ class AuthenticationMiddleware:
                 self._populate_identity(ctx, token_set)
                 return await next()
 
-            # 3. Token is expired — attempt refresh
+            # 3. Token is expired
+            if self._is_m2m:
+                # M2M: no refresh tokens — just re-acquire via client_credentials
+                await self.token_storage.delete(self._storage_key)
+                return await self._handle_client_credentials(ctx, next)
+
+            # Interactive: attempt refresh if we have a refresh token
             if token_set.refresh_token:
                 return await self._handle_refresh(ctx, token_set, next)
             else:
@@ -184,8 +197,11 @@ class AuthenticationMiddleware:
                 await self.token_storage.delete(self._storage_key)
                 return await self._handle_oauth_flow(ctx, next)
         else:
-            # 4. No token in storage — initiate OAuth flow
-            return await self._handle_oauth_flow(ctx, next)
+            # 4. No token in storage — initiate appropriate flow
+            if self._is_m2m:
+                return await self._handle_client_credentials(ctx, next)
+            else:
+                return await self._handle_oauth_flow(ctx, next)
 
     def _is_token_valid(self, token_set: TokenSet) -> bool:
         """Check if the token is still valid (not expired)."""
@@ -298,4 +314,42 @@ class AuthenticationMiddleware:
             return {
                 "error": "authentication_required",
                 "message": f"Authentication required: {exc}",
+            }
+
+    async def _handle_client_credentials(
+        self,
+        ctx: RequestContext,
+        next: Callable[[], Awaitable[Any]],
+    ) -> Any:
+        """Obtain a token via the client_credentials grant (M2M flow).
+
+        No browser interaction required. Uses client_id + client_secret to
+        authenticate directly with the token endpoint.
+
+        On success: store token, populate identity, call next.
+        On failure: return auth error.
+        On transient provider errors: return provider error.
+        """
+        try:
+            token_set = await self.oauth_service.client_credentials(
+                provider_config=self.auth_config,
+            )
+
+            # Store the token set
+            await self.token_storage.store(self._storage_key, token_set)
+            self._populate_identity(ctx, token_set)
+            return await next()
+
+        except ProviderError as exc:
+            logger.warning("Client credentials flow failed due to provider error: %s", exc)
+            return {
+                "error": "provider_error",
+                "message": f"Identity provider unavailable: {exc}",
+            }
+
+        except AuthenticationError as exc:
+            logger.info("Client credentials flow failed: %s", exc)
+            return {
+                "error": "authentication_failed",
+                "message": f"M2M authentication failed: {exc}",
             }

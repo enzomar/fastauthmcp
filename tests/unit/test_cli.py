@@ -131,8 +131,7 @@ class TestRunCommand:
 
         result = runner.invoke(cli, ["run", "--config", str(config_file)])
         assert result.exit_code == 0
-        assert "Ceramic server ready on" in result.output
-        assert "localhost:8000" in result.output
+        assert "Ceramic server starting (stdio transport)" in result.output
 
 
 class TestLoginCommand:

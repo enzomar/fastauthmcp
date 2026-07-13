@@ -77,10 +77,16 @@ class TLSEnforcer:
     def get_ssl_context(self) -> ssl.SSLContext:
         """Create and return an SSLContext enforcing TLS 1.2 minimum.
 
+        Uses certifi's CA bundle for certificate verification, which provides
+        a reliable set of root certificates across all platforms.
+
         Returns:
             An ssl.SSLContext configured with TLS_CLIENT protocol and
             minimum version set to TLS 1.2.
         """
+        import certifi
+
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.load_verify_locations(certifi.where())
         return context

@@ -37,7 +37,11 @@ def require_role(role_name: str) -> Callable[[F], F]:
 
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
-            return await func(*args, **kwargs)
+            import inspect
+            result = func(*args, **kwargs)
+            if inspect.isawaitable(result):
+                return await result
+            return result
 
         # Copy metadata to wrapper
         wrapper._ceramic_required_roles = func._ceramic_required_roles  # type: ignore[attr-defined]
@@ -73,7 +77,11 @@ def require_group(group_name: str) -> Callable[[F], F]:
 
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
-            return await func(*args, **kwargs)
+            import inspect
+            result = func(*args, **kwargs)
+            if inspect.isawaitable(result):
+                return await result
+            return result
 
         # Copy metadata to wrapper
         wrapper._ceramic_required_groups = func._ceramic_required_groups  # type: ignore[attr-defined]
