@@ -7,8 +7,10 @@ or CWD ceramic.yaml).
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
+import threading
 from pathlib import Path
 from typing import Any, Callable
 
@@ -17,6 +19,8 @@ from pydantic import ValidationError
 
 from ceramic.config import CeramicConfig
 from ceramic.exceptions import ConfigurationError
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigLoader:
@@ -100,16 +104,112 @@ class ConfigLoader:
             print(msg, file=sys.stderr)
             raise ConfigurationError(msg) from exc
 
-    def watch(self, callback: Callable[[CeramicConfig], None]) -> None:
-        """Watch the configuration file for changes (stub).
+    def watch(
+        self,
+        callback: Callable[[CeramicConfig], None],
+        config_path: Path | None = None,
+        interval: int = 5,
+    ) -> None:
+        """Start watching the configuration file for changes.
 
-        This method will be implemented in a later task (hot-reload).
+        Starts a daemonic background thread that polls the config file's
+        modification time at the specified interval. When a change is detected:
+        - Re-reads and validates the YAML
+        - If valid: atomically swaps only reloadable sections (observability,
+          authorization), retaining auth and sessions from the previous config
+        - If invalid: logs WARNING and retains the previous config
 
         Args:
-            callback: Function to call when configuration changes.
+            callback: Function called with the new CeramicConfig on successful reload.
+            config_path: Path to the config file to watch. If None, uses resolution order.
+            interval: Seconds between file modification time checks.
         """
-        # Stub — implemented in task 12.1
-        pass
+        resolved_path = self._resolve_path(config_path)
+        if resolved_path is None:
+            logger.warning("No configuration file found to watch")
+            return
+
+        self._watch_stop_event = threading.Event()
+        self._current_config = self.load(config_path)
+        self._last_mtime = os.path.getmtime(resolved_path)
+
+        def _poll_loop() -> None:
+            while not self._watch_stop_event.is_set():
+                self._watch_stop_event.wait(timeout=interval)
+                if self._watch_stop_event.is_set():
+                    break
+
+                try:
+                    current_mtime = os.path.getmtime(resolved_path)
+                except OSError:
+                    continue
+
+                if current_mtime == self._last_mtime:
+                    continue
+
+                self._last_mtime = current_mtime
+
+                # Re-read and validate
+                try:
+                    raw_data = self._read_yaml(resolved_path)
+                    new_config = self._validate(raw_data)
+                    new_config = self.apply_env_overrides(new_config)
+                except (ConfigurationError, ValidationError) as exc:
+                    logger.warning("Configuration reload failed: %s", exc)
+                    continue
+
+                # Determine reloadable sections from the hot_reload config
+                reloadable = {"observability", "authorization"}
+                if new_config.hot_reload:
+                    reloadable = set(new_config.hot_reload.reloadable_sections)
+
+                # Block reload of auth and sessions — keep from previous config
+                merged_data = new_config.model_dump(mode="json", exclude_none=True)
+                prev_data = self._current_config.model_dump(mode="json", exclude_none=True)
+
+                # For non-reloadable sections, retain previous values
+                non_reloadable = {"auth", "sessions"}
+                for section in non_reloadable:
+                    if section in prev_data:
+                        merged_data[section] = prev_data[section]
+                    elif section in merged_data:
+                        del merged_data[section]
+
+                # Also preserve any other sections not in reloadable set
+                all_sections = set(merged_data.keys()) | set(prev_data.keys())
+                for section in all_sections:
+                    if section in non_reloadable:
+                        continue
+                    if section in reloadable:
+                        continue
+                    # Non-reloadable, non-explicitly-blocked: keep previous
+                    if section in prev_data:
+                        merged_data[section] = prev_data[section]
+                    elif section in merged_data:
+                        del merged_data[section]
+
+                try:
+                    merged_config = CeramicConfig.model_validate(merged_data)
+                except ValidationError as exc:
+                    logger.warning("Configuration reload failed during merge: %s", exc)
+                    continue
+
+                self._current_config = merged_config
+                logger.info("Configuration reloaded successfully")
+                callback(merged_config)
+
+        self._watch_thread = threading.Thread(
+            target=_poll_loop, name="ceramic-config-watcher", daemon=True
+        )
+        self._watch_thread.start()
+
+    def stop_watching(self) -> None:
+        """Stop the file watcher background thread."""
+        if hasattr(self, "_watch_stop_event") and self._watch_stop_event is not None:
+            self._watch_stop_event.set()
+        if hasattr(self, "_watch_thread") and self._watch_thread is not None:
+            self._watch_thread.join(timeout=5)
+            self._watch_thread = None
 
     def _resolve_path(self, path: Path | None) -> Path | None:
         """Resolve the configuration file path using resolution order.

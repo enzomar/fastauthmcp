@@ -220,8 +220,8 @@ This plan implements the Ceramic framework as a Python package that wraps FastMC
 - [x] 11. Checkpoint - Enterprise features complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Configuration hot reload
-  - [-] 12.1 Implement hot-reload watcher
+- [x] 12. Configuration hot reload
+  - [x] 12.1 Implement hot-reload watcher
     - Add `watch()` method to `ConfigLoader` that monitors file modification time at configured interval
     - On change: re-parse YAML, validate; if valid, atomically swap observability and authorization config
     - If invalid: retain previous config, log warning
@@ -229,14 +229,14 @@ This plan implements the Ceramic framework as a Python package that wraps FastMC
     - Emit INFO log on successful reload
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
 
-  - [ ]* 12.2 Write property tests for hot reload
+  - [x]* 12.2 Write property tests for hot reload
     - **Property 20: Atomic Configuration Hot-Reload** — after reload, active config fully matches new file (no partial state)
     - **Property 21: Invalid Reload Retains Previous Configuration** — validation failure preserves old config
     - **Property 22: Non-Reloadable Sections Blocked** — auth/sessions changes not applied on reload
     - **Validates: Requirements 12.2, 12.3, 12.4**
 
-- [ ] 13. CLI implementation
-  - [ ] 13.1 Implement CLI commands with Click
+- [x] 13. CLI implementation
+  - [x] 13.1 Implement CLI commands with Click
     - Create `ceramic/cli/__init__.py` with Click group
     - Implement `ceramic run` — load config, start server, print ready message with host:port
     - Implement `ceramic login` — run OAuth flow, store tokens, print email
@@ -247,7 +247,7 @@ This plan implements the Ceramic framework as a Python package that wraps FastMC
     - All commands: exit 0 on success, non-zero + stderr message on failure
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 10.10_
 
-  - [ ]* 13.2 Write unit tests for CLI commands
+  - [x]* 13.2 Write unit tests for CLI commands
     - Test `run` exits with error on missing/invalid config
     - Test `login` stores tokens and outputs email
     - Test `logout` clears tokens
@@ -257,7 +257,7 @@ This plan implements the Ceramic framework as a Python package that wraps FastMC
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 10.10_
 
 - [ ] 14. Testing utilities
-  - [ ] 14.1 Implement CeramicTestClient and MockIdentityProvider
+  - [-] 14.1 Implement CeramicTestClient and MockIdentityProvider
     - Create `ceramic/testing/__init__.py` with `CeramicTestClient` class
     - Accept `email`, `subject`, `claims`, `roles`, `groups` as constructor parameters
     - Bypass OAuth flows, inject identity directly into middleware pipeline
