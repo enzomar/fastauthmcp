@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ceramic-fwk"
+version = "0.1.0"
+description = "Production-grade Python framework on top of FastMCP with enterprise capabilities"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+keywords = ["mcp", "fastmcp", "enterprise", "authentication", "authorization", "observability"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/vincenzo/ceramic-fwk"
+Documentation = "https://vincenzo.github.io/ceramic-fwk/"
+Repository = "https://github.com/vincenzo/ceramic-fwk"
+Issues = "https://github.com/vincenzo/ceramic-fwk/issues"
+Changelog = "https://github.com/vincenzo/ceramic-fwk/releases"
+dependencies = [
+    "fastmcp>=2.0.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0",
+    "click>=8.1.0",
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "prometheus-client>=0.20.0",
+]
+
+[project.optional-dependencies]
+keyring = [
+    "keyring>=25.0.0",
+]
+crypto = [
+    "cryptography>=42.0.0",
+]
+dev = [
+    "hypothesis>=6.100.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
+]
+
+[project.scripts]
+ceramic = "ceramic.cli:cli"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ceramic"]

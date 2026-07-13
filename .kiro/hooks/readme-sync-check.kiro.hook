@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "README Sync Check",
+  "description": "After editing public API files, CLI commands, config models, or examples, reminds to update README.md if the changes affect documented behavior.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "ceramic/__init__.py",
+      "ceramic/cli/*.py",
+      "ceramic/config.py",
+      "pyproject.toml",
+      "examples/**/*.py"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file that may affect the README was just edited. Check if README.md needs updating to reflect the change (new exports, CLI commands, config options, examples, or dependencies). If the README is already accurate, do nothing. If it needs updating, make the changes now."
+  }
+}

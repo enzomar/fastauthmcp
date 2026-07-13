@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../ceramic.schema.json
+# Ceramic configuration for the Zitadel example
+# Copy to ceramic.yaml and fill in your Zitadel details.
+
+auth:
+  provider: oidc
+  # Replace with your Zitadel instance URL
+  issuer: https://your-instance.zitadel.cloud
+  # Replace with your application's Client ID from Zitadel
+  client_id: "YOUR_CLIENT_ID"
+  scopes:
+    - openid
+    - profile
+    - email
+    # Zitadel-specific scope to include project roles in the token
+    - "urn:zitadel:iam:org:project:roles"
+  callback_timeout: 120
+  token_exchange_timeout: 30
+
+authorization:
+  # Zitadel puts roles under this claim (as a nested object)
+  role_claim: "urn:zitadel:iam:org:project:roles"
+  group_claim: "groups"
+  policies:
+    - tool: "get_*"
+      require_role: viewer
+    - tool: "create_*"
+      require_role: editor
+    - tool: "update_*"
+      require_role: editor
+    - tool: "delete_*"
+      require_role: admin
+    - tool: "get_audit_log"
+      require_role: admin
+
+observability:
+  enabled: true
+  metrics_path: /metrics
+  metrics_port: 9090
+  exporter: console
+  log_format: json
+  log_level: info
+
+sessions:
+  enabled: true
+  ttl: 3600
