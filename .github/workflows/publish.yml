@@ -7,8 +7,31 @@ on:
 
 permissions:
   id-token: write
+  contents: write
 
 jobs:
+  # Gate: run full CI (lint + tests) before publishing
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dev dependencies
+        run: pip install -e ".[dev]" ruff mypy
+
+      - name: Ruff check
+        run: ruff check ceramic/ tests/ examples/
+
+      - name: Ruff format check
+        run: ruff format --check ceramic/ tests/ examples/
+
+      - name: Type check
+        run: mypy ceramic/ --ignore-missing-imports
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -27,8 +50,9 @@ jobs:
       - name: Run tests
         run: pytest -v --tb=short
 
+  # Only build if lint + tests pass
   build:
-    needs: test
+    needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +73,7 @@ jobs:
           name: dist
           path: dist/
 
+  # Only publish if build succeeds (which requires lint + test)
   publish:
     needs: build
     runs-on: ubuntu-latest

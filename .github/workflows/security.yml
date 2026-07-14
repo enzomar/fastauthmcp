@@ -27,10 +27,10 @@ jobs:
         run: pip install pip-audit
 
       - name: Install project dependencies
-        run: pip install -e "."
+        run: pip install .
 
       - name: Audit dependencies for known vulnerabilities
-        run: pip-audit --strict --desc --skip-editable
+        run: pip-audit --strict --desc
 
   secret-scan:
     runs-on: ubuntu-latest

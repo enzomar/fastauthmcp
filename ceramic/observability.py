@@ -78,9 +78,15 @@ class TelemetryService:
 
     OpenTelemetry and Prometheus libraries are imported lazily inside __init__
     to support conditional loading (requirement 6.5). All telemetry operations
+
     are wrapped in try/except to ensure export failures never interrupt request
     processing (requirement 6.6).
     """
+
+    _shared_registry: Any
+    _shared_request_counter: Any
+    _shared_error_counter: Any
+    _shared_latency_histogram: Any
 
     def __init__(self, config: ObservabilityConfig | None = None) -> None:
         self._config = config or ObservabilityConfig()

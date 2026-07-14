@@ -238,7 +238,7 @@ class EncryptedFileStorage:
                 logger.error("Failed to decrypt token file: %s", file_path)
                 return None
         else:
-            raw = await asyncio.to_thread(self._read_text, file_path)
+            raw = await asyncio.to_thread(self._read_text, file_path)  # type: ignore[arg-type]
             if raw is None:
                 return None
 

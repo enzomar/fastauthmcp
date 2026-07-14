@@ -88,11 +88,13 @@ def login() -> None:
 
         async def _do_login() -> str:
             # Discover OIDC endpoints
-            issuer_url = str(config.auth.issuer).rstrip("/")
+            auth_config = config.auth
+            assert auth_config is not None  # guarded above
+            issuer_url = str(auth_config.issuer).rstrip("/")
             await oauth.discover_endpoints(issuer_url)
 
             # Initiate OAuth flow (opens browser)
-            result = await oauth.initiate_flow(config.auth)
+            result = await oauth.initiate_flow(auth_config)
 
             # Exchange code for tokens
             token_set = await oauth.exchange_code(

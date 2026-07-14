@@ -7,12 +7,32 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dev dependencies
+        run: pip install -e ".[dev]" ruff mypy
+
+      - name: Ruff check
+        run: ruff check ceramic/ tests/ examples/
+
+      - name: Ruff format check
+        run: ruff format --check ceramic/ tests/ examples/
+
+      - name: Type check
+        run: mypy ceramic/ --ignore-missing-imports
+
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
-
     steps:
       - uses: actions/checkout@v4
 
@@ -28,24 +48,3 @@ jobs:
 
       - name: Run property-based tests with extended examples
         run: pytest tests/properties/ -v --hypothesis-seed=0
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dev dependencies
-        run: pip install -e ".[dev]" ruff mypy
-
-      - name: Ruff check
-        run: ruff check ceramic/ tests/
-
-      - name: Ruff format check
-        run: ruff format --check ceramic/ tests/
-
-      - name: Type check
-        run: mypy ceramic/ --ignore-missing-imports

@@ -182,7 +182,7 @@ class CeramicFastMCP:
         if transport == "stdio":
             kwargs.pop("host", None)
             kwargs.pop("port", None)
-        self._app.run(transport=transport, **kwargs)
+        self._app.run(transport=transport, **kwargs)  # type: ignore[arg-type]
 
     # ------------------------------------------------------------------
     # Ceramic-specific API

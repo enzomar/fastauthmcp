@@ -30,7 +30,7 @@ class ObservabilityMiddleware:
                 ObservabilityMiddleware as _RealObsMiddleware,
             )
 
-            self._impl = _RealObsMiddleware(config=config)
+            self._impl: Any = _RealObsMiddleware(config=config)
         else:
             self._impl = None
 
@@ -59,7 +59,7 @@ class SessionMiddleware:
                 SessionMiddleware as _RealSessionMiddleware,
             )
 
-            self._impl = _RealSessionMiddleware(session_config=config)
+            self._impl: Any = _RealSessionMiddleware(session_config=config)
         else:
             self._impl = None
 

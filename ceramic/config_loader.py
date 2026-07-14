@@ -211,7 +211,7 @@ class ConfigLoader:
             self._watch_stop_event.set()
         if hasattr(self, "_watch_thread") and self._watch_thread is not None:
             self._watch_thread.join(timeout=5)
-            self._watch_thread = None
+            self._watch_thread = None  # type: ignore[assignment]
 
     def _resolve_path(self, path: Path | None) -> Path | None:
         """Resolve the configuration file path using resolution order.
