@@ -72,13 +72,9 @@ class TestCircuitBreakerProperties:
         for success in outcomes:
             try:
                 if success:
-                    asyncio.get_event_loop().run_until_complete(
-                        cb.execute(_make_success_coro())
-                    )
+                    asyncio.run(cb.execute(_make_success_coro()))
                 else:
-                    asyncio.get_event_loop().run_until_complete(
-                        cb.execute(_make_failure_coro())
-                    )
+                    asyncio.run(cb.execute(_make_failure_coro()))
             except (httpx.HTTPStatusError, Exception):
                 pass  # Expected for failures or open circuit
 
@@ -95,13 +91,9 @@ class TestCircuitBreakerProperties:
         for success in outcomes:
             try:
                 if success:
-                    asyncio.get_event_loop().run_until_complete(
-                        cb.execute(_make_success_coro())
-                    )
+                    asyncio.run(cb.execute(_make_success_coro()))
                 else:
-                    asyncio.get_event_loop().run_until_complete(
-                        cb.execute(_make_failure_coro())
-                    )
+                    asyncio.run(cb.execute(_make_failure_coro()))
             except (httpx.HTTPStatusError, Exception):
                 pass
 
@@ -121,14 +113,10 @@ class TestCircuitBreakerProperties:
 
             try:
                 if success:
-                    asyncio.get_event_loop().run_until_complete(
-                        cb.execute(_make_success_coro())
-                    )
+                    asyncio.run(cb.execute(_make_success_coro()))
                     consecutive_failures = 0
                 else:
-                    asyncio.get_event_loop().run_until_complete(
-                        cb.execute(_make_failure_coro())
-                    )
+                    asyncio.run(cb.execute(_make_failure_coro()))
             except httpx.HTTPStatusError:
                 consecutive_failures += 1
             except Exception:
@@ -147,16 +135,14 @@ class TestCircuitBreakerProperties:
         failures_to_add = min(threshold - 1, 3)
         for _ in range(failures_to_add):
             try:
-                asyncio.get_event_loop().run_until_complete(
-                    cb.execute(_make_failure_coro())
-                )
+                asyncio.run(cb.execute(_make_failure_coro()))
             except (httpx.HTTPStatusError, Exception):
                 pass
 
         assume(cb._state == CircuitState.CLOSED)
 
         # A success should reset
-        asyncio.get_event_loop().run_until_complete(cb.execute(_make_success_coro()))
+        asyncio.run(cb.execute(_make_success_coro()))
         assert cb._failure_count == 0
 
     @given(threshold=thresholds)
@@ -168,9 +154,7 @@ class TestCircuitBreakerProperties:
         # Feed more failures than the threshold
         for _ in range(threshold + 5):
             try:
-                asyncio.get_event_loop().run_until_complete(
-                    cb.execute(_make_failure_coro())
-                )
+                asyncio.run(cb.execute(_make_failure_coro()))
             except (httpx.HTTPStatusError, Exception):
                 pass
 
