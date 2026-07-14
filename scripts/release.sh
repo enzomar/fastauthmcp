@@ -8,12 +8,7 @@ set -euo pipefail
 #   ./scripts/release.sh major    # 0.1.0 → 1.0.0
 #   ./scripts/release.sh 0.3.0    # explicit version
 
-BUMP="${1:-}"
-
-if [ -z "$BUMP" ]; then
-  echo "Usage: ./scripts/release.sh <patch|minor|major|X.Y.Z>"
-  exit 1
-fi
+BUMP="${1:-patch}"
 
 # Ensure we're on main
 BRANCH=$(git branch --show-current)
