@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ceramic-fwk"
-version = "0.1.0"
+version = "0.1.1"
 description = "Production-grade Python framework on top of FastMCP with enterprise capabilities"
 readme = "README.md"
 license = {text = "Apache-2.0"}
