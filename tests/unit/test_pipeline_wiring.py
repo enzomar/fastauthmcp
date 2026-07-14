@@ -17,14 +17,12 @@ import pytest
 
 from ceramic.config import (
     AuthConfig,
-    AuthorizationConfig,
     CeramicConfig,
     ObservabilityConfig,
     SessionsConfig,
 )
 from ceramic.middleware.builtin import (
     AuthenticationMiddleware,
-    AuthorizationMiddleware,
     ObservabilityMiddleware,
     SessionMiddleware,
 )
@@ -59,18 +57,12 @@ def _config_with_sessions() -> CeramicConfig:
     return CeramicConfig(sessions=SessionsConfig())
 
 
-def _config_with_authorization() -> CeramicConfig:
-    """Return a CeramicConfig with only authorization configured."""
-    return CeramicConfig(authorization=AuthorizationConfig())
-
-
 def _full_config() -> CeramicConfig:
     """Return a CeramicConfig with all sections enabled."""
     return CeramicConfig(
         observability=ObservabilityConfig(),
         sessions=SessionsConfig(),
         auth=AuthConfig(issuer="https://idp.example.com", client_id="test-app"),
-        authorization=AuthorizationConfig(),
     )
 
 
@@ -172,22 +164,6 @@ class TestSessionsSection:
         assert mw.config is config.sessions
 
 
-class TestAuthorizationSection:
-    """Config with authorization section should include AuthorizationMiddleware."""
-
-    def test_authorization_middleware_added(self) -> None:
-        server = _make_ceramic(_config_with_authorization())
-        assert len(server._pipeline._before) == 1
-        assert isinstance(server._pipeline._before[0], AuthorizationMiddleware)
-
-    def test_authorization_middleware_receives_config(self) -> None:
-        config = _config_with_authorization()
-        server = _make_ceramic(config)
-        mw = server._pipeline._before[0]
-        assert isinstance(mw, AuthorizationMiddleware)
-        assert mw.config is config.authorization
-
-
 # ---------------------------------------------------------------------------
 # Tests: Full config → all middleware in correct order
 # ---------------------------------------------------------------------------
@@ -199,11 +175,10 @@ class TestFullConfigOrder:
     def test_all_middleware_present_in_order(self) -> None:
         server = _make_ceramic(_full_config())
         before = server._pipeline._before
-        assert len(before) == 4
+        assert len(before) == 3
         assert isinstance(before[0], ObservabilityMiddleware)
         assert isinstance(before[1], SessionMiddleware)
         assert isinstance(before[2], AuthenticationMiddleware)
-        assert isinstance(before[3], AuthorizationMiddleware)
 
     def test_passthrough_flag_is_false(self) -> None:
         server = _make_ceramic(_full_config())
@@ -229,15 +204,14 @@ class TestCustomPluginsAfterBuiltins:
         server._pipeline = server._build_pipeline()
 
         before = server._pipeline._before
-        # 4 built-ins + 1 plugin before_request hook
-        assert len(before) == 5
-        # First 4 are built-ins
+        # 3 built-ins + 1 plugin before_request hook
+        assert len(before) == 4
+        # First 3 are built-ins
         assert isinstance(before[0], ObservabilityMiddleware)
         assert isinstance(before[1], SessionMiddleware)
         assert isinstance(before[2], AuthenticationMiddleware)
-        assert isinstance(before[3], AuthorizationMiddleware)
         # Last is the plugin hook
-        assert before[4] is plugin.hooks["before_request"]
+        assert before[3] is plugin.hooks["before_request"]
 
     def test_multiple_plugins_maintain_registration_order(self) -> None:
         server = _make_ceramic(_empty_config())

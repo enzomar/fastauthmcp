@@ -10,14 +10,6 @@ def test_fastmcp_import():
     assert FastMCP is CeramicFastMCP
 
 
-def test_authorization_imports():
-    """from ceramic import require_role, require_group works."""
-    from ceramic import require_role, require_group
-
-    assert callable(require_role)
-    assert callable(require_group)
-
-
 def test_identity_import():
     """from ceramic import identity works."""
     from ceramic import identity
@@ -48,10 +40,12 @@ def test_all_exports_present():
     expected = {
         "FastMCP",
         "CeramicFastMCP",
-        "require_role",
-        "require_group",
         "identity",
+        "access_token",
         "IdentityContext",
         "CeramicTestClient",
+        "authenticated_client",
+        "authenticated_async_client",
+        "authenticated_soap_client",
     }
     assert expected == set(ceramic.__all__)

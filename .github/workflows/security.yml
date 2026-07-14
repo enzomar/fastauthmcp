@@ -1,0 +1,85 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Install project dependencies
+        run: pip install -e "."
+
+      - name: Audit dependencies for known vulnerabilities
+        run: pip-audit --strict --desc
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  security-sensitive-files:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for security-sensitive file changes
+        run: |
+          SECURITY_FILES=(
+            "ceramic/auth/oauth.py"
+            "ceramic/middleware/authentication.py"
+            "ceramic/auth/jwks_manager.py"
+            "ceramic/auth/token_storage.py"
+            "ceramic/security.py"
+            "ceramic/resilience.py"
+            "ceramic/identity.py"
+          )
+
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || echo "")
+
+          SECURITY_CHANGES=""
+          for file in "${SECURITY_FILES[@]}"; do
+            if echo "$CHANGED_FILES" | grep -q "^${file}$"; then
+              SECURITY_CHANGES="${SECURITY_CHANGES}\n- ${file}"
+            fi
+          done
+
+          if [ -n "$SECURITY_CHANGES" ]; then
+            echo "⚠️ Security-sensitive files modified:"
+            echo -e "$SECURITY_CHANGES"
+            echo ""
+            echo "These files require careful review. Ensure:"
+            echo "  - No tokens/secrets are logged"
+            echo "  - TLS enforcement is preserved"
+            echo "  - Circuit breaker protection is intact"
+            echo "  - Tests cover rejection/failure cases"
+          fi

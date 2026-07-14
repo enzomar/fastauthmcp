@@ -11,15 +11,17 @@ from unittest.mock import AsyncMock
 import pytest
 
 from ceramic.auth.oauth import AuthResult, OAuthService
+from ceramic.auth.claims import (
+    build_identity_context,
+    extract_nested_claim,
+    parse_jwt_claims,
+)
 from ceramic.config import AuthConfig
 from ceramic.exceptions import AuthenticationError, ProviderError
 from ceramic.identity import _identity_context_var
 from ceramic.middleware.authentication import (
     AuthenticationMiddleware,
-    _build_identity_context,
     _derive_storage_key,
-    _extract_nested_claim,
-    _parse_jwt_claims,
 )
 from ceramic.middleware.pipeline import RequestContext
 from ceramic.models import TokenSet
@@ -129,32 +131,32 @@ def next_fn():
 
 
 class TestParseJwtClaims:
-    """Tests for _parse_jwt_claims helper."""
+    """Tests for parse_jwt_claims helper."""
 
     def test_parses_valid_jwt(self):
         """Should parse claims from a valid JWT."""
         claims = {"sub": "user-123", "email": "test@example.com", "iat": 1234567890}
         token = _make_jwt(claims)
-        result = _parse_jwt_claims(token)
+        result = parse_jwt_claims(token)
         assert result["sub"] == "user-123"
         assert result["email"] == "test@example.com"
 
     def test_rejects_malformed_jwt(self):
         """Should raise ValueError for non-JWT strings."""
-        with pytest.raises(ValueError, match="Malformed JWT"):
-            _parse_jwt_claims("not-a-jwt")
+        with pytest.raises(ValueError, match="Failed to decode JWT"):
+            parse_jwt_claims("not-a-jwt")
 
     def test_rejects_two_segment_jwt(self):
         """Should raise ValueError for JWTs with wrong number of segments."""
-        with pytest.raises(ValueError, match="Malformed JWT"):
-            _parse_jwt_claims("header.payload")
+        with pytest.raises(ValueError, match="Failed to decode JWT"):
+            parse_jwt_claims("header.payload")
 
     def test_handles_padding(self):
         """Should handle base64url payloads that need padding."""
         # Short payload that needs padding
         claims = {"a": "b"}
         token = _make_jwt(claims)
-        result = _parse_jwt_claims(token)
+        result = parse_jwt_claims(token)
         assert result["a"] == "b"
 
 
@@ -162,36 +164,36 @@ class TestParseJwtClaims:
 
 
 class TestExtractNestedClaim:
-    """Tests for _extract_nested_claim helper."""
+    """Tests for extract_nested_claim helper."""
 
     def test_extracts_simple_list(self):
         """Should extract a list from a top-level key."""
         claims = {"groups": ["eng", "ops"]}
-        result = _extract_nested_claim(claims, "groups")
+        result = extract_nested_claim(claims, "groups")
         assert result == ["eng", "ops"]
 
     def test_extracts_nested_list(self):
         """Should extract a list from a nested path."""
         claims = {"realm_access": {"roles": ["admin", "user"]}}
-        result = _extract_nested_claim(claims, "realm_access.roles")
+        result = extract_nested_claim(claims, "realm_access.roles")
         assert result == ["admin", "user"]
 
     def test_returns_empty_on_missing_key(self):
         """Should return empty list when path doesn't exist."""
         claims = {"other": "value"}
-        result = _extract_nested_claim(claims, "realm_access.roles")
+        result = extract_nested_claim(claims, "realm_access.roles")
         assert result == []
 
     def test_returns_empty_on_none_intermediate(self):
         """Should return empty list when intermediate value is None."""
         claims = {"realm_access": None}
-        result = _extract_nested_claim(claims, "realm_access.roles")
+        result = extract_nested_claim(claims, "realm_access.roles")
         assert result == []
 
     def test_handles_string_value(self):
         """Should wrap a single string value in a list."""
         claims = {"role": "admin"}
-        result = _extract_nested_claim(claims, "role")
+        result = extract_nested_claim(claims, "role")
         assert result == ["admin"]
 
 
@@ -199,7 +201,7 @@ class TestExtractNestedClaim:
 
 
 class TestBuildIdentityContext:
-    """Tests for _build_identity_context helper."""
+    """Tests for build_identity_context helper."""
 
     def test_builds_complete_identity(self):
         """Should create IdentityContext with all fields populated."""
@@ -209,7 +211,7 @@ class TestBuildIdentityContext:
             "realm_access": {"roles": ["admin"]},
             "groups": ["engineering"],
         }
-        identity = _build_identity_context(claims)
+        identity = build_identity_context(claims)
         assert identity.email == "user@example.com"
         assert identity.subject == "user-123"
         assert identity.roles == frozenset(["admin"])
@@ -220,13 +222,13 @@ class TestBuildIdentityContext:
     def test_handles_missing_email(self):
         """Should set email to None when claim is absent."""
         claims = {"sub": "user-123"}
-        identity = _build_identity_context(claims)
+        identity = build_identity_context(claims)
         assert identity.email is None
 
     def test_handles_missing_subject(self):
         """Should set subject to None when claim is absent."""
         claims = {"email": "user@example.com"}
-        identity = _build_identity_context(claims)
+        identity = build_identity_context(claims)
         assert identity.subject is None
 
     def test_custom_claim_paths(self):
@@ -235,7 +237,7 @@ class TestBuildIdentityContext:
             "custom": {"user_roles": ["viewer"]},
             "org": {"teams": ["platform"]},
         }
-        identity = _build_identity_context(
+        identity = build_identity_context(
             claims,
             role_claim_path="custom.user_roles",
             group_claim_path="org.teams",
@@ -246,7 +248,7 @@ class TestBuildIdentityContext:
     def test_claims_immutable(self):
         """Claims should be wrapped in MappingProxyType (immutable)."""
         claims = {"sub": "user-123"}
-        identity = _build_identity_context(claims)
+        identity = build_identity_context(claims)
         with pytest.raises(TypeError):
             identity.claims["new_key"] = "value"  # type: ignore[index]
 

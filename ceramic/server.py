@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib
+import logging
+import ssl
 from pathlib import Path
 from typing import Any
 
@@ -11,12 +13,11 @@ from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.base import ToolResult
 import mcp.types as _mcp_types
 
-from ceramic.config import CeramicConfig, PluginRef
+from ceramic.config import AuthConfig, CeramicConfig, PluginRef
 from ceramic.config_loader import ConfigLoader
 from ceramic.exceptions import ConfigurationError, PluginError
 from ceramic.middleware.builtin import (
     AuthenticationMiddleware,
-    AuthorizationMiddleware,
     ObservabilityMiddleware,
     SessionMiddleware,
 )
@@ -26,6 +27,8 @@ from ceramic.middleware.pipeline import (
     MiddlewarePlugin,
     RequestContext,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class _CeramicBridgeMiddleware(Middleware):
@@ -120,7 +123,7 @@ class CeramicFastMCP:
         if self._config.plugins:
             self._load_plugins_from_config(self._config.plugins)
 
-        # Tool function registry: tool_name → function (for authorization metadata)
+        # Tool function registry: tool_name → function (for identity metadata)
         self._tool_functions: dict[str, Any] = {}
 
         # Build the middleware pipeline based on config sections and plugins
@@ -136,26 +139,13 @@ class CeramicFastMCP:
     # ------------------------------------------------------------------
 
     def tool(self, *args: Any, **kwargs: Any) -> Any:
-        """Register an MCP tool. Delegates to the internal FastMCP instance.
-
-        Also stores the tool function reference in ``_tool_functions`` so
-        that the AuthorizationMiddleware can read decorator metadata.
-        """
+        """Register an MCP tool. Delegates to the internal FastMCP instance."""
         decorator = self._app.tool(*args, **kwargs)
 
         def wrapper(func: Any) -> Any:
-            # Register with FastMCP
             result = decorator(func)
-            # Store the function for authorization metadata lookup.
-            # The tool name defaults to the function name if not specified.
             tool_name = kwargs.get("name") or func.__name__
             self._tool_functions[tool_name] = func
-            # Update authorization middleware if active
-            if (
-                hasattr(self, "_authz_middleware")
-                and self._authz_middleware is not None
-            ):
-                self._authz_middleware.set_tool_functions(self._tool_functions)
             return result
 
         # If called without arguments as @server.tool (no parens), args[0] is the func
@@ -164,11 +154,6 @@ class CeramicFastMCP:
             result = self._app.tool()(func)
             tool_name = func.__name__
             self._tool_functions[tool_name] = func
-            if (
-                hasattr(self, "_authz_middleware")
-                and self._authz_middleware is not None
-            ):
-                self._authz_middleware.set_tool_functions(self._tool_functions)
             return result
 
         return wrapper
@@ -396,55 +381,42 @@ class CeramicFastMCP:
         1. ObservabilityMiddleware (if config.observability is present/enabled)
         2. SessionMiddleware (if config.sessions is present/enabled)
         3. AuthenticationMiddleware (if config.auth is present)
-        4. AuthorizationMiddleware (if config.authorization is present)
-        5. Custom plugins (in registration order)
+        4. Custom plugins (in registration order)
 
         In passthrough mode (no config sections active and no plugins),
         the pipeline is empty — requests go directly to FastMCP.
-
-        Also populates ``_middleware_layers`` with the type names of active
-        middleware for introspection and testing.
 
         Returns:
             A configured MiddlewarePipeline instance.
         """
         pipeline = MiddlewarePipeline()
         layers: list[str] = []
-        self._authz_middleware: AuthorizationMiddleware | None = None
 
         # Add built-in middleware based on config sections (fixed order)
         if self._config.observability is not None:
             pipeline.add_before(ObservabilityMiddleware(self._config.observability))
             layers.append("observability")
 
-        if self._config.sessions is not None:
+        # Sessions are auto-disabled in token_exchange mode — each request
+        # carries its own upstream token so there's no session to restore.
+        _is_token_exchange = (
+            self._config.auth is not None
+            and self._config.auth.grant_type == "token_exchange"
+        )
+        if self._config.sessions is not None and not _is_token_exchange:
             pipeline.add_before(SessionMiddleware(self._config.sessions))
             layers.append("session")
+        elif _is_token_exchange and self._config.sessions is not None:
+            logger.info(
+                "Sessions auto-disabled: token_exchange mode uses per-request tokens"
+            )
 
         if self._config.auth is not None:
-            # Pass role/group claim paths from authorization config if available
-            role_claim = "realm_access.roles"
-            group_claim = "groups"
-            if self._config.authorization is not None:
-                role_claim = self._config.authorization.role_claim
-                group_claim = self._config.authorization.group_claim
+            ssl_context = self._build_mtls_context(self._config.auth)
             pipeline.add_before(
-                AuthenticationMiddleware(
-                    self._config.auth,
-                    role_claim_path=role_claim,
-                    group_claim_path=group_claim,
-                )
+                AuthenticationMiddleware(self._config.auth, ssl_context=ssl_context)
             )
             layers.append("authentication")
-
-        if self._config.authorization is not None:
-            authz_mw = AuthorizationMiddleware(
-                self._config.authorization,
-                tool_functions=self._tool_functions,
-            )
-            self._authz_middleware = authz_mw
-            pipeline.add_before(authz_mw)
-            layers.append("authorization")
 
         # Add custom plugin hooks (in registration order, after built-ins)
         for plugin in self._plugins:
@@ -468,8 +440,38 @@ class CeramicFastMCP:
         """
         return (
             config.auth is None
-            and config.authorization is None
             and config.observability is None
             and config.sessions is None
             and config.plugins is None
+        )
+
+    @staticmethod
+    def _build_mtls_context(auth_config: "AuthConfig") -> "ssl.SSLContext | None":
+        """Build an SSL context for mTLS if configured.
+
+        Reads the ``mtls`` section from AuthConfig and constructs an
+        ssl.SSLContext with the client certificate loaded. Returns None
+        if mTLS is not configured.
+
+        Args:
+            auth_config: The authentication configuration.
+
+        Returns:
+            An ssl.SSLContext configured for mTLS, or None.
+
+        Raises:
+            ConfigurationError: If the certificate/key files are invalid or missing.
+        """
+
+        from ceramic.security import TLSEnforcer
+
+        if auth_config.mtls is None:
+            return None
+
+        mtls = auth_config.mtls
+        enforcer = TLSEnforcer()
+        return enforcer.get_mtls_ssl_context(
+            client_cert=mtls.client_cert,
+            client_key=mtls.client_key,
+            ca_bundle=mtls.ca_bundle,
         )

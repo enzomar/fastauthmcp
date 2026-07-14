@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 
@@ -31,7 +31,7 @@ class Session:
     @property
     def is_expired(self) -> bool:
         """Return True if the session has exceeded its TTL."""
-        return (datetime.utcnow() - self.created_at).total_seconds() > self.ttl
+        return (datetime.now(timezone.utc) - self.created_at).total_seconds() > self.ttl
 
 
 @dataclass

@@ -9,11 +9,9 @@ Provides TokenStorage protocol and platform-specific implementations:
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import logging
 import os
-import platform
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -169,23 +167,27 @@ class EncryptedFileStorage:
         return self._storage_dir / f"{safe_key}.json"
 
     def _derive_key(self) -> bytes:
-        """Derive an AES-256 encryption key from machine-specific data."""
-        # Use machine-specific salt for key derivation
-        machine_id = _get_machine_id()
-        salt = hashlib.sha256(machine_id.encode()).digest()
+        """Load or generate an AES-256 encryption key.
 
-        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-        from cryptography.hazmat.primitives import hashes
+        Uses a randomly-generated key stored in a file with mode 600.
+        If the key file doesn't exist, generates a new random key and
+        persists it. This is significantly more secure than deriving from
+        machine-id (which is public on Linux).
+        """
+        key_file = self._storage_dir / ".ceramic_key"
 
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=100_000,
-        )
-        # Use a static passphrase combined with the machine ID
-        passphrase = f"ceramic-fwk-{machine_id}".encode()
-        return kdf.derive(passphrase)
+        if key_file.exists():
+            key_data = key_file.read_bytes()
+            if len(key_data) == 32:
+                return key_data
+            # Invalid key file — regenerate
+            logger.warning("Invalid key file, regenerating encryption key")
+
+        # Generate a cryptographically random 256-bit key
+        key = os.urandom(32)
+        key_file.write_bytes(key)
+        os.chmod(key_file, 0o600)
+        return key
 
     def _encrypt(self, data: str) -> bytes:
         """Encrypt data using AES-256-GCM."""
@@ -275,32 +277,6 @@ class EncryptedFileStorage:
             return path.read_text()
         except OSError:
             return None
-
-
-def _get_machine_id() -> str:
-    """Get a machine-specific identifier for key derivation.
-
-    Uses platform-specific methods to find a stable machine identifier.
-    Falls back to hostname + platform info if nothing better is available.
-    """
-    # Try Linux machine-id
-    machine_id_path = Path("/etc/machine-id")
-    if machine_id_path.exists():
-        try:
-            return machine_id_path.read_text().strip()
-        except OSError:
-            pass
-
-    # Try DBus machine-id (another Linux location)
-    dbus_path = Path("/var/lib/dbus/machine-id")
-    if dbus_path.exists():
-        try:
-            return dbus_path.read_text().strip()
-        except OSError:
-            pass
-
-    # Fallback: use hostname + platform node
-    return f"{platform.node()}-{platform.machine()}-{os.getlogin()}"
 
 
 def get_token_storage(storage_dir: Path | None = None) -> TokenStorage:

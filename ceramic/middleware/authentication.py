@@ -6,18 +6,20 @@ Populates RequestContext.identity with IdentityContext on successful auth.
 
 from __future__ import annotations
 
-import base64
-import json
+import hashlib
 import logging
+import ssl
+import sys
+import time
 from datetime import datetime, timezone
-from types import MappingProxyType
 from typing import Any, Awaitable, Callable
 
+from ceramic.auth.claims import build_identity_context, parse_jwt_claims
 from ceramic.auth.oauth import OAuthService
 from ceramic.auth.token_storage import TokenStorage, get_token_storage
 from ceramic.config import AuthConfig
 from ceramic.exceptions import AuthenticationError, ProviderError
-from ceramic.identity import IdentityContext, _identity_context_var
+from ceramic.identity import _access_token_var, _identity_context_var
 from ceramic.middleware.pipeline import RequestContext
 from ceramic.models import TokenSet
 
@@ -30,7 +32,6 @@ _DEFAULT_STORAGE_KEY = "default"
 def _derive_storage_key(auth_config: AuthConfig) -> str:
     """Derive a storage key from the issuer URL, or use default."""
     issuer = str(auth_config.issuer).rstrip("/")
-    # Use a simplified key based on the issuer hostname
     try:
         from urllib.parse import urlparse
 
@@ -40,115 +41,19 @@ def _derive_storage_key(auth_config: AuthConfig) -> str:
         return _DEFAULT_STORAGE_KEY
 
 
-def _parse_jwt_claims(access_token: str) -> dict[str, Any]:
-    """Parse claims from a JWT access token by base64-decoding the payload.
-
-    This performs NO signature verification — we trust the token from our own
-    OAuth flow.
-
-    Args:
-        access_token: The JWT access token string.
-
-    Returns:
-        Dictionary of claims parsed from the JWT payload.
-
-    Raises:
-        ValueError: If the token is malformed or cannot be decoded.
-    """
-    parts = access_token.split(".")
-    if len(parts) != 3:
-        raise ValueError("Malformed JWT: expected 3 dot-separated segments")
-
-    payload_segment = parts[1]
-    # Add padding if needed (base64url uses no padding)
-    padding = 4 - len(payload_segment) % 4
-    if padding != 4:
-        payload_segment += "=" * padding
-
-    try:
-        decoded = base64.urlsafe_b64decode(payload_segment)
-        claims = json.loads(decoded)
-    except (ValueError, json.JSONDecodeError) as exc:
-        raise ValueError(f"Failed to decode JWT payload: {exc}") from exc
-
-    return claims
-
-
-def _extract_nested_claim(claims: dict[str, Any], claim_path: str) -> list[str]:
-    """Extract a nested claim value using a dot-separated path.
-
-    For example, "realm_access.roles" will look up claims["realm_access"]["roles"].
-
-    Args:
-        claims: The full claims dictionary.
-        claim_path: Dot-separated path to the claim (e.g. "realm_access.roles").
-
-    Returns:
-        List of strings found at the claim path, or empty list if not found.
-    """
-    parts = claim_path.split(".")
-    current: Any = claims
-    for part in parts:
-        if isinstance(current, dict):
-            current = current.get(part)
-        else:
-            return []
-        if current is None:
-            return []
-
-    if isinstance(current, list):
-        return [str(item) for item in current]
-    elif isinstance(current, str):
-        return [current]
-    return []
-
-
-def _build_identity_context(
-    claims: dict[str, Any],
-    role_claim_path: str = "realm_access.roles",
-    group_claim_path: str = "groups",
-) -> IdentityContext:
-    """Build an IdentityContext from JWT claims.
-
-    Args:
-        claims: Parsed JWT claims dictionary.
-        role_claim_path: Dot-path to extract roles from claims.
-        group_claim_path: Dot-path to extract groups from claims.
-
-    Returns:
-        A populated IdentityContext instance.
-    """
-    email = claims.get("email")
-    subject = claims.get("sub")
-    roles = frozenset(_extract_nested_claim(claims, role_claim_path))
-    groups = frozenset(_extract_nested_claim(claims, group_claim_path))
-
-    return IdentityContext(
-        email=email,
-        subject=subject,
-        claims=MappingProxyType(claims),
-        roles=roles,
-        groups=groups,
-    )
-
-
 class AuthenticationMiddleware:
     """Middleware that handles authentication: token validation, refresh, and OAuth flow.
 
-    Supports two grant types:
+    Supports three grant types:
 
-    1. **authorization_code** (default) — Interactive OAuth2 + PKCE flow that opens
-       a browser for user login. Suitable for CLI/desktop apps running locally (stdio).
-
-    2. **client_credentials** — M2M (machine-to-machine) flow that authenticates
-       using client_id + client_secret without user interaction. Suitable for
-       remote/headless server deployments where a browser can't be opened.
+    1. **authorization_code** (default) — Interactive OAuth2 + PKCE flow.
+    2. **client_credentials** — M2M flow using client_id + client_secret.
+    3. **token_exchange** — Exchanges an upstream token for a downstream token.
 
     On before_request:
     1. Try to get token from storage
     2. If token exists and valid → populate identity → call next
-    3. If token exists but expired → attempt refresh (authorization_code) or
-       re-acquire (client_credentials)
+    3. If token exists but expired → attempt refresh or re-acquire
     4. If no token → initiate appropriate flow based on grant_type
     5. On transient provider errors → preserve stored tokens, return auth error
     """
@@ -160,44 +65,48 @@ class AuthenticationMiddleware:
         oauth_service: OAuthService | None = None,
         role_claim_path: str = "realm_access.roles",
         group_claim_path: str = "groups",
+        ssl_context: ssl.SSLContext | None = None,
     ) -> None:
         self.auth_config = auth_config
-        self.oauth_service = oauth_service or OAuthService(provider_config=auth_config)
+        self._ssl_context = ssl_context
+        self.oauth_service = oauth_service or OAuthService(
+            provider_config=auth_config, ssl_context=ssl_context
+        )
         self.token_storage = token_storage or get_token_storage()
         self._storage_key = _derive_storage_key(auth_config)
         self._role_claim_path = role_claim_path
         self._group_claim_path = group_claim_path
         self._is_m2m = auth_config.grant_type == "client_credentials"
+        self._is_token_exchange = auth_config.grant_type == "token_exchange"
+        self._upstream_token_header = auth_config.upstream_token_header
+        # Token exchange cache: hash(upstream_token) → (TokenSet, expiry_time)
+        self._exchange_cache: dict[str, tuple[TokenSet, float]] = {}
+        self._exchange_cache_ttl = 60.0  # seconds
 
     async def __call__(
         self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
     ) -> Any:
         """Execute authentication logic before passing to the next middleware."""
-        # 1. Try to get token from storage
+        if self._is_token_exchange:
+            return await self._handle_token_exchange(ctx, next)
+
         token_set = await self.token_storage.retrieve(self._storage_key)
 
         if token_set is not None:
-            # 2. Token exists — check if it's still valid
             if self._is_token_valid(token_set):
-                # Token is valid — populate identity and proceed
-                self._populate_identity(ctx, token_set)
+                await self._populate_identity(ctx, token_set)
                 return await next()
 
-            # 3. Token is expired
             if self._is_m2m:
-                # M2M: no refresh tokens — just re-acquire via client_credentials
                 await self.token_storage.delete(self._storage_key)
                 return await self._handle_client_credentials(ctx, next)
 
-            # Interactive: attempt refresh if we have a refresh token
             if token_set.refresh_token:
                 return await self._handle_refresh(ctx, token_set, next)
             else:
-                # No refresh token available — need to re-authenticate
                 await self.token_storage.delete(self._storage_key)
                 return await self._handle_oauth_flow(ctx, next)
         else:
-            # 4. No token in storage — initiate appropriate flow
             if self._is_m2m:
                 return await self._handle_client_credentials(ctx, next)
             else:
@@ -207,21 +116,37 @@ class AuthenticationMiddleware:
         """Check if the token is still valid (not expired)."""
         return token_set.expires_at > datetime.now(timezone.utc)
 
-    def _populate_identity(self, ctx: RequestContext, token_set: TokenSet) -> None:
-        """Parse JWT claims and set identity on the request context."""
-        try:
-            claims = _parse_jwt_claims(token_set.access_token)
-        except ValueError:
-            # If we can't parse claims, create a minimal identity
-            claims = {}
+    async def _populate_identity(
+        self, ctx: RequestContext, token_set: TokenSet
+    ) -> None:
+        """Parse JWT claims and set identity on the request context.
 
-        identity = _build_identity_context(
+        Attempts to decode the access_token. Falls back to id_token
+        if the access token is opaque/JWE.
+        """
+        claims: dict[str, Any] = {}
+
+        # Try access_token first
+        try:
+            claims = parse_jwt_claims(token_set.access_token)
+        except ValueError:
+            pass
+
+        # If access_token didn't yield useful claims, try id_token
+        if not claims.get("sub") and token_set.id_token:
+            try:
+                claims = parse_jwt_claims(token_set.id_token)
+            except ValueError:
+                pass
+
+        identity = build_identity_context(
             claims,
             role_claim_path=self._role_claim_path,
             group_claim_path=self._group_claim_path,
         )
         ctx.identity = identity
         _identity_context_var.set(identity)
+        _access_token_var.set(token_set.access_token)
 
     async def _handle_refresh(
         self,
@@ -229,19 +154,11 @@ class AuthenticationMiddleware:
         token_set: TokenSet,
         next: Callable[[], Awaitable[Any]],
     ) -> Any:
-        """Attempt to refresh an expired token.
-
-        On success: update storage, populate identity, call next.
-        On refresh failure (AuthenticationError): invalidate session, discard tokens,
-            return auth error.
-        On transient provider failure (ProviderError): preserve stored tokens,
-            return provider error.
-        """
+        """Attempt to refresh an expired token."""
         try:
             new_token_set = await self.oauth_service.refresh_token(
                 refresh_token=token_set.refresh_token,  # type: ignore[arg-type]
             )
-            # Preserve the old refresh token if the provider didn't rotate it
             if new_token_set.refresh_token is None:
                 new_token_set = TokenSet(
                     access_token=new_token_set.access_token,
@@ -251,13 +168,11 @@ class AuthenticationMiddleware:
                     id_token=new_token_set.id_token,
                 )
 
-            # Store the new token set
             await self.token_storage.store(self._storage_key, new_token_set)
-            self._populate_identity(ctx, new_token_set)
+            await self._populate_identity(ctx, new_token_set)
             return await next()
 
         except ProviderError as exc:
-            # Transient provider failure — preserve stored tokens
             logger.warning("Token refresh failed due to provider error: %s", exc)
             return {
                 "error": "provider_error",
@@ -265,7 +180,6 @@ class AuthenticationMiddleware:
             }
 
         except AuthenticationError as exc:
-            # Refresh failed (e.g., token revoked) — invalidate and discard
             logger.info("Token refresh failed, invalidating session: %s", exc)
             await self.token_storage.delete(self._storage_key)
             return {
@@ -278,30 +192,19 @@ class AuthenticationMiddleware:
         ctx: RequestContext,
         next: Callable[[], Awaitable[Any]],
     ) -> Any:
-        """Initiate the OAuth2 flow to obtain new tokens.
+        """Initiate the OAuth2 PKCE flow to obtain new tokens."""
+        import asyncio
 
-        On success: store token, populate identity, call next.
-        On failure: return auth error.
-        On transient provider errors: preserve stored tokens, return provider error.
-        """
         try:
-            # Initiate the OAuth2 authorization code flow
-            auth_result = await self.oauth_service.initiate_flow(self.auth_config)
-
-            # Exchange the authorization code for tokens
-            token_set = await self.oauth_service.exchange_code(
-                code=auth_result.code,
-                verifier=auth_result.verifier,
-                redirect_uri=auth_result.redirect_uri,
-            )
-
-            # Store the new token set
-            await self.token_storage.store(self._storage_key, token_set)
-            self._populate_identity(ctx, token_set)
+            token_set = await asyncio.shield(self._do_oauth_flow())
+            await self._populate_identity(ctx, token_set)
             return await next()
 
+        except asyncio.CancelledError:
+            logger.info("OAuth flow interrupted by transport")
+            raise
+
         except ProviderError as exc:
-            # Transient provider failure — preserve any stored tokens
             logger.warning("OAuth flow failed due to provider error: %s", exc)
             return {
                 "error": "provider_error",
@@ -309,41 +212,57 @@ class AuthenticationMiddleware:
             }
 
         except AuthenticationError as exc:
-            # Auth flow failed (timeout, user cancelled, etc.)
             logger.info("OAuth flow failed: %s", exc)
             return {
                 "error": "authentication_required",
                 "message": f"Authentication required: {exc}",
             }
 
+        except TimeoutError as exc:
+            logger.warning("OAuth flow timed out: %s", exc)
+            return {
+                "error": "authentication_timeout",
+                "message": f"Authentication timed out: {exc}",
+            }
+
+    async def _do_oauth_flow(self) -> TokenSet:
+        """Execute the full OAuth flow: initiate → callback → exchange."""
+        auth_result = await self.oauth_service.initiate_flow(self.auth_config)
+
+        logger.info("OAuth callback received, exchanging code for tokens...")
+
+        token_set = await self.oauth_service.exchange_code(
+            code=auth_result.code,
+            verifier=auth_result.verifier,
+            redirect_uri=auth_result.redirect_uri,
+        )
+
+        logger.info("Token exchange successful, storing tokens...")
+        print(
+            "   ✓ Token exchange successful, authenticated!\n",
+            file=sys.stderr,
+            flush=True,
+        )
+
+        await self.token_storage.store(self._storage_key, token_set)
+        return token_set
+
     async def _handle_client_credentials(
         self,
         ctx: RequestContext,
         next: Callable[[], Awaitable[Any]],
     ) -> Any:
-        """Obtain a token via the client_credentials grant (M2M flow).
-
-        No browser interaction required. Uses client_id + client_secret to
-        authenticate directly with the token endpoint.
-
-        On success: store token, populate identity, call next.
-        On failure: return auth error.
-        On transient provider errors: return provider error.
-        """
+        """Obtain a token via the client_credentials grant (M2M flow)."""
         try:
             token_set = await self.oauth_service.client_credentials(
                 provider_config=self.auth_config,
             )
-
-            # Store the token set
             await self.token_storage.store(self._storage_key, token_set)
-            self._populate_identity(ctx, token_set)
+            await self._populate_identity(ctx, token_set)
             return await next()
 
         except ProviderError as exc:
-            logger.warning(
-                "Client credentials flow failed due to provider error: %s", exc
-            )
+            logger.warning("Client credentials flow failed: %s", exc)
             return {
                 "error": "provider_error",
                 "message": f"Identity provider unavailable: {exc}",
@@ -355,3 +274,152 @@ class AuthenticationMiddleware:
                 "error": "authentication_failed",
                 "message": f"M2M authentication failed: {exc}",
             }
+
+    async def _handle_token_exchange(
+        self,
+        ctx: RequestContext,
+        next: Callable[[], Awaitable[Any]],
+    ) -> Any:
+        """Handle token exchange for headless/cloud deployments.
+
+        Extracts the upstream user token, validates its structure,
+        checks the cache, then exchanges it at the IDP.
+        """
+        # --- Extract upstream token ---
+        upstream_token: str | None = None
+
+        if self._upstream_token_header:
+            upstream_token = ctx.metadata.get(self._upstream_token_header)
+
+        if not upstream_token:
+            upstream_token = ctx.metadata.get("upstream_token")
+
+        if not upstream_token:
+            auth_header = ctx.metadata.get("authorization", "")
+            if auth_header.lower().startswith("bearer "):
+                upstream_token = auth_header[7:]
+
+        if not upstream_token:
+            return {
+                "error": "authentication_required",
+                "message": (
+                    "Token exchange mode requires an upstream user token. "
+                    f"Provide it via metadata key "
+                    f"'{self._upstream_token_header or 'upstream_token'}' "
+                    "or 'authorization: Bearer <token>'."
+                ),
+            }
+
+        # --- Structural validation (no IDP call) ---
+        validation_error = self._validate_upstream_token(upstream_token)
+        if validation_error:
+            return {
+                "error": "authentication_failed",
+                "message": f"Upstream token rejected: {validation_error}",
+            }
+
+        # --- Check cache ---
+        cache_key = hashlib.sha256(upstream_token.encode()).hexdigest()[:32]
+        cached = self._exchange_cache.get(cache_key)
+        if cached is not None:
+            cached_token_set, cached_at = cached
+            if (time.monotonic() - cached_at) < self._exchange_cache_ttl:
+                if self._is_token_valid(cached_token_set):
+                    await self._populate_identity(ctx, cached_token_set)
+                    return await next()
+            del self._exchange_cache[cache_key]
+
+        # --- Exchange at IDP ---
+        try:
+            token_set = await self.oauth_service.token_exchange(
+                subject_token=upstream_token,
+                provider_config=self.auth_config,
+            )
+
+            # Cache the result
+            self._exchange_cache[cache_key] = (token_set, time.monotonic())
+
+            # Evict old entries (simple size cap)
+            if len(self._exchange_cache) > 1000:
+                oldest_key = min(
+                    self._exchange_cache, key=lambda k: self._exchange_cache[k][1]
+                )
+                del self._exchange_cache[oldest_key]
+
+            await self._populate_identity(ctx, token_set)
+            return await next()
+
+        except ProviderError as exc:
+            logger.warning("Token exchange failed: %s", exc)
+            return {
+                "error": "provider_error",
+                "message": f"Token exchange failed: {exc}",
+            }
+
+        except AuthenticationError as exc:
+            logger.info("Token exchange failed: %s", exc)
+            return {
+                "error": "authentication_failed",
+                "message": f"Token exchange rejected: {exc}",
+            }
+
+    def _validate_upstream_token(self, token: str) -> str | None:
+        """Validate upstream token structure before exchanging at the IDP.
+
+        Performs cheap local checks to reject obviously invalid tokens
+        without making an IDP roundtrip.
+
+        Returns:
+            None if the token passes validation.
+            An error message string if validation fails.
+        """
+        import base64
+        import json as _json
+
+        # 1. Must be a 3-part JWT
+        parts = token.split(".")
+        if len(parts) != 3:
+            return "not a valid JWT (expected 3 dot-separated parts)"
+
+        # 2. Decode payload and check expiration
+        try:
+            payload_b64 = parts[1]
+            padding = 4 - len(payload_b64) % 4
+            if padding != 4:
+                payload_b64 += "=" * padding
+            payload_bytes = base64.urlsafe_b64decode(payload_b64)
+            claims = _json.loads(payload_bytes)
+        except (ValueError, _json.JSONDecodeError, UnicodeDecodeError):
+            return "JWT payload is not decodable"
+
+        # 3. Check expiration
+        exp = claims.get("exp")
+        if exp is not None:
+            try:
+                if float(exp) < time.time():
+                    return "token has expired"
+            except (TypeError, ValueError):
+                pass
+
+        # 4. Audience check
+        expected_client_id = self.auth_config.client_id
+        if expected_client_id:
+            aud = claims.get("aud")
+            azp = claims.get("azp")
+
+            if aud is not None:
+                if isinstance(aud, str):
+                    aud_list = [aud]
+                elif isinstance(aud, list):
+                    aud_list = aud
+                else:
+                    aud_list = []
+
+                if expected_client_id not in aud_list:
+                    if azp != expected_client_id:
+                        return (
+                            f"token audience '{aud}' does not include "
+                            f"this service '{expected_client_id}'"
+                        )
+
+        return None

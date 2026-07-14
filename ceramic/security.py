@@ -90,3 +90,64 @@ class TLSEnforcer:
         context.minimum_version = ssl.TLSVersion.TLSv1_2
         context.load_verify_locations(certifi.where())
         return context
+
+    def get_mtls_ssl_context(
+        self,
+        client_cert: str,
+        client_key: str | None = None,
+        ca_bundle: str | None = None,
+    ) -> ssl.SSLContext:
+        """Create an SSLContext with mutual TLS (client certificate authentication).
+
+        Loads the client certificate (and optionally a separate private key)
+        for mTLS communication with the identity provider. Enforces TLS 1.2+.
+
+        Args:
+            client_cert: Path to the PEM-encoded client certificate file.
+            client_key: Path to the PEM-encoded client private key file.
+                If None, the key is expected to be bundled in client_cert.
+            ca_bundle: Path to a custom CA bundle (PEM) for server cert
+                verification. If None, uses the system/certifi CA bundle.
+
+        Returns:
+            An ssl.SSLContext configured for mTLS with TLS 1.2 minimum.
+
+        Raises:
+            ConfigurationError: If the certificate/key files cannot be loaded.
+        """
+        import os
+
+        import certifi
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+
+        # Load CA bundle for verifying the IDP's server certificate
+        ca_path = ca_bundle or certifi.where()
+        if not os.path.isfile(ca_path):
+            raise ConfigurationError(f"CA bundle not found at: {ca_path!r}")
+        context.load_verify_locations(ca_path)
+
+        # Load client certificate + key for mTLS
+        if not os.path.isfile(client_cert):
+            raise ConfigurationError(
+                f"mTLS client certificate not found at: {client_cert!r}"
+            )
+        if client_key and not os.path.isfile(client_key):
+            raise ConfigurationError(f"mTLS client key not found at: {client_key!r}")
+
+        try:
+            context.load_cert_chain(
+                certfile=client_cert,
+                keyfile=client_key,
+            )
+        except ssl.SSLError as exc:
+            raise ConfigurationError(
+                f"Failed to load mTLS client certificate/key: {exc}"
+            ) from exc
+        except OSError as exc:
+            raise ConfigurationError(
+                f"Failed to read mTLS certificate files: {exc}"
+            ) from exc
+
+        return context

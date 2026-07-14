@@ -1,8 +1,8 @@
 """Zitadel + Ceramic example: Project Management API.
 
-A simulated HTTP API with role-based access control using Zitadel as the
-identity provider. Demonstrates authentication, authorization, identity
-context access, and session management.
+A simulated HTTP API with identity-aware tools using Zitadel as the
+identity provider. Demonstrates authentication, identity context access,
+and session management.
 
 Setup:
     1. Configure Zitadel (see README.md)
@@ -18,7 +18,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from ceramic import FastMCP, identity, require_role
+from ceramic import FastMCP, identity
 
 # ---------------------------------------------------------------------------
 # Simulated database (in-memory)
@@ -92,9 +92,8 @@ def whoami() -> dict[str, Any]:
 
 
 @mcp.tool()
-@require_role("viewer")
 def get_projects() -> list[dict[str, Any]]:
-    """List all projects. Requires 'viewer' role."""
+    """List all projects."""
     user = identity()
     _audit("list_projects", user.email or "unknown", "Listed all projects")
     return [
@@ -104,9 +103,8 @@ def get_projects() -> list[dict[str, Any]]:
 
 
 @mcp.tool()
-@require_role("viewer")
 def get_project_details(project_id: str) -> dict[str, Any]:
-    """Get full details of a specific project. Requires 'viewer' role.
+    """Get full details of a specific project.
 
     Args:
         project_id: The project ID (e.g., "proj-001")
@@ -128,9 +126,8 @@ def get_project_details(project_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-@require_role("editor")
 def create_project(name: str, description: str) -> dict[str, Any]:
-    """Create a new project. Requires 'editor' role.
+    """Create a new project.
 
     Args:
         name: Project name
@@ -158,9 +155,8 @@ def create_project(name: str, description: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-@require_role("editor")
 def update_project_status(project_id: str, status: str) -> dict[str, Any]:
-    """Update a project's status. Requires 'editor' role.
+    """Update a project's status.
 
     Args:
         project_id: The project ID
@@ -195,9 +191,8 @@ def update_project_status(project_id: str, status: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-@require_role("admin")
 def delete_project(project_id: str) -> dict[str, Any]:
-    """Delete a project permanently. Requires 'admin' role.
+    """Delete a project permanently.
 
     Args:
         project_id: The project ID to delete
@@ -218,9 +213,8 @@ def delete_project(project_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-@require_role("admin")
 def get_audit_log(limit: int = 20) -> list[dict[str, Any]]:
-    """View the audit trail. Requires 'admin' role.
+    """View the audit trail.
 
     Args:
         limit: Maximum number of entries to return (default: 20)

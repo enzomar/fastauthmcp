@@ -7,17 +7,23 @@ name = "ceramic-fwk"
 version = "0.1.0"
 description = "Production-grade Python framework on top of FastMCP with enterprise capabilities"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "Apache-2.0"}
 requires-python = ">=3.11"
-keywords = ["mcp", "fastmcp", "enterprise", "authentication", "authorization", "observability"]
+keywords = ["mcp", "fastmcp", "enterprise", "authentication", "authorization", "observability", "oauth2", "oidc", "security", "middleware"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration :: Authentication/Directory",
+    "Framework :: FastAPI",
+    "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
 
@@ -26,18 +32,21 @@ dependencies = [
     "pydantic>=2.0.0",
     "pyyaml>=6.0",
     "click>=8.1.0",
+    "httpx>=0.27.0",
+    "pyjwt>=2.8.0",
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
     "prometheus-client>=0.20.0",
     "certifi>=2024.0.0",
+    "zeep>=4.2.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/vincenzo/ceramic-fwk"
-Documentation = "https://vincenzo.github.io/ceramic-fwk/"
-Repository = "https://github.com/vincenzo/ceramic-fwk"
-Issues = "https://github.com/vincenzo/ceramic-fwk/issues"
-Changelog = "https://github.com/vincenzo/ceramic-fwk/releases"
+Homepage = "https://github.com/enzomar/ceramic-fwk"
+Documentation = "https://enzomar.github.io/ceramic-fwk/"
+Repository = "https://github.com/enzomar/ceramic-fwk"
+Issues = "https://github.com/enzomar/ceramic-fwk/issues"
+Changelog = "https://github.com/enzomar/ceramic-fwk/releases"
 
 [project.optional-dependencies]
 keyring = [
@@ -51,6 +60,8 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-mock>=3.12.0",
+    "textual>=0.70.0",
+    "rich>=13.0.0",
 ]
 
 [project.scripts]

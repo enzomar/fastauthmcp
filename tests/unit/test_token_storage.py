@@ -263,7 +263,7 @@ class TestEncryptedFileStorage:
     async def test_directory_permissions(self, tmp_path: Path) -> None:
         """Verify storage directory is created with mode 700."""
         storage_dir = tmp_path / "tokens"
-        storage = EncryptedFileStorage(storage_dir=storage_dir)
+        EncryptedFileStorage(storage_dir=storage_dir)
 
         mode = oct(os.stat(storage_dir).st_mode & 0o777)
         assert mode == "0o700"

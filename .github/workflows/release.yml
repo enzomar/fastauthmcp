@@ -56,9 +56,16 @@ jobs:
         run: |
           sed -i "s/^version = \"${{ steps.current.outputs.version }}\"/version = \"${{ steps.new.outputs.version }}\"/" pyproject.toml
 
+      - name: Update CHANGELOG
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          sed -i "s/## \[Unreleased\]/## [Unreleased]\n\n---\n\n## [${{ steps.new.outputs.version }}] — $DATE/" CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "[${{ steps.new.outputs.version }}]: https://github.com/enzomar/ceramic-fwk/compare/v${{ steps.current.outputs.version }}...v${{ steps.new.outputs.version }}" >> CHANGELOG.md
+
       - name: Commit and tag
         run: |
-          git add pyproject.toml
+          git add pyproject.toml CHANGELOG.md
           git commit -m "release: v${{ steps.new.outputs.version }}"
           git tag -a "v${{ steps.new.outputs.version }}" -m "Release v${{ steps.new.outputs.version }}"
 

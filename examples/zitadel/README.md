@@ -1,55 +1,105 @@
 # Zitadel + Ceramic Example
 
-A working example that demonstrates Ceramic authentication using [Zitadel](https://zitadel.com/) as the identity provider. Features a project management API with role-based access control, audit logging, and session management.
+A working example that demonstrates Ceramic authentication using [Zitadel](https://zitadel.com/) as the identity provider. Includes two MCP servers (Project API and Pet Store) with identity-aware tools, plus an MCP client that emulates LLM tool-calling through the full Ceramic pipeline.
 
-## Prerequisites
+## What's in this directory
 
-- Python 3.11+
-- A Zitadel instance (cloud or self-hosted)
+| File | Description |
+|------|-------------|
+| `server.py` | **Project API** — MCP server with project management tools |
+| `petstore_server.py` | **Pet Store** — MCP server with CRUD pet operations |
+| `mcp_client.py` | **MCP Client** — Textual TUI emulating LLM tool calls through Ceramic |
+| `test_server.py` | Unit tests using `CeramicTestClient` (no live IDP needed) |
+| `ceramic.yaml` | Ceramic config pointing to the Ceramic OSS Zitadel instance |
 
-## Quick Start
+## Quick Start — E2E Demo
 
-This example ships with a ready-to-use `ceramic.yaml` pointing to the **Ceramic OSS** Zitadel Cloud instance:
-
-```yaml
-auth:
-  provider: oidc
-  issuer: https://ceramic-oss-agq8i8.eu1.zitadel.cloud
-  client_id: "380842820363183891"
-```
-
-You can run it immediately against the hosted instance, or set up your own (see below).
+The fastest way to see Ceramic in action:
 
 ```bash
-# Install ceramic-fwk (from PyPI or repo root)
-pip install ceramic-fwk
-# Or: pip install -e ".[dev]"
+# From the repo root
+./scripts/demo.sh
+```
 
-# Login (opens browser for OIDC flow)
-ceramic login
+This launches a **Textual TUI** with three panels:
 
-# Run the server
-ceramic run
-# Or: python server.py
+```
+┌─────────────────────────┬─────────────────────────┐
+│     📖 NARRATOR         │    💬 USER ↔ AI         │
+│                         │                         │
+│  Step-by-step           │  Simulated LLM          │
+│  explanation of         │  conversation with      │
+│  what Ceramic is        │  tool calls & results   │
+│  doing under the hood   │                         │
+├─────────────────────────┴─────────────────────────┤
+│              ⚡ MIDDLEWARE PIPELINE                │
+│                                                   │
+│  Live observability: see each request flow        │
+│  through Auth → Session → Tool                    │
+└───────────────────────────────────────────────────┘
+```
+
+Press **N** to advance through each step. The demo runs simulated "LLM prompts":
+1. `whoami` → triggers browser-based OAuth2 login (first call)
+2. `list_pets` → session reused, no re-auth
+3. `add_pet` → write operation with identity tracking
+
+### Transport options
+
+```bash
+./scripts/demo.sh sse          # SSE (default) — starts server + client
+./scripts/demo.sh stdio        # stdio — client spawns server as subprocess
+./scripts/demo.sh http         # streamable-http — starts server + client
+```
+
+### What you'll see
+
+The TUI clearly separates three concerns:
+- **Narrator** (left) — explains the "why" of each step in plain language
+- **User ↔ AI** (right) — shows the simulated conversation and tool results
+- **Pipeline** (bottom) — live trace of each middleware layer firing
+
+This makes it immediately clear that authentication and observability happen transparently — the server code is just a YAML file and `identity()` calls.
+
+## Running the servers manually
+
+```bash
+# Pet Store (recommended for the E2E demo)
+cd examples/zitadel
+python petstore_server.py                                        # stdio
+CERAMIC_TRANSPORT=sse python petstore_server.py                  # SSE on :8000
+CERAMIC_TRANSPORT=streamable-http python petstore_server.py      # HTTP on :8000
+
+# Project API (the original example)
+python server.py
+CERAMIC_TRANSPORT=sse python server.py
+```
+
+## Running the MCP client manually
+
+```bash
+# Against a running SSE server
+python mcp_client.py --transport sse
+
+# Against a running streamable-http server
+python mcp_client.py --transport streamable-http --url http://localhost:8000/mcp
+
+# Via stdio (spawns server as subprocess, no separate server needed)
+python mcp_client.py --transport stdio
 ```
 
 ## Zitadel Setup
 
 ### Option A: Use the provided Ceramic OSS instance
 
-The included `ceramic.yaml` is pre-configured to use the Ceramic OSS Zitadel Cloud project. No setup needed — just run `ceramic login`.
+The included `ceramic.yaml` is pre-configured to use the Ceramic OSS Zitadel Cloud project. No setup needed — just run the demo.
 
-### Option B: Zitadel Cloud (your own instance)
+### Option B: Your own Zitadel instance
 
-1. Sign up at [zitadel.cloud](https://zitadel.cloud)
-2. Create a new project
-3. Add an application:
-   - Type: **Native** (for CLI/desktop apps)
-   - Auth method: **PKCE** (no client secret needed)
-   - Redirect URI: `http://localhost:9876/callback`
-4. Go to **Roles** → Add roles: `viewer`, `editor`, `admin`
-5. Assign roles to your user via **Authorizations**
-6. Update `ceramic.yaml` with your issuer and client ID:
+1. Sign up at [zitadel.cloud](https://zitadel.cloud) or run Zitadel locally
+2. Create a project → add a **Native** application (PKCE, no client secret)
+3. Set redirect URI: `http://localhost:9876/callback`
+4. Update `ceramic.yaml`:
 
 ```yaml
 auth:
@@ -58,55 +108,12 @@ auth:
   client_id: "YOUR_CLIENT_ID"
 ```
 
-### Option C: Local Zitadel with Docker
-
-```bash
-docker run -d \
-  --name zitadel \
-  -p 8080:8080 \
-  -e ZITADEL_MASTERKEY="MasterkeyNeedsToHave32Characters" \
-  -e ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME="playground@ceramic.local" \
-  -e ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD="Playground0." \
-  ghcr.io/zitadel/zitadel:latest start-from-init \
-    --masterkey "MasterkeyNeedsToHave32Characters" \
-    --tlsMode disabled
-```
-
-Zitadel console available at http://localhost:8080  
-Login: `playground@ceramic.local` / `Playground0.`
-
-Then create a project and application as described in Option B, and update `ceramic.yaml`:
+### M2M (Machine-to-Machine) — for remote/headless deployments
 
 ```yaml
 auth:
   provider: oidc
-  issuer: http://localhost:8080
-  client_id: "YOUR_LOCAL_CLIENT_ID"
-```
-
-> **Note:** When using a local instance without TLS, Ceramic's TLS enforcer must be disabled or the issuer URL will be rejected. For development only.
-
-### Create Roles
-
-In your Zitadel project:
-
-1. Go to **Roles** → Add roles: `viewer`, `editor`, `admin`
-2. Assign roles to your user via **Authorizations**
-3. Make sure the scope `urn:zitadel:iam:org:project:roles` is included (already set in `ceramic.yaml`) — this tells Zitadel to include role claims in the token
-
-### M2M (Machine-to-Machine) Setup
-
-For remote/headless server deployments where no browser is available (e.g., running as a remote MCP server over SSE or HTTP):
-
-1. In Zitadel, create a new application with type **API** (instead of Native)
-2. Set auth method to **Basic** (client_id + client_secret)
-3. Copy the client secret
-4. Configure `ceramic.yaml` with `grant_type: client_credentials`:
-
-```yaml
-auth:
-  provider: oidc
-  issuer: https://ceramic-oss-agq8i8.eu1.zitadel.cloud
+  issuer: https://your-instance.zitadel.cloud
   client_id: "YOUR_SERVICE_ACCOUNT_CLIENT_ID"
   client_secret: ${CERAMIC_AUTH_CLIENT_SECRET}
   grant_type: client_credentials
@@ -115,105 +122,33 @@ auth:
     - "urn:zitadel:iam:org:project:roles"
 ```
 
-```bash
-export CERAMIC_AUTH_CLIENT_SECRET="your-client-secret"
-ceramic run --transport sse --host 0.0.0.0 --port 8000
-```
-
-The server will authenticate itself with the IDP automatically — no browser interaction needed.
-
-## Configuration
-
-The `ceramic.yaml` in this directory is the live config file used by the server. No copy/rename step needed.
-
-Full configuration:
-
-```yaml
-auth:
-  provider: oidc
-  issuer: https://ceramic-oss-agq8i8.eu1.zitadel.cloud
-  client_id: "380842820363183891"
-  scopes:
-    - openid
-    - profile
-    - email
-    - "urn:zitadel:iam:org:project:roles"
-  callback_timeout: 120
-  token_exchange_timeout: 30
-
-authorization:
-  role_claim: "urn:zitadel:iam:org:project:roles"
-  group_claim: "groups"
-  policies:
-    - tool: "get_*"
-      require_role: viewer
-    - tool: "create_*"
-      require_role: editor
-    - tool: "update_*"
-      require_role: editor
-    - tool: "delete_*"
-      require_role: admin
-    - tool: "get_audit_log"
-      require_role: admin
-
-observability:
-  enabled: true
-  metrics_path: /metrics
-  metrics_port: 9090
-  exporter: console
-  log_format: json
-  log_level: info
-
-sessions:
-  enabled: true
-  ttl: 3600
-```
-
-## What This Example Demonstrates
-
-1. **OIDC Authentication** — Full OAuth2 + PKCE flow against Zitadel
-2. **M2M Authentication** — Client credentials flow for headless/remote deployments
-3. **Role-Based Authorization** — Tools protected by `@require_role()` decorators and YAML policies
-4. **Identity Access** — Tools reading the authenticated user's identity via `ceramic.identity()`
-5. **Audit Logging** — Every action is recorded with user, timestamp, and details
-6. **Session Management** — Subsequent calls reuse the session without re-authentication
-
-## Tools Available
-
-| Tool | Required Role | Description |
-|------|---------------|-------------|
-| `whoami` | (any authenticated) | Show current user info |
-| `get_projects` | viewer | List all projects |
-| `get_project_details` | viewer | Get a specific project |
-| `create_project` | editor | Create a new project |
-| `update_project_status` | editor | Update project status |
-| `delete_project` | admin | Delete a project |
-| `get_audit_log` | admin | View the audit trail |
-
-## Live Client (SSE)
-
-The `live_client.py` script connects to a running Ceramic server over SSE transport, triggering the real OAuth2 flow in your browser:
-
-```bash
-# Start the server with SSE transport
-ceramic run --transport sse
-
-# In another terminal — interactive REPL
-python live_client.py
-
-# Or call a single tool directly
-python live_client.py whoami
-python live_client.py create_project name="New Project" description="A test project"
-```
-
-Set `CERAMIC_SERVER_URL` to override the default (`http://localhost:8000/sse`).
-
-## Testing Without Zitadel
-
-Use the included test file to verify authorization logic without a live IDP:
+## Testing without a live IDP
 
 ```bash
 pytest test_server.py -v
 ```
 
-This uses `CeramicTestClient` to inject identity and test role-based access control without any network calls.
+Uses `CeramicTestClient` to inject identity and verify tool behavior without any network calls or browser interaction.
+
+## Pet Store tools
+
+| Tool | Description |
+|------|-------------|
+| `whoami` | Show current user info |
+| `list_pets` | List all pets (optional status filter) |
+| `get_pet` | Get full details of a pet |
+| `add_pet` | Add a new pet to the store |
+| `update_pet_status` | Change pet status (available/adopted) |
+| `delete_pet` | Remove a pet permanently |
+
+## Project API tools
+
+| Tool | Description |
+|------|-------------|
+| `whoami` | Show current user info |
+| `get_projects` | List all projects |
+| `get_project_details` | Get a specific project |
+| `create_project` | Create a new project |
+| `update_project_status` | Update project status |
+| `delete_project` | Delete a project |
+| `get_audit_log` | View the audit trail |

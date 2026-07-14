@@ -3,907 +3,921 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ceramic — Enterprise Authentication for FastMCP</title>
-<meta name="description" content="Ceramic is a drop-in framework that adds authentication, authorization, observability and enterprise security to any FastMCP application." />
+<title>Ceramic — Enterprise Authentication for FastMCP (Python)</title>
+<meta name="description" content="Ceramic is a production-grade Python framework built on top of FastMCP that adds authentication, observability and enterprise security to any MCP application." />
+<link rel="icon" type="image/svg+xml" href="logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        colors: {
-          ink: '#050709',
-          panel: '#0a0d12',
-          line: 'rgba(255,255,255,0.08)',
-          cyan: '#22d3ee',
-          violet: '#8b5cf6',
-          blue: '#3b82f6',
-        },
-        fontFamily: {
-          sans: ['Inter', 'sans-serif'],
-          mono: ['"JetBrains Mono"', 'monospace'],
-        },
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        ink: '#020408',
+        panel: '#080c14',
+        line: 'rgba(255,255,255,0.06)',
+        cyan: '#22d3ee',
+        violet: '#8b5cf6',
+        blue: '#3b82f6',
+        emerald: '#10b981',
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
     },
-  };
+  },
+};
 </script>
 <style>
-  * { box-sizing: border-box; }
-  html, body { background: #050709; }
-  body {
-    font-family: 'Inter', sans-serif;
-    color: #e7e9ee;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-  ::selection { background: rgba(34,211,238,0.25); color: #fff; }
-
-  /* scrollbar */
-  ::-webkit-scrollbar { width: 10px; }
-  ::-webkit-scrollbar-track { background: #050709; }
-  ::-webkit-scrollbar-thumb { background: #1b2028; border-radius: 8px; border: 2px solid #050709; }
-
-  :focus-visible { outline: 2px solid #22d3ee; outline-offset: 3px; border-radius: 4px; }
-
-  .mono { font-family: 'JetBrains Mono', monospace; }
-
-  /* Glass */
-  .glass {
-    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
-  .glass-strong {
-    background: rgba(10,13,18,0.75);
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-  }
-
-  /* Grid background */
-  .bg-grid {
-    background-image:
-      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
-  }
-
-  /* Gradient text */
-  .grad-text {
-    background: linear-gradient(90deg, #7dd3fc, #a78bfa 55%, #22d3ee);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .glow {
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 20px 60px -20px rgba(34,211,238,0.25);
-  }
-
-  .noise::before {
-    content: "";
-    position: absolute; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .card-hover { transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s ease, box-shadow .35s ease; }
-  .card-hover:hover { transform: translateY(-4px); border-color: rgba(34,211,238,0.35); box-shadow: 0 24px 60px -24px rgba(34,211,238,0.3); }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #22d3ee, #8b5cf6);
-    color: #05070a;
-    font-weight: 600;
-    transition: filter .25s ease, transform .25s ease;
-  }
-  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-
-  .btn-ghost {
-    border: 1px solid rgba(255,255,255,0.14);
-    transition: border-color .25s ease, background .25s ease;
-  }
-  .btn-ghost:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.04); }
-
-  .particle {
-    position: absolute;
-    border-radius: 999px;
-    background: radial-gradient(circle, rgba(34,211,238,0.9), rgba(34,211,238,0) 70%);
-    filter: blur(0.5px);
-    pointer-events: none;
-  }
-
-  .code-window {
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.7);
-  }
-  .dot { width: 11px; height: 11px; border-radius: 999px; }
-
-  .fade-line { opacity: 0; transform: translateY(6px); }
-
-  .blink { animation: blink 1.1s steps(1) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
-
-  .marquee-track { animation: marquee 32s linear infinite; }
-  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
-  .switch { width: 40px; height: 22px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative; transition: background .25s ease; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); }
-  .switch.on { background: linear-gradient(135deg,#22d3ee,#8b5cf6); border-color: transparent; }
-  .switch .knob { position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:999px; background:#fff; transition: transform .25s cubic-bezier(.2,.8,.2,1); }
-  .switch.on .knob { transform: translateX(18px); }
-
-  .diagram-node { transition: box-shadow .3s ease, border-color .3s ease, transform .3s ease; }
-  .diagram-node:hover { border-color: rgba(34,211,238,0.5); box-shadow: 0 0 40px -8px rgba(34,211,238,0.5); transform: translateY(-2px); }
-
-  .flow-dot { animation: flow 2.4s linear infinite; }
-  @keyframes flow { from { offset-distance: 0%; } to { offset-distance: 100%; } }
-
-  @media (prefers-reduced-motion: reduce) {
-    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
-  }
-
-  section { position: relative; }
-  .section-pad { padding-top: 7rem; padding-bottom: 7rem; }
-  @media (max-width: 768px) { .section-pad { padding-top: 4.5rem; padding-bottom: 4.5rem; } }
-
-  .eyebrow {
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    font-size: 0.72rem;
-    color: #7dd3fc;
-  }
-
-  .divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent); }
-
-  .counter { font-variant-numeric: tabular-nums; }
-
-  .logo-tile { filter: grayscale(1) opacity(0.55); transition: filter .3s ease, transform .3s ease; }
-  .logo-tile:hover { filter: grayscale(0) opacity(1); transform: translateY(-2px); }
+* { box-sizing: border-box; }
+html { background: #020408; }
+body {
+  font-family: 'Inter', sans-serif;
+  color: #e7e9ee;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  background: #020408;
+  margin: 0;
+}
+::selection { background: rgba(34,211,238,0.25); color: #fff; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #020408; }
+::-webkit-scrollbar-thumb { background: #1a1f2e; border-radius: 8px; }
+:focus-visible { outline: 2px solid #22d3ee; outline-offset: 3px; border-radius: 4px; }
 </style>
 </head>
-<body class="bg-ink antialiased">
+<body>
 
-<!-- Ambient canvas background -->
-<canvas id="bg-canvas" class="fixed inset-0 -z-10 opacity-70"></canvas>
-<div class="fixed inset-0 -z-10 bg-grid"></div>
-<div class="fixed inset-0 -z-10 noise"></div>
+<!-- ====== THREE.js for 3D background ====== -->
+<canvas id="hero-canvas" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
 
-<!-- NAV -->
-<header id="nav" class="fixed top-0 inset-x-0 z-50 transition-all duration-300">
+<!-- ====== NAV ====== -->
+<header id="nav" class="fixed top-0 inset-x-0 z-50 transition-all duration-500">
   <div class="max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between h-16">
-    <a href="#top" class="flex items-center gap-2.5 group">
-      <span class="relative flex h-7 w-7 items-center justify-center rounded-md" style="background:linear-gradient(135deg,#22d3ee,#8b5cf6)">
-        <span class="h-2.5 w-2.5 rounded-sm bg-ink"></span>
+    <a href="#" class="flex items-center gap-2.5 group relative z-10">
+      <span class="relative flex h-8 w-8 items-center justify-center rounded-lg" style="background:linear-gradient(135deg,#22d3ee,#8b5cf6)">
+        <span class="h-3 w-3 rounded-sm bg-ink"></span>
       </span>
-      <span class="font-semibold tracking-tight text-[15px]">ceramic</span>
+      <span class="font-bold tracking-tight text-[16px]">ceramic</span>
     </a>
-    <nav class="hidden md:flex items-center gap-8 text-sm text-white/60 mono">
-      <a href="#how" class="hover:text-white transition-colors">how it works</a>
-      <a href="#features" class="hover:text-white transition-colors">features</a>
-      <a href="#architecture" class="hover:text-white transition-colors">architecture</a>
-      <a href="#enterprise" class="hover:text-white transition-colors">enterprise</a>
-      <a href="#docs" class="hover:text-white transition-colors">docs</a>
+    <nav class="hidden md:flex items-center gap-8 text-sm text-white/50 font-mono">
+      <a href="#how" class="hover:text-white transition-colors duration-300">how it works</a>
+      <a href="#features" class="hover:text-white transition-colors duration-300">features</a>
+      <a href="#scenarios" class="hover:text-white transition-colors duration-300">scenarios</a>
+      <a href="#architecture" class="hover:text-white transition-colors duration-300">architecture</a>
+      <a href="https://github.com/enzomar/ceramic-fwk/blob/main/docs/GUIDE.md" class="hover:text-white transition-colors duration-300">docs</a>
     </nav>
-    <div class="flex items-center gap-3">
-      <a href="#github" class="hidden sm:flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.5 0 12.3c0 5.44 3.44 10.05 8.2 11.68.6.11.82-.27.82-.6 0-.29-.01-1.06-.02-2.08-3.34.75-4.04-1.66-4.04-1.66-.55-1.43-1.33-1.82-1.33-1.82-1.09-.77.08-.75.08-.75 1.2.09 1.84 1.26 1.84 1.26 1.07 1.87 2.8 1.33 3.49 1.02.11-.79.42-1.33.76-1.64-2.67-.31-5.47-1.37-5.47-6.09 0-1.35.47-2.45 1.24-3.31-.12-.31-.54-1.57.12-3.27 0 0 1.01-.33 3.3 1.26a11.3 11.3 0 0 1 6 0c2.29-1.59 3.3-1.26 3.3-1.26.66 1.7.24 2.96.12 3.27.77.86 1.24 1.96 1.24 3.31 0 4.73-2.81 5.77-5.49 6.08.43.38.81 1.14.81 2.3 0 1.66-.02 3-.02 3.41 0 .33.22.72.83.6C20.57 22.34 24 17.74 24 12.3 24 5.5 18.63 0 12 0Z"/></svg>
-        <span>GitHub</span>
+    <div class="flex items-center gap-3 relative z-10">
+      <a href="https://www.paypal.com/ncp/payment/DA8FJHJT5GSZY" class="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 2.22A.773.773 0 0 1 5.706 1.6h6.574c2.18 0 3.9.575 4.957 1.656.49.502.832 1.09 1.017 1.748.196.703.204 1.54.024 2.487l-.015.076v.215l.168.095c.326.18.588.388.791.625.34.396.56.884.647 1.449.09.584.046 1.264-.127 2.018-.2.87-.525 1.627-.965 2.25a4.678 4.678 0 0 1-1.525 1.442 5.73 5.73 0 0 1-1.934.782c-.7.163-1.49.244-2.354.244H12.38a.95.95 0 0 0-.938.806l-.036.197-.628 3.985-.028.142a.95.95 0 0 1-.937.806H7.076z"/></svg>
+        <span class="hidden sm:inline">Support</span>
       </a>
-      <a href="#get-started" class="btn-primary text-sm px-4 py-2 rounded-lg">Get Started</a>
+      <a href="https://github.com/enzomar/ceramic-fwk" class="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.5 0 12.3c0 5.44 3.44 10.05 8.2 11.68.6.11.82-.27.82-.6 0-.29-.01-1.06-.02-2.08-3.34.75-4.04-1.66-4.04-1.66-.55-1.43-1.33-1.82-1.33-1.82-1.09-.77.08-.75.08-.75 1.2.09 1.84 1.26 1.84 1.26 1.07 1.87 2.8 1.33 3.49 1.02.11-.79.42-1.33.76-1.64-2.67-.31-5.47-1.37-5.47-6.09 0-1.35.47-2.45 1.24-3.31-.12-.31-.54-1.57.12-3.27 0 0 1.01-.33 3.3 1.26a11.3 11.3 0 0 1 6 0c2.29-1.59 3.3-1.26 3.3-1.26.66 1.7.24 2.96.12 3.27.77.86 1.24 1.96 1.24 3.31 0 4.73-2.81 5.77-5.49 6.08.43.38.81 1.14.81 2.3 0 1.66-.02 3-.02 3.41 0 .33.22.72.83.6C20.57 22.34 24 17.74 24 12.3 24 5.5 18.63 0 12 0Z"/></svg>
+        <span class="hidden sm:inline">GitHub</span>
+      </a>
+      <a href="#get-started" class="bg-gradient-to-r from-cyan to-violet text-ink font-semibold text-sm px-5 py-2 rounded-lg hover:brightness-110 transition-all">Get Started</a>
     </div>
   </div>
 </header>
 
-<main id="top">
+<!-- ====== HERO ====== -->
+<main>
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 pb-32">
+  <!-- Radial glow -->
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full opacity-30" style="background:radial-gradient(circle, rgba(34,211,238,0.15) 0%, rgba(139,92,246,0.08) 40%, transparent 70%);"></div>
 
-  <!-- ================= HERO ================= -->
-  <section class="section-pad pt-40 md:pt-48 relative">
-    <div class="max-w-7xl mx-auto px-6 lg:px-10 grid lg:grid-cols-2 gap-16 items-center">
-      <div>
-        <div class="inline-flex items-center gap-2 glass rounded-full px-3.5 py-1.5 mb-7 fade-up">
-          <span class="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse"></span>
-          <span class="text-xs text-white/70 mono">v0.1 — open source, MIT licensed</span>
-        </div>
-        <h1 class="fade-up text-[2.6rem] leading-[1.05] sm:text-6xl lg:text-[3.6rem] font-extrabold tracking-tight">
-          Enterprise <span class="grad-text">Authentication</span><br class="hidden sm:block" /> for FastMCP
-        </h1>
-        <p class="fade-up mt-6 text-lg text-white/60 max-w-xl leading-relaxed">
-          Ceramic is a drop-in framework that adds authentication, authorization, observability and enterprise security to any FastMCP application — without touching a single tool.
-        </p>
-        <div class="fade-up mt-9 flex flex-wrap items-center gap-4">
-          <a href="#get-started" class="btn-primary rounded-lg px-6 py-3 text-sm">Get Started →</a>
-          <a href="#github" class="btn-ghost rounded-lg px-6 py-3 text-sm flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.5 0 12.3c0 5.44 3.44 10.05 8.2 11.68.6.11.82-.27.82-.6 0-.29-.01-1.06-.02-2.08-3.34.75-4.04-1.66-4.04-1.66-.55-1.43-1.33-1.82-1.33-1.82-1.09-.77.08-.75.08-.75 1.2.09 1.84 1.26 1.84 1.26 1.07 1.87 2.8 1.33 3.49 1.02.11-.79.42-1.33.76-1.64-2.67-.31-5.47-1.37-5.47-6.09 0-1.35.47-2.45 1.24-3.31-.12-.31-.54-1.57.12-3.27 0 0 1.01-.33 3.3 1.26a11.3 11.3 0 0 1 6 0c2.29-1.59 3.3-1.26 3.3-1.26.66 1.7.24 2.96.12 3.27.77.86 1.24 1.96 1.24 3.31 0 4.73-2.81 5.77-5.49 6.08.43.38.81 1.14.81 2.3 0 1.66-.02 3-.02 3.41 0 .33.22.72.83.6C20.57 22.34 24 17.74 24 12.3 24 5.5 18.63 0 12 0Z"/></svg>
-            Star on GitHub
-          </a>
-        </div>
-        <div class="fade-up mt-10 flex items-center gap-6 text-white/40 text-xs mono">
-          <span>$ pip install ceramic-fwk</span>
-        </div>
-      </div>
-
-      <!-- Architecture animated diagram -->
-      <div class="fade-up relative">
-        <div class="absolute -inset-10 opacity-40" style="background: radial-gradient(circle at 50% 40%, rgba(139,92,246,0.25), transparent 60%);"></div>
-        <div class="relative glass-strong rounded-2xl p-6 md:p-8 glow">
-          <svg id="hero-diagram" viewBox="0 0 360 460" class="w-full h-auto">
-            <defs>
-              <linearGradient id="edgeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#22d3ee"/>
-                <stop offset="100%" stop-color="#8b5cf6"/>
-              </linearGradient>
-            </defs>
-            <!-- connecting line -->
-            <path id="hero-path" d="M180 46 L180 414" stroke="url(#edgeGrad)" stroke-width="1.5" fill="none" opacity="0.5"/>
-
-            <!-- Developer -->
-            <g class="diagram-node">
-              <rect x="90" y="14" width="180" height="46" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.14)"/>
-              <text x="180" y="42" text-anchor="middle" fill="#e7e9ee" font-family="JetBrains Mono" font-size="13">Developer</text>
-            </g>
-
-            <!-- Ceramic Framework -->
-            <g class="diagram-node">
-              <rect x="55" y="100" width="250" height="56" rx="12" fill="rgba(34,211,238,0.08)" stroke="rgba(34,211,238,0.4)"/>
-              <text x="180" y="133" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono" font-weight="600" font-size="14">Ceramic Framework</text>
-            </g>
-
-            <!-- capability chips -->
-            <g class="diagram-node">
-              <rect x="30" y="182" width="300" height="94" rx="12" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)"/>
-              <text x="180" y="207" text-anchor="middle" fill="#c9cdd6" font-family="JetBrains Mono" font-size="11.5">Authentication</text>
-              <text x="180" y="228" text-anchor="middle" fill="#c9cdd6" font-family="JetBrains Mono" font-size="11.5">Authorization</text>
-              <text x="180" y="249" text-anchor="middle" fill="#c9cdd6" font-family="JetBrains Mono" font-size="11.5">Observability</text>
-              <text x="180" y="270" text-anchor="middle" fill="#c9cdd6" font-family="JetBrains Mono" font-size="11.5">Sessions</text>
-            </g>
-
-            <!-- FastMCP -->
-            <g class="diagram-node">
-              <rect x="70" y="308" width="220" height="52" rx="12" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.45)"/>
-              <text x="180" y="340" text-anchor="middle" fill="#c4b5fd" font-family="JetBrains Mono" font-weight="600" font-size="14">FastMCP</text>
-            </g>
-
-            <!-- MCP Client -->
-            <g class="diagram-node">
-              <rect x="90" y="394" width="180" height="46" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.14)"/>
-              <text x="180" y="422" text-anchor="middle" fill="#e7e9ee" font-family="JetBrains Mono" font-size="13">MCP Client</text>
-            </g>
-
-            <circle r="3.5" fill="#22d3ee">
-              <animateMotion dur="2.6s" repeatCount="indefinite" path="M180 46 L180 414"/>
-            </circle>
-          </svg>
-        </div>
-      </div>
+  <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
+    <!-- Badge -->
+    <div class="inline-flex items-center gap-2 border border-white/10 rounded-full px-4 py-1.5 mb-8 backdrop-blur-md bg-white/[0.03] hero-fade" style="animation-delay:0.1s">
+      <span class="h-2 w-2 rounded-full bg-emerald animate-pulse"></span>
+      <span class="text-xs text-white/60 font-mono">v0.1 — open source, Apache 2.0</span>
     </div>
-  </section>
 
-  <!-- ================= LIVE CODE TRANSFORM ================= -->
-  <section id="how" class="section-pad">
-    <div class="max-w-6xl mx-auto px-6 lg:px-10">
-      <div class="text-center max-w-2xl mx-auto mb-14">
-        <p class="eyebrow mono mb-3">the change</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Two lines. That's it.</h2>
-        <p class="text-white/55 mt-4">Point Ceramic at your existing FastMCP app and every tool call is authenticated, authorized and observed — with zero changes to your tools.</p>
-      </div>
+    <!-- Headline with typewriter shimmer -->
+    <h1 class="hero-fade text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[0.9] mb-8" style="animation-delay:0.2s">
+      <span class="block">Secure your</span>
+      <span class="block mt-2 bg-gradient-to-r from-cyan via-blue to-violet bg-clip-text text-transparent animate-gradient-x bg-[length:200%_auto]">FastMCP server</span>
+      <span class="block mt-2 text-3xl sm:text-4xl lg:text-5xl font-bold text-white/40">in two lines of Python</span>
+    </h1>
 
-      <div class="grid md:grid-cols-2 gap-6 items-start">
-        <div class="code-window glass-strong">
-          <div class="flex items-center gap-2 px-4 py-3 border-b border-white/8">
-            <span class="dot bg-[#ff5f56]"></span><span class="dot bg-[#ffbd2e]"></span><span class="dot bg-[#27c93f]"></span>
-            <span class="mono text-xs text-white/40 ml-3">weather_server.py</span>
-          </div>
-          <pre class="mono text-[13px] leading-7 p-5 text-white/80"><span class="text-white/30"># before</span>
-<span class="text-[#f47067]">from</span> fastmcp <span class="text-[#f47067]">import</span> FastMCP
+    <!-- Sub -->
+    <p class="hero-fade max-w-2xl mx-auto text-lg sm:text-xl text-white/50 leading-relaxed mb-12" style="animation-delay:0.4s">
+      A production-grade framework <strong class="text-white/80">built on top of FastMCP</strong> — authentication, observability, and sessions activate with a single config file.
+    </p>
 
-app = FastMCP(<span class="text-[#a5d6ff]">"Weather"</span>)</pre>
-        </div>
-
-        <div class="code-window glass-strong relative overflow-hidden">
-          <div class="flex items-center gap-2 px-4 py-3 border-b border-white/8">
-            <span class="dot bg-[#ff5f56]"></span><span class="dot bg-[#ffbd2e]"></span><span class="dot bg-[#27c93f]"></span>
-            <span class="mono text-xs text-white/40 ml-3">weather_server.py</span>
-            <span class="ml-auto mono text-[10px] px-2 py-0.5 rounded-full bg-cyan/10 text-cyan border border-cyan/30">ceramic</span>
-          </div>
-          <pre class="mono text-[13px] leading-7 p-5 text-white/80"><span class="text-white/30"># after</span>
-<span class="text-[#f47067]">from</span> ceramic <span class="text-[#f47067]">import</span> FastMCP
-
-app = FastMCP(
-    <span class="text-[#a5d6ff]">"Weather"</span>,
-    config=<span class="text-[#a5d6ff]">"ceramic.yaml"</span>
-)</pre>
-        </div>
-      </div>
-
-      <div class="flex flex-wrap justify-center gap-3 mt-10" id="capability-checks">
-        <div class="cap-chip glass rounded-full px-4 py-2 text-sm flex items-center gap-2 opacity-0"><span class="text-cyan">✓</span> Authentication</div>
-        <div class="cap-chip glass rounded-full px-4 py-2 text-sm flex items-center gap-2 opacity-0"><span class="text-cyan">✓</span> Authorization</div>
-        <div class="cap-chip glass rounded-full px-4 py-2 text-sm flex items-center gap-2 opacity-0"><span class="text-cyan">✓</span> Metrics</div>
-        <div class="cap-chip glass rounded-full px-4 py-2 text-sm flex items-center gap-2 opacity-0"><span class="text-cyan">✓</span> Tracing</div>
-        <div class="cap-chip glass rounded-full px-4 py-2 text-sm flex items-center gap-2 opacity-0"><span class="text-cyan">✓</span> Sessions</div>
-      </div>
+    <!-- CTA -->
+    <div class="hero-fade flex flex-wrap items-center justify-center gap-4 mb-16" style="animation-delay:0.5s">
+      <a href="#get-started" class="group relative px-8 py-4 rounded-xl font-semibold text-ink bg-gradient-to-r from-cyan to-violet overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(34,211,238,0.4)]">
+        <span class="relative z-10">pip install ceramic-fwk</span>
+        <div class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
+      </a>
+      <a href="https://github.com/enzomar/ceramic-fwk" class="px-8 py-4 rounded-xl font-semibold border border-white/15 text-white/80 hover:border-cyan/50 hover:text-white hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] transition-all duration-300 flex items-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.5 0 12.3c0 5.44 3.44 10.05 8.2 11.68.6.11.82-.27.82-.6 0-.29-.01-1.06-.02-2.08-3.34.75-4.04-1.66-4.04-1.66-.55-1.43-1.33-1.82-1.33-1.82-1.09-.77.08-.75.08-.75 1.2.09 1.84 1.26 1.84 1.26 1.07 1.87 2.8 1.33 3.49 1.02.11-.79.42-1.33.76-1.64-2.67-.31-5.47-1.37-5.47-6.09 0-1.35.47-2.45 1.24-3.31-.12-.31-.54-1.57.12-3.27 0 0 1.01-.33 3.3 1.26a11.3 11.3 0 0 1 6 0c2.29-1.59 3.3-1.26 3.3-1.26.66 1.7.24 2.96.12 3.27.77.86 1.24 1.96 1.24 3.31 0 4.73-2.81 5.77-5.49 6.08.43.38.81 1.14.81 2.3 0 1.66-.02 3-.02 3.41 0 .33.22.72.83.6C20.57 22.34 24 17.74 24 12.3 24 5.5 18.63 0 12 0Z"/></svg>
+        Star on GitHub
+      </a>
     </div>
-  </section>
 
-  <!-- ================= INTERACTIVE CONFIG ================= -->
-  <section class="section-pad">
-    <div class="max-w-6xl mx-auto px-6 lg:px-10">
-      <div class="text-center max-w-2xl mx-auto mb-14">
-        <p class="eyebrow mono mb-3">configuration</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">One file controls everything</h2>
-        <p class="text-white/55 mt-4">Toggle capabilities and watch the request path update in real time.</p>
-      </div>
-
-      <div class="grid lg:grid-cols-2 gap-6">
-        <div class="code-window glass-strong">
-          <div class="flex items-center gap-2 px-4 py-3 border-b border-white/8">
-            <span class="dot bg-[#ff5f56]"></span><span class="dot bg-[#ffbd2e]"></span><span class="dot bg-[#27c93f]"></span>
-            <span class="mono text-xs text-white/40 ml-3">ceramic.yaml</span>
-          </div>
-          <div class="p-5 mono text-[13px] leading-8 text-white/80">
-            <div class="flex items-center justify-between"><span><span class="text-[#f47067]">auth</span>:</span></div>
-            <div class="pl-4 flex items-center justify-between"><span>provider: <span class="text-[#a5d6ff]">oidc</span></span><div class="switch on" data-toggle="auth"><div class="knob"></div></div></div>
-            <div class="flex items-center justify-between mt-2"><span><span class="text-[#f47067]">authorization</span>:</span></div>
-            <div class="pl-4 flex items-center justify-between"><span>enabled: <span class="text-[#79c0ff]" data-bool="authz">true</span></span><div class="switch on" data-toggle="authz"><div class="knob"></div></div></div>
-            <div class="flex items-center justify-between mt-2"><span><span class="text-[#f47067]">observability</span>:</span></div>
-            <div class="pl-4 flex items-center justify-between"><span>tracing: <span class="text-[#79c0ff]" data-bool="tracing">true</span></span><div class="switch on" data-toggle="tracing"><div class="knob"></div></div></div>
-            <div class="pl-4 flex items-center justify-between mt-2"><span>metrics: <span class="text-[#79c0ff]" data-bool="metrics">true</span></span><div class="switch on" data-toggle="metrics"><div class="knob"></div></div></div>
-          </div>
-        </div>
-
-        <div class="glass-strong rounded-2xl p-6 flex flex-col items-center justify-center">
-          <svg viewBox="0 0 320 220" class="w-full max-w-sm">
-            <path d="M40 30 L40 190" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" fill="none"/>
-            <rect x="10" y="10" width="60" height="30" rx="7" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.14)"/>
-            <text x="40" y="29" text-anchor="middle" fill="#e7e9ee" font-family="JetBrains Mono" font-size="9">Client</text>
-
-            <line x1="70" y1="55" x2="140" y2="55" stroke="rgba(255,255,255,0.12)"/>
-            <g id="node-auth">
-              <rect x="10" y="45" width="60" height="0" rx="7"/>
-            </g>
-
-            <!-- pipeline nodes -->
-            <g id="pipeline-auth" class="transition-opacity duration-300">
-              <rect x="90" y="42" width="70" height="28" rx="7" fill="rgba(34,211,238,0.12)" stroke="rgba(34,211,238,0.5)"/>
-              <text x="125" y="60" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono" font-size="9">Auth</text>
-            </g>
-            <g id="pipeline-authz" class="transition-opacity duration-300">
-              <rect x="90" y="82" width="70" height="28" rx="7" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.5)"/>
-              <text x="125" y="100" text-anchor="middle" fill="#c4b5fd" font-family="JetBrains Mono" font-size="8.5">Authz</text>
-            </g>
-            <g id="pipeline-tracing" class="transition-opacity duration-300">
-              <rect x="90" y="122" width="70" height="28" rx="7" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.5)"/>
-              <text x="125" y="140" text-anchor="middle" fill="#93c5fd" font-family="JetBrains Mono" font-size="8.5">Tracing</text>
-            </g>
-            <g id="pipeline-metrics" class="transition-opacity duration-300">
-              <rect x="90" y="162" width="70" height="28" rx="7" fill="rgba(34,211,238,0.1)" stroke="rgba(34,211,238,0.4)"/>
-              <text x="125" y="180" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono" font-size="8.5">Metrics</text>
-            </g>
-
-            <line x1="160" y1="56" x2="230" y2="56" stroke="rgba(255,255,255,0.1)"/>
-            <line x1="160" y1="96" x2="230" y2="96" stroke="rgba(255,255,255,0.1)"/>
-            <line x1="160" y1="136" x2="230" y2="136" stroke="rgba(255,255,255,0.1)"/>
-            <line x1="160" y1="176" x2="230" y2="176" stroke="rgba(255,255,255,0.1)"/>
-            <rect x="230" y="90" width="80" height="30" rx="7" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.14)"/>
-            <text x="270" y="109" text-anchor="middle" fill="#e7e9ee" font-family="JetBrains Mono" font-size="9">FastMCP</text>
-          </svg>
-          <p class="mono text-xs text-white/40 mt-4">Live request path — disabled stages fade out</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= FEATURES ================= -->
-  <section id="features" class="section-pad">
-    <div class="max-w-7xl mx-auto px-6 lg:px-10">
-      <div class="max-w-2xl mb-14">
-        <p class="eyebrow mono mb-3">capabilities</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Everything an enterprise MCP deployment needs</h2>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        <div class="reveal-card card-hover glass rounded-2xl p-7">
-          <div class="h-10 w-10 rounded-lg flex items-center justify-center mb-5" style="background:rgba(34,211,238,0.12); border:1px solid rgba(34,211,238,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
-          </div>
-          <h3 class="font-semibold text-lg mb-2">Authentication</h3>
-          <p class="text-white/55 text-sm leading-relaxed mb-4">Standards-based identity for every tool call.</p>
-          <div class="flex flex-wrap gap-1.5 mono text-[11px] text-white/50">
-            <span class="glass rounded-full px-2.5 py-1">OAuth2</span><span class="glass rounded-full px-2.5 py-1">OIDC</span><span class="glass rounded-full px-2.5 py-1">PKCE</span><span class="glass rounded-full px-2.5 py-1">Google</span><span class="glass rounded-full px-2.5 py-1">Entra ID</span><span class="glass rounded-full px-2.5 py-1">Okta</span><span class="glass rounded-full px-2.5 py-1">Keycloak</span><span class="glass rounded-full px-2.5 py-1">Auth0</span>
-          </div>
-        </div>
-
-        <div class="reveal-card card-hover glass rounded-2xl p-7">
-          <div class="h-10 w-10 rounded-lg flex items-center justify-center mb-5" style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          </div>
-          <h3 class="font-semibold text-lg mb-2">Authorization</h3>
-          <p class="text-white/55 text-sm leading-relaxed">Role-based access control, group-based policies, and declarative decorators that sit directly on your tool functions.</p>
-        </div>
-
-        <div class="reveal-card card-hover glass rounded-2xl p-7">
-          <div class="h-10 w-10 rounded-lg flex items-center justify-center mb-5" style="background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 3 5-8"/></svg>
-          </div>
-          <h3 class="font-semibold text-lg mb-2">Observability</h3>
-          <p class="text-white/55 text-sm leading-relaxed mb-4">Full-stack visibility, out of the box.</p>
-          <div class="flex flex-wrap gap-1.5 mono text-[11px] text-white/50">
-            <span class="glass rounded-full px-2.5 py-1">OpenTelemetry</span><span class="glass rounded-full px-2.5 py-1">Metrics</span><span class="glass rounded-full px-2.5 py-1">Tracing</span><span class="glass rounded-full px-2.5 py-1">Structured logs</span><span class="glass rounded-full px-2.5 py-1">Prometheus</span><span class="glass rounded-full px-2.5 py-1">Grafana</span>
-          </div>
-        </div>
-
-        <div class="reveal-card card-hover glass rounded-2xl p-7">
-          <div class="h-10 w-10 rounded-lg flex items-center justify-center mb-5" style="background:rgba(34,211,238,0.12); border:1px solid rgba(34,211,238,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          </div>
-          <h3 class="font-semibold text-lg mb-2">Developer Experience</h3>
-          <p class="text-white/55 text-sm leading-relaxed">A drop-in replacement for FastMCP. Zero tool changes, one config file, fully compatible with your existing server.</p>
-        </div>
-
-        <div class="reveal-card card-hover glass rounded-2xl p-7 md:col-span-2 lg:col-span-1">
-          <div class="h-10 w-10 rounded-lg flex items-center justify-center mb-5" style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v5"/></svg>
-          </div>
-          <h3 class="font-semibold text-lg mb-2">Enterprise Ready</h3>
-          <p class="text-white/55 text-sm leading-relaxed">Hardened security defaults, tamper-evident audit logs, durable session management, and a deployment model built for production.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= ARCHITECTURE ================= -->
-  <section id="architecture" class="section-pad">
-    <div class="max-w-6xl mx-auto px-6 lg:px-10">
-      <div class="text-center max-w-2xl mx-auto mb-14">
-        <p class="eyebrow mono mb-3">architecture</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">How a request flows through Ceramic</h2>
-        <p class="text-white/55 mt-4">Hover any layer for detail.</p>
-      </div>
-
-      <div class="glass-strong rounded-2xl p-6 md:p-10">
-        <div class="grid gap-4 max-w-md mx-auto">
-          <div class="arch-node diagram-node glass rounded-xl px-5 py-3 text-center" data-tip="Your existing MCP server and tool definitions, unmodified.">
-            <span class="mono text-sm">FastMCP</span>
-          </div>
-          <div class="flex justify-center text-white/25">↓</div>
-          <div class="arch-node diagram-node rounded-xl px-5 py-3 text-center" style="background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.35)" data-tip="The Ceramic middleware layer that wraps every request.">
-            <span class="mono text-sm text-cyan">Ceramic</span>
-          </div>
-          <div class="flex justify-center text-white/25">↓</div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="arch-node diagram-node glass rounded-xl px-4 py-3 text-center" data-tip="Verifies identity via OIDC / OAuth2 / PKCE.">
-              <span class="mono text-xs">Authentication</span>
-            </div>
-            <div class="arch-node diagram-node glass rounded-xl px-4 py-3 text-center" data-tip="Enforces role and group-based policy.">
-              <span class="mono text-xs">Authorization</span>
-            </div>
-            <div class="arch-node diagram-node glass rounded-xl px-4 py-3 text-center" data-tip="Emits traces, metrics and structured logs.">
-              <span class="mono text-xs">Observability</span>
-            </div>
-            <div class="arch-node diagram-node glass rounded-xl px-4 py-3 text-center" data-tip="Resolves and caches user identity.">
-              <span class="mono text-xs">Identity</span>
-            </div>
-          </div>
-          <div class="arch-node diagram-node glass rounded-xl px-5 py-3 text-center" data-tip="Durable, revocable sessions across tool calls.">
-            <span class="mono text-sm">Sessions</span>
-          </div>
-          <div class="flex justify-center text-white/25">↓</div>
-          <div class="arch-node diagram-node rounded-xl px-5 py-3 text-center" style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.35)" data-tip="Audit, SSO and directory integrations for your org.">
-            <span class="mono text-sm text-[#c4b5fd]">Enterprise APIs</span>
-          </div>
-        </div>
-        <p id="arch-tip" class="text-center mono text-xs text-white/40 mt-8 h-4">Hover a layer above</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= MIGRATION ================= -->
-  <section class="section-pad">
-    <div class="max-w-4xl mx-auto px-6 lg:px-10 text-center">
-      <p class="eyebrow mono mb-3">migration</p>
-      <h2 class="text-3xl sm:text-5xl font-bold tracking-tight mb-12">Migrate in less than <span class="grad-text">30 seconds</span></h2>
-
-      <div class="code-window glass-strong text-left max-w-xl mx-auto">
-        <div class="flex items-center gap-2 px-4 py-3 border-b border-white/8">
-          <span class="dot bg-[#ff5f56]"></span><span class="dot bg-[#ffbd2e]"></span><span class="dot bg-[#27c93f]"></span>
-          <span class="mono text-xs text-white/40 ml-3">server.py</span>
-        </div>
-        <div class="p-6 mono text-sm">
-          <p><span class="text-[#f47067]">from</span> <span id="migrate-word" class="transition-colors duration-500">fastmcp</span> <span class="text-[#f47067]">import</span> FastMCP</p>
-        </div>
-      </div>
-      <div id="migrate-check" class="mt-8 opacity-0 transition-opacity duration-500">
-        <svg width="52" height="52" viewBox="0 0 52 52" class="mx-auto">
-          <circle cx="26" cy="26" r="24" fill="none" stroke="#27c93f" stroke-width="3"/>
-          <path d="M15 27l7 7 15-15" fill="none" stroke="#27c93f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= AUTH FLOW ================= -->
-  <section class="section-pad">
-    <div class="max-w-6xl mx-auto px-6 lg:px-10">
-      <div class="text-center max-w-2xl mx-auto mb-14">
-        <p class="eyebrow mono mb-3">authentication flow</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">From tool call to token in one hop</h2>
-      </div>
-      <div class="glass-strong rounded-2xl p-8 md:p-12">
-        <div class="grid grid-cols-4 gap-4 text-center">
-          <div class="flow-step">
-            <div class="h-14 w-14 mx-auto rounded-xl glass flex items-center justify-center mb-3"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></svg></div>
-            <p class="mono text-xs text-white/60">Browser opens</p>
-          </div>
-          <div class="flow-step">
-            <div class="h-14 w-14 mx-auto rounded-xl glass flex items-center justify-center mb-3"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg></div>
-            <p class="mono text-xs text-white/60">User logs in</p>
-          </div>
-          <div class="flow-step">
-            <div class="h-14 w-14 mx-auto rounded-xl glass flex items-center justify-center mb-3"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
-            <p class="mono text-xs text-white/60">Token stored</p>
-          </div>
-          <div class="flow-step">
-            <div class="h-14 w-14 mx-auto rounded-xl glass flex items-center justify-center mb-3"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg></div>
-            <p class="mono text-xs text-white/60">Tool executes</p>
-          </div>
-        </div>
-        <div class="relative h-1 mt-6 mx-8 bg-white/10 rounded-full overflow-hidden">
-          <div id="flow-progress" class="absolute inset-y-0 left-0 w-0 rounded-full" style="background:linear-gradient(90deg,#22d3ee,#8b5cf6)"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= ENTERPRISE ================= -->
-  <section id="enterprise" class="section-pad">
-    <div class="max-w-6xl mx-auto px-6 lg:px-10">
-      <div class="text-center max-w-2xl mx-auto mb-14">
-        <p class="eyebrow mono mb-3">identity providers</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Works with the identity stack you already have</h2>
-      </div>
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div class="logo-tile glass rounded-xl py-8 flex items-center justify-center mono text-sm text-white/80">Entra ID</div>
-        <div class="logo-tile glass rounded-xl py-8 flex items-center justify-center mono text-sm text-white/80">Google Identity</div>
-        <div class="logo-tile glass rounded-xl py-8 flex items-center justify-center mono text-sm text-white/80">Keycloak</div>
-        <div class="logo-tile glass rounded-xl py-8 flex items-center justify-center mono text-sm text-white/80">Okta</div>
-        <div class="logo-tile glass rounded-xl py-8 flex items-center justify-center mono text-sm text-white/80">Auth0</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= DASHBOARD ================= -->
-  <section class="section-pad">
-    <div class="max-w-6xl mx-auto px-6 lg:px-10">
-      <div class="text-center max-w-2xl mx-auto mb-14">
-        <p class="eyebrow mono mb-3">observability</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Watch every tool call, live</h2>
-      </div>
-      <div class="glass-strong rounded-2xl p-6 md:p-8">
-        <div class="grid sm:grid-cols-4 gap-4 mb-8">
-          <div class="glass rounded-xl p-4"><p class="mono text-xs text-white/40 mb-1">Requests / min</p><p class="text-2xl font-bold counter" id="stat-req">0</p></div>
-          <div class="glass rounded-xl p-4"><p class="mono text-xs text-white/40 mb-1">p99 latency</p><p class="text-2xl font-bold counter" id="stat-lat">0<span class="text-sm text-white/40">ms</span></p></div>
-          <div class="glass rounded-xl p-4"><p class="mono text-xs text-white/40 mb-1">Auth success</p><p class="text-2xl font-bold counter" id="stat-auth">0<span class="text-sm text-white/40">%</span></p></div>
-          <div class="glass rounded-xl p-4"><p class="mono text-xs text-white/40 mb-1">Active sessions</p><p class="text-2xl font-bold counter" id="stat-sess">0</p></div>
-        </div>
-        <svg id="chart" viewBox="0 0 600 140" class="w-full h-32">
-          <polyline id="chart-line" fill="none" stroke="#22d3ee" stroke-width="2" points=""/>
-          <polyline id="chart-fill" fill="url(#chartGrad)" stroke="none" points=""/>
-          <defs>
-            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.3"/>
-              <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <div class="flex flex-wrap gap-2 mt-6">
-          <span class="mono text-[11px] glass rounded-full px-3 py-1 text-white/50">trace_id: 7f3a…c1</span>
-          <span class="mono text-[11px] glass rounded-full px-3 py-1 text-white/50">span: tools/call</span>
-          <span class="mono text-[11px] glass rounded-full px-3 py-1 text-white/50">status: 200</span>
-          <span class="mono text-[11px] glass rounded-full px-3 py-1 text-white/50">duration: 42ms</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= CLI ================= -->
-  <section class="section-pad">
-    <div class="max-w-4xl mx-auto px-6 lg:px-10">
-      <div class="text-center max-w-2xl mx-auto mb-14">
-        <p class="eyebrow mono mb-3">command line</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">From zero to authenticated in three commands</h2>
-      </div>
-      <div class="code-window glass-strong">
-        <div class="flex items-center gap-2 px-4 py-3 border-b border-white/8">
-          <span class="dot bg-[#ff5f56]"></span><span class="dot bg-[#ffbd2e]"></span><span class="dot bg-[#27c93f]"></span>
-          <span class="mono text-xs text-white/40 ml-3">terminal</span>
-        </div>
-        <pre id="cli-output" class="mono text-sm p-6 leading-8 min-h-[160px] text-white/80"></pre>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= EARLY ADOPTERS ================= -->
-  <section class="section-pad">
-    <div class="max-w-6xl mx-auto px-6 lg:px-10">
-      <div class="text-center max-w-2xl mx-auto mb-14">
-        <p class="eyebrow mono mb-3">early access</p>
-        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Built for teams deploying MCP in production</h2>
-      </div>
-      <div class="grid md:grid-cols-3 gap-5">
-        <div class="glass rounded-2xl p-6 card-hover">
-          <div class="h-10 w-10 rounded-lg flex items-center justify-center mb-5" style="background:rgba(34,211,238,0.12); border:1px solid rgba(34,211,238,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
-          </div>
-          <h3 class="font-semibold mb-2">Security-first defaults</h3>
-          <p class="text-white/55 text-sm leading-relaxed">PKCE, TLS 1.2+, platform-native token storage, and automatic log redaction — all enabled by default.</p>
-        </div>
-        <div class="glass rounded-2xl p-6 card-hover">
-          <div class="h-10 w-10 rounded-lg flex items-center justify-center mb-5" style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          </div>
-          <h3 class="font-semibold mb-2">Zero lock-in</h3>
-          <p class="text-white/55 text-sm leading-relaxed">Remove Ceramic and your FastMCP app still works. It's a layer on top, not a fork underneath.</p>
-        </div>
-        <div class="glass rounded-2xl p-6 card-hover">
-          <div class="h-10 w-10 rounded-lg flex items-center justify-center mb-5" style="background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 3 5-8"/></svg>
-          </div>
-          <h3 class="font-semibold mb-2">Production-tested patterns</h3>
-          <p class="text-white/55 text-sm leading-relaxed">Middleware pipeline, context propagation, and hot reload follow battle-tested patterns from Django, FastAPI, and Express.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= GITHUB ================= -->
-  <section id="github" class="section-pad">
-    <div class="max-w-4xl mx-auto px-6 lg:px-10">
-      <div class="glass-strong rounded-2xl p-8 md:p-10 glow">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-          <div>
-            <p class="mono text-xs text-white/40 mb-1">github.com/vincenzo/ceramic-fwk</p>
-            <h3 class="text-2xl font-bold">Open source, MIT licensed</h3>
-          </div>
-          <a href="#" class="btn-primary rounded-lg px-5 py-2.5 text-sm whitespace-nowrap">Star on GitHub</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-          <div class="glass rounded-xl py-5"><p class="text-2xl font-bold counter" id="stat-stars">0</p><p class="mono text-xs text-white/40 mt-1">stars</p></div>
-          <div class="glass rounded-xl py-5"><p class="text-2xl font-bold counter" id="stat-contrib">0</p><p class="mono text-xs text-white/40 mt-1">contributors</p></div>
-          <div class="glass rounded-xl py-5"><p class="text-2xl font-bold text-[#27c93f]">passing</p><p class="mono text-xs text-white/40 mt-1">CI</p></div>
-          <div class="glass rounded-xl py-5"><p class="text-2xl font-bold counter" id="stat-coverage">0<span class="text-base text-white/40">%</span></p><p class="mono text-xs text-white/40 mt-1">coverage</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= CTA ================= -->
-  <section id="get-started" class="section-pad">
-    <div class="max-w-4xl mx-auto px-6 lg:px-10 text-center">
-      <h2 class="text-3xl sm:text-5xl font-bold tracking-tight mb-6">Ready to secure your <span class="grad-text">FastMCP</span> app?</h2>
-      <p class="text-white/55 mb-9 max-w-xl mx-auto">One install, one config file, production-grade security.</p>
-      <div class="flex flex-wrap justify-center gap-4">
-        <a href="#" class="btn-primary rounded-lg px-7 py-3.5 text-sm">Get Started →</a>
-        <a href="#docs" class="btn-ghost rounded-lg px-7 py-3.5 text-sm">Read the Docs</a>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<!-- ================= FOOTER ================= -->
-<footer id="docs" class="border-t border-white/8 mt-10">
-  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-14 grid sm:grid-cols-2 md:grid-cols-5 gap-8">
-    <div class="md:col-span-1 sm:col-span-2">
-      <div class="flex items-center gap-2.5 mb-3">
-        <span class="relative flex h-6 w-6 items-center justify-center rounded-md" style="background:linear-gradient(135deg,#22d3ee,#8b5cf6)"><span class="h-2 w-2 rounded-sm bg-ink"></span></span>
-        <span class="font-semibold text-sm">ceramic</span>
-      </div>
-      <p class="text-white/40 text-sm">Enterprise auth for FastMCP.</p>
-    </div>
-    <div>
-      <p class="mono text-xs text-white/40 mb-3">resources</p>
-      <ul class="space-y-2 text-sm text-white/60">
-        <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
-        <li><a href="#" class="hover:text-white transition-colors">Examples</a></li>
-        <li><a href="#" class="hover:text-white transition-colors">API Reference</a></li>
-      </ul>
-    </div>
-    <div>
-      <p class="mono text-xs text-white/40 mb-3">community</p>
-      <ul class="space-y-2 text-sm text-white/60">
-        <li><a href="#github" class="hover:text-white transition-colors">GitHub</a></li>
-        <li><a href="#" class="hover:text-white transition-colors">Discord</a></li>
-      </ul>
-    </div>
-    <div>
-      <p class="mono text-xs text-white/40 mb-3">legal</p>
-      <ul class="space-y-2 text-sm text-white/60">
-        <li><a href="#" class="hover:text-white transition-colors">License</a></li>
-      </ul>
+    <!-- Language badge -->
+    <div class="hero-fade font-mono text-xs text-white/30 flex items-center justify-center gap-4" style="animation-delay:0.6s">
+      <span class="text-cyan/70">Python 3.11+</span>
+      <span class="text-white/15">•</span>
+      <span>Node.js & Go coming soon</span>
     </div>
   </div>
-  <div class="divider"></div>
-  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-6 text-xs text-white/30 mono">© 2026 Ceramic. Open source under MIT.</div>
+
+  <!-- Animated orbs floating in hero -->
+  <div class="absolute top-20 left-[10%] w-72 h-72 rounded-full bg-cyan/5 blur-3xl animate-float-slow"></div>
+  <div class="absolute bottom-20 right-[10%] w-96 h-96 rounded-full bg-violet/5 blur-3xl animate-float-slower"></div>
+</section>
+
+<!-- ====== CODE TRANSFORM — The magic moment ====== -->
+<section id="how" class="relative py-32 overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent via-cyan/[0.02] to-transparent"></div>
+  <div class="max-w-6xl mx-auto px-6 relative z-10">
+    <div class="text-center mb-20">
+      <p class="font-mono text-xs text-cyan/80 tracking-[0.2em] uppercase mb-4">the change</p>
+      <h2 class="text-4xl sm:text-6xl font-black tracking-tight">Two lines. <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">That's it.</span></h2>
+      <p class="text-white/40 mt-6 max-w-xl mx-auto text-lg">Point Ceramic at your FastMCP app. Every tool call is now authenticated and observed.</p>
+    </div>
+
+    <!-- Code comparison with morphing animation -->
+    <div class="grid md:grid-cols-2 gap-6 items-stretch">
+      <!-- Before -->
+      <div class="group relative rounded-2xl overflow-hidden border border-white/[0.06] bg-panel/80 backdrop-blur-xl transition-all duration-500 hover:border-white/15 hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)]">
+        <div class="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06]">
+          <span class="w-3 h-3 rounded-full bg-[#ff5f56]/80"></span>
+          <span class="w-3 h-3 rounded-full bg-[#ffbd2e]/80"></span>
+          <span class="w-3 h-3 rounded-full bg-[#27c93f]/80"></span>
+          <span class="font-mono text-xs text-white/30 ml-3">server.py</span>
+          <span class="ml-auto font-mono text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/30 border border-white/10">before</span>
+        </div>
+        <pre class="font-mono text-sm leading-8 p-6 text-white/70"><span class="text-white/30"># Your existing FastMCP server</span>
+<span class="text-[#f97583]">from</span> <span class="text-white/90">fastmcp</span> <span class="text-[#f97583]">import</span> FastMCP
+
+app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>)
+
+<span class="text-[#b392f0]">@app.tool()</span>
+<span class="text-[#f97583]">def</span> <span class="text-[#b392f0]">forecast</span>(city: str) -> str:
+    <span class="text-[#f97583]">return</span> get_weather(city)</pre>
+      </div>
+
+      <!-- After -->
+      <div class="group relative rounded-2xl overflow-hidden border border-cyan/20 bg-panel/80 backdrop-blur-xl transition-all duration-500 hover:border-cyan/40 hover:shadow-[0_20px_60px_-20px_rgba(34,211,238,0.2)]">
+        <div class="absolute inset-0 bg-gradient-to-br from-cyan/[0.03] to-violet/[0.02]"></div>
+        <div class="relative flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06]">
+          <span class="w-3 h-3 rounded-full bg-[#ff5f56]/80"></span>
+          <span class="w-3 h-3 rounded-full bg-[#ffbd2e]/80"></span>
+          <span class="w-3 h-3 rounded-full bg-[#27c93f]/80"></span>
+          <span class="font-mono text-xs text-white/30 ml-3">server.py</span>
+          <span class="ml-auto font-mono text-[10px] px-2 py-0.5 rounded-full bg-cyan/10 text-cyan border border-cyan/30">ceramic ✨</span>
+        </div>
+        <pre class="relative font-mono text-sm leading-8 p-6 text-white/70"><span class="text-white/30"># Same server, enterprise-grade</span>
+<span class="text-[#f97583]">from</span> <span class="text-cyan font-bold">ceramic</span> <span class="text-[#f97583]">import</span> FastMCP
+
+app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class="text-[#79b8ff]">"ceramic.yaml"</span>)
+
+<span class="text-[#b392f0]">@app.tool()</span>
+<span class="text-[#f97583]">def</span> <span class="text-[#b392f0]">forecast</span>(city: str) -> str:
+    <span class="text-[#f97583]">return</span> get_weather(city)</pre>
+      </div>
+    </div>
+
+    <!-- Capability chips that appear -->
+    <div class="flex flex-wrap justify-center gap-3 mt-12" id="caps">
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Authentication</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> OpenTelemetry</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Sessions</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Prometheus Metrics</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Circuit Breaker</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Token Exchange</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> SOAP Support</div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== INTERACTIVE CONFIG — Live pipeline visualization ====== -->
+<section class="relative py-32">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-20">
+      <p class="font-mono text-xs text-violet/80 tracking-[0.2em] uppercase mb-4">configuration</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">One file controls <span class="bg-gradient-to-r from-violet to-cyan bg-clip-text text-transparent">everything</span></h2>
+      <p class="text-white/40 mt-6 max-w-lg mx-auto">Toggle capabilities on and off. The middleware pipeline reconfigures in real time.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8 items-start">
+      <!-- YAML Config -->
+      <div class="rounded-2xl overflow-hidden border border-white/[0.06] bg-panel/80 backdrop-blur-xl">
+        <div class="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06]">
+          <span class="w-3 h-3 rounded-full bg-[#ff5f56]/80"></span>
+          <span class="w-3 h-3 rounded-full bg-[#ffbd2e]/80"></span>
+          <span class="w-3 h-3 rounded-full bg-[#27c93f]/80"></span>
+          <span class="font-mono text-xs text-white/30 ml-3">ceramic.yaml</span>
+        </div>
+        <div class="p-6 font-mono text-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <span><span class="text-[#f97583]">auth</span>: <span class="text-white/40">provider: oidc</span></span>
+            <button class="toggle-btn on" data-target="auth" aria-label="Toggle authentication"><span class="toggle-knob"></span></button>
+          </div>
+          <div class="flex items-center justify-between">
+            <span><span class="text-[#f97583]">observability</span>: <span class="text-white/40">tracing: true</span></span>
+            <button class="toggle-btn on" data-target="obs" aria-label="Toggle observability"><span class="toggle-knob"></span></button>
+          </div>
+          <div class="flex items-center justify-between">
+            <span><span class="text-[#f97583]">sessions</span>: <span class="text-white/40">ttl: 3600</span></span>
+            <button class="toggle-btn on" data-target="sess" aria-label="Toggle sessions"><span class="toggle-knob"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Animated pipeline diagram -->
+      <div class="rounded-2xl border border-white/[0.06] bg-panel/80 backdrop-blur-xl p-8 flex flex-col items-center justify-center min-h-[340px]">
+        <div class="w-full max-w-xs space-y-3" id="pipeline-viz">
+          <div class="pipeline-node" data-layer="client">
+            <div class="px-4 py-2.5 rounded-lg border border-white/15 bg-white/[0.03] text-center font-mono text-xs text-white/60">MCP Client</div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-5 bg-gradient-to-b from-white/20 to-white/5"></div></div>
+          <div class="pipeline-node transition-all duration-500" data-layer="auth" id="pipe-auth">
+            <div class="px-4 py-2.5 rounded-lg border border-cyan/30 bg-cyan/[0.06] text-center font-mono text-xs text-cyan">Authentication</div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-5 bg-gradient-to-b from-cyan/30 to-blue/30"></div></div>
+          <div class="pipeline-node transition-all duration-500" data-layer="obs" id="pipe-obs">
+            <div class="px-4 py-2.5 rounded-lg border border-blue/30 bg-blue/[0.06] text-center font-mono text-xs text-blue-400">Observability</div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-5 bg-gradient-to-b from-blue/30 to-emerald/30"></div></div>
+          <div class="pipeline-node transition-all duration-500" data-layer="sess" id="pipe-sess">
+            <div class="px-4 py-2.5 rounded-lg border border-emerald/30 bg-emerald/[0.06] text-center font-mono text-xs text-emerald-400">Sessions</div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-5 bg-gradient-to-b from-emerald/30 to-white/10"></div></div>
+          <div class="pipeline-node" data-layer="fastmcp">
+            <div class="px-4 py-2.5 rounded-lg border border-white/15 bg-white/[0.03] text-center font-mono text-xs text-white/60">FastMCP → Your Tools</div>
+          </div>
+        </div>
+        <p class="font-mono text-[11px] text-white/25 mt-6">Toggle switches to see the pipeline change</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== FEATURES — Bento grid ====== -->
+<section id="features" class="relative py-32">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-20">
+      <p class="font-mono text-xs text-emerald/80 tracking-[0.2em] uppercase mb-4">capabilities</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Everything your MCP deployment <span class="bg-gradient-to-r from-emerald to-cyan bg-clip-text text-transparent">needs</span></h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Auth card -->
+      <div class="feature-card group relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8 transition-all duration-500 hover:border-cyan/30 hover:shadow-[0_0_60px_-20px_rgba(34,211,238,0.2)] overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-cyan/5 rounded-full blur-2xl group-hover:bg-cyan/10 transition-all duration-700 -translate-y-8 translate-x-8"></div>
+        <div class="relative">
+          <div class="h-12 w-12 rounded-xl flex items-center justify-center mb-6 border border-cyan/20 bg-cyan/[0.06]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+          </div>
+          <h3 class="font-bold text-xl mb-3">Authentication</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-5">Standards-based identity for every tool call. OAuth2 + OIDC + PKCE, automatic token refresh, platform-native storage.</p>
+          <div class="flex flex-wrap gap-1.5 font-mono text-[10px] text-white/35">
+            <span class="border border-white/10 rounded-full px-2.5 py-1">OAuth2</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">OIDC</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">PKCE</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Google</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Entra ID</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Okta</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Auth0</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Keycloak</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observability card -->
+      <div class="feature-card group relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8 transition-all duration-500 hover:border-blue/30 hover:shadow-[0_0_60px_-20px_rgba(59,130,246,0.2)] overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-blue/5 rounded-full blur-2xl group-hover:bg-blue/10 transition-all duration-700 -translate-y-8 translate-x-8"></div>
+        <div class="relative">
+          <div class="h-12 w-12 rounded-xl flex items-center justify-center mb-6 border border-blue/20 bg-blue/[0.06]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 3 5-8"/></svg>
+          </div>
+          <h3 class="font-bold text-xl mb-3">Observability</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-5">Full-stack visibility out of the box. OpenTelemetry traces, Prometheus metrics, structured JSON logs.</p>
+          <div class="flex flex-wrap gap-1.5 font-mono text-[10px] text-white/35">
+            <span class="border border-white/10 rounded-full px-2.5 py-1">OpenTelemetry</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Prometheus</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Grafana</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Built on FastMCP — wider card -->
+      <div class="feature-card group relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8 md:col-span-2 transition-all duration-500 hover:border-emerald/30 hover:shadow-[0_0_60px_-20px_rgba(16,185,129,0.15)] overflow-hidden">
+        <div class="absolute top-0 right-0 w-48 h-48 bg-emerald/5 rounded-full blur-3xl group-hover:bg-emerald/10 transition-all duration-700 -translate-y-12 translate-x-12"></div>
+        <div class="relative flex flex-col sm:flex-row gap-6 items-start">
+          <div class="h-12 w-12 rounded-xl flex items-center justify-center border border-emerald/20 bg-emerald/[0.06] shrink-0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-xl mb-3">Built on FastMCP</h3>
+            <p class="text-white/45 text-sm leading-relaxed">Ceramic doesn't fork — it wraps via composition. Your existing tools, prompts, and resources remain untouched. Remove Ceramic and your app still works. It's a layer on top, never a lock-in.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enterprise card -->
+      <div class="feature-card group relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8 transition-all duration-500 hover:border-white/20 hover:shadow-[0_0_60px_-20px_rgba(255,255,255,0.05)] overflow-hidden">
+        <div class="relative">
+          <div class="h-12 w-12 rounded-xl flex items-center justify-center mb-6 border border-white/15 bg-white/[0.04]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e7e9ee" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v5"/></svg>
+          </div>
+          <h3 class="font-bold text-xl mb-3">Enterprise Ready</h3>
+          <p class="text-white/45 text-sm leading-relaxed">Hardened security defaults, log redaction, durable sessions, hot reload, and battle-tested middleware patterns.</p>
+        </div>
+      </div>
+
+      <!-- Resilience card -->
+      <div class="feature-card group relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8 transition-all duration-500 hover:border-violet/30 hover:shadow-[0_0_60px_-20px_rgba(139,92,246,0.2)] overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-violet/5 rounded-full blur-2xl group-hover:bg-violet/10 transition-all duration-700 -translate-y-8 translate-x-8"></div>
+        <div class="relative">
+          <div class="h-12 w-12 rounded-xl flex items-center justify-center mb-6 border border-violet/20 bg-violet/[0.06]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <h3 class="font-bold text-xl mb-3">Resilience Built In</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-5">Circuit breaker for all IDP calls, JWKS stale-while-revalidate caching, exponential backoff, and request coalescing.</p>
+          <div class="flex flex-wrap gap-1.5 font-mono text-[10px] text-white/35">
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Circuit Breaker</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Backoff + Jitter</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Coalescing</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Token Exchange card -->
+      <div class="feature-card group relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8 transition-all duration-500 hover:border-cyan/20 hover:shadow-[0_0_60px_-20px_rgba(34,211,238,0.15)] overflow-hidden">
+        <div class="relative">
+          <div class="h-12 w-12 rounded-xl flex items-center justify-center mb-6 border border-cyan/20 bg-cyan/[0.06]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+          </div>
+          <h3 class="font-bold text-xl mb-3">Token Exchange</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-5">RFC 8693 token exchange for cloud deployments. Built-in adapters for Google STS, Microsoft Entra OBO, and any OIDC provider.</p>
+          <div class="flex flex-wrap gap-1.5 font-mono text-[10px] text-white/35">
+            <span class="border border-white/10 rounded-full px-2.5 py-1">RFC 8693</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Google STS</span>
+            <span class="border border-white/10 rounded-full px-2.5 py-1">Entra OBO</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== COMPARISON TABLE ====== -->
+<section class="relative py-32">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-20">
+      <p class="font-mono text-xs text-violet/80 tracking-[0.2em] uppercase mb-4">comparison</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Why Ceramic over <span class="bg-gradient-to-r from-violet to-cyan bg-clip-text text-transparent">alternatives?</span></h2>
+      <p class="text-white/40 mt-6 max-w-lg mx-auto">How Ceramic compares to rolling your own auth or using an API gateway.</p>
+    </div>
+
+    <div class="rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead>
+            <tr class="border-b border-white/[0.06]">
+              <th class="px-6 py-4 font-mono text-xs text-white/40 font-normal"></th>
+              <th class="px-6 py-4 font-semibold text-cyan">Ceramic</th>
+              <th class="px-6 py-4 font-semibold text-white/60">DIY Middleware</th>
+              <th class="px-6 py-4 font-semibold text-white/60">API Gateway</th>
+            </tr>
+          </thead>
+          <tbody class="text-white/50">
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">Setup time</td>
+              <td class="px-6 py-3 text-cyan">5 minutes</td>
+              <td class="px-6 py-3">Days to weeks</td>
+              <td class="px-6 py-3">Hours + infra</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">Code changes</td>
+              <td class="px-6 py-3 text-cyan">0 (one import)</td>
+              <td class="px-6 py-3">Extensive</td>
+              <td class="px-6 py-3">0 (external)</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">MCP-aware</td>
+              <td class="px-6 py-3 text-emerald-400">✓</td>
+              <td class="px-6 py-3 text-white/25">✗</td>
+              <td class="px-6 py-3 text-white/25">✗</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">OAuth2/OIDC built-in</td>
+              <td class="px-6 py-3 text-emerald-400">✓</td>
+              <td class="px-6 py-3 text-white/25">Build it</td>
+              <td class="px-6 py-3 text-emerald-400">✓</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">Token forwarding</td>
+              <td class="px-6 py-3 text-emerald-400">✓ access_token()</td>
+              <td class="px-6 py-3 text-white/25">Build it</td>
+              <td class="px-6 py-3">Depends</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">Identity in tools</td>
+              <td class="px-6 py-3 text-emerald-400">✓ identity()</td>
+              <td class="px-6 py-3 text-white/25">Manual</td>
+              <td class="px-6 py-3 text-white/25">✗</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">Per-tool authorization</td>
+              <td class="px-6 py-3 text-emerald-400">✓ decorators</td>
+              <td class="px-6 py-3 text-white/25">Build it</td>
+              <td class="px-6 py-3 text-white/25">Route-level only</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">OpenTelemetry</td>
+              <td class="px-6 py-3 text-emerald-400">✓ automatic</td>
+              <td class="px-6 py-3 text-white/25">Integrate</td>
+              <td class="px-6 py-3">Varies</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">Lock-in</td>
+              <td class="px-6 py-3 text-cyan">None</td>
+              <td class="px-6 py-3">N/A</td>
+              <td class="px-6 py-3">Vendor</td>
+            </tr>
+            <tr class="border-b border-white/[0.04]">
+              <td class="px-6 py-3 font-medium text-white/70">Resilience</td>
+              <td class="px-6 py-3 text-emerald-400">✓ circuit breaker</td>
+              <td class="px-6 py-3 text-white/25">Build it</td>
+              <td class="px-6 py-3 text-emerald-400">✓</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-3 font-medium text-white/70">Cost</td>
+              <td class="px-6 py-3 text-cyan">Free (Apache 2.0)</td>
+              <td class="px-6 py-3">Engineering time</td>
+              <td class="px-6 py-3">$ to $$$$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== DEPLOYMENT SCENARIOS — The killer use cases ====== -->
+<section id="scenarios" class="relative py-32">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-20">
+      <p class="font-mono text-xs text-cyan/80 tracking-[0.2em] uppercase mb-4">deployment scenarios</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">One codebase. <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">Two deployment modes.</span></h2>
+      <p class="text-white/40 mt-6 max-w-2xl mx-auto text-lg">Your MCP tools call downstream APIs on behalf of the user. Ceramic handles authentication for both local and cloud — same tool code, different config.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+      <!-- Scenario 1: Local -->
+      <div class="reveal group relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl overflow-hidden transition-all duration-500 hover:border-cyan/30 hover:shadow-[0_0_60px_-20px_rgba(34,211,238,0.15)]">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-cyan/5 rounded-full blur-3xl group-hover:bg-cyan/10 transition-all duration-700 -translate-y-10 translate-x-10"></div>
+        <div class="relative p-8 sm:p-10">
+          <!-- Header -->
+          <div class="flex items-center gap-3 mb-6">
+            <div class="h-10 w-10 rounded-xl flex items-center justify-center border border-cyan/20 bg-cyan/[0.06]">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+            </div>
+            <div>
+              <h3 class="font-bold text-lg">Local via stdio</h3>
+              <p class="text-white/35 text-xs font-mono">Claude Desktop · Cursor · VS Code</p>
+            </div>
+          </div>
+
+          <!-- Pain without Ceramic -->
+          <div class="mb-6 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+            <p class="text-xs font-mono text-white/30 mb-2">WITHOUT CERAMIC</p>
+            <p class="text-white/50 text-sm leading-relaxed">Hand-roll OAuth PKCE, build a local callback server, manage token refresh, store credentials securely, wire the token into every HTTP call. Days of work before your first tool.</p>
+          </div>
+
+          <!-- Solution with Ceramic -->
+          <div class="mb-6 rounded-lg border border-cyan/20 bg-cyan/[0.03] p-4">
+            <p class="text-xs font-mono text-cyan/70 mb-2">WITH CERAMIC</p>
+            <p class="text-white/60 text-sm leading-relaxed"><code class="text-cyan">ceramic login</code> → browser opens → token stored in Keychain → every tool call authenticated. <strong class="text-white/80">30 seconds.</strong></p>
+          </div>
+
+          <!-- Config snippet -->
+          <div class="rounded-lg overflow-hidden border border-white/[0.06]">
+            <div class="px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
+              <span class="font-mono text-[10px] text-white/30">ceramic.yaml</span>
+            </div>
+            <pre class="font-mono text-xs leading-6 p-4 text-white/60"><span class="text-[#f97583]">auth</span>:
+  <span class="text-white/40">provider</span>: oidc
+  <span class="text-white/40">issuer</span>: https://your-idp.example.com
+  <span class="text-white/40">client_id</span>: my-dev-app
+  <span class="text-white/40">grant_type</span>: authorization_code</pre>
+          </div>
+
+          <!-- Key point -->
+          <div class="mt-6 flex items-start gap-2">
+            <span class="text-emerald mt-0.5">✓</span>
+            <p class="text-white/50 text-sm"><code class="text-cyan/80">access_token()</code> in your tool → user-scoped, auto-refreshed, zero boilerplate</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scenario 2: Cloud -->
+      <div class="reveal group relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl overflow-hidden transition-all duration-500 hover:border-violet/30 hover:shadow-[0_0_60px_-20px_rgba(139,92,246,0.15)]">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-violet/5 rounded-full blur-3xl group-hover:bg-violet/10 transition-all duration-700 -translate-y-10 translate-x-10"></div>
+        <div class="relative p-8 sm:p-10">
+          <!-- Header -->
+          <div class="flex items-center gap-3 mb-6">
+            <div class="h-10 w-10 rounded-xl flex items-center justify-center border border-violet/20 bg-violet/[0.06]">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            </div>
+            <div>
+              <h3 class="font-bold text-lg">Cloud via HTTP/SSE</h3>
+              <p class="text-white/35 text-xs font-mono">Claude · Gemini · Remote MCP</p>
+            </div>
+          </div>
+
+          <!-- Pain without Ceramic -->
+          <div class="mb-6 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+            <p class="text-xs font-mono text-white/30 mb-2">WITHOUT CERAMIC</p>
+            <p class="text-white/50 text-sm leading-relaxed">Implement RFC 8693 token exchange, parse upstream tokens, POST to IDP, handle errors, add retry logic, build a circuit breaker. Weeks of security-sensitive code.</p>
+          </div>
+
+          <!-- Solution with Ceramic -->
+          <div class="mb-6 rounded-lg border border-violet/20 bg-violet/[0.03] p-4">
+            <p class="text-xs font-mono text-violet/70 mb-2">WITH CERAMIC</p>
+            <p class="text-white/60 text-sm leading-relaxed">Platform passes user token → Ceramic exchanges it at IDP → your tool gets a downstream-scoped token. <strong class="text-white/80">Same tool code as local.</strong></p>
+          </div>
+
+          <!-- Config snippet -->
+          <div class="rounded-lg overflow-hidden border border-white/[0.06]">
+            <div class="px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
+              <span class="font-mono text-[10px] text-white/30">ceramic.yaml</span>
+            </div>
+            <pre class="font-mono text-xs leading-6 p-4 text-white/60"><span class="text-[#f97583]">auth</span>:
+  <span class="text-white/40">provider</span>: oidc
+  <span class="text-white/40">issuer</span>: https://your-idp.example.com
+  <span class="text-white/40">client_id</span>: my-cloud-mcp
+  <span class="text-white/40">grant_type</span>: token_exchange
+  <span class="text-white/40">upstream_token_header</span>: x-user-token
+  <span class="text-white/40">token_exchange_audience</span>: https://api.internal.com
+  <span class="text-white/40">token_exchange_provider</span>: rfc8693</pre>
+          </div>
+
+          <!-- Key point -->
+          <div class="mt-6 flex items-start gap-2">
+            <span class="text-emerald mt-0.5">✓</span>
+            <p class="text-white/50 text-sm">Circuit breaker, exponential backoff, JWKS validation — all built in. No extra infrastructure.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom callout -->
+    <div class="reveal mt-12 rounded-2xl border border-white/[0.08] bg-gradient-to-r from-cyan/[0.03] to-violet/[0.03] backdrop-blur-xl p-8 text-center">
+      <p class="text-white/70 text-lg font-medium mb-3">Same tool code. Same <code class="text-cyan font-mono text-base">access_token()</code> call. Only the YAML changes.</p>
+      <p class="text-white/40 text-sm max-w-2xl mx-auto">Deploy locally during development with interactive login. Push to production with token exchange. Your tools never know the difference.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====== ARCHITECTURE — Animated flow ====== -->
+<section id="architecture" class="relative py-32">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="text-center mb-20">
+      <p class="font-mono text-xs text-blue/80 tracking-[0.2em] uppercase mb-4">architecture</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">How a request <span class="bg-gradient-to-r from-blue to-cyan bg-clip-text text-transparent">flows</span></h2>
+      <p class="text-white/40 mt-6 max-w-lg mx-auto">Each layer is independent. Enable or disable by config section.</p>
+    </div>
+
+    <div class="relative rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8 sm:p-12 overflow-hidden">
+      <!-- Animated pulse line -->
+      <div class="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+      <div class="absolute left-1/2 top-0 w-px h-full overflow-hidden">
+        <div class="w-full h-20 bg-gradient-to-b from-transparent via-cyan to-transparent animate-flow-pulse"></div>
+      </div>
+
+      <div class="relative grid gap-6 max-w-sm mx-auto">
+        <div class="arch-step flex items-center gap-4 rounded-xl border border-white/10 bg-white/[0.02] px-5 py-4 transition-all hover:border-white/25 hover:bg-white/[0.04]">
+          <div class="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40 font-mono text-xs shrink-0">1</div>
+          <div>
+            <p class="font-semibold text-sm">MCP Client</p>
+            <p class="text-white/35 text-xs">Tool call arrives</p>
+          </div>
+        </div>
+
+        <div class="arch-step flex items-center gap-4 rounded-xl border border-cyan/25 bg-cyan/[0.04] px-5 py-4 transition-all hover:border-cyan/50 hover:shadow-[0_0_30px_-10px_rgba(34,211,238,0.3)]">
+          <div class="h-8 w-8 rounded-lg bg-cyan/10 flex items-center justify-center text-cyan font-mono text-xs shrink-0">2</div>
+          <div>
+            <p class="font-semibold text-sm text-cyan">Ceramic Middleware</p>
+            <p class="text-white/35 text-xs">Auth → Observability → Sessions</p>
+          </div>
+        </div>
+
+        <div class="arch-step flex items-center gap-4 rounded-xl border border-violet/25 bg-violet/[0.04] px-5 py-4 transition-all hover:border-violet/50 hover:shadow-[0_0_30px_-10px_rgba(139,92,246,0.3)]">
+          <div class="h-8 w-8 rounded-lg bg-violet/10 flex items-center justify-center text-violet font-mono text-xs shrink-0">3</div>
+          <div>
+            <p class="font-semibold text-sm text-violet-300">FastMCP</p>
+            <p class="text-white/35 text-xs">Your tool executes</p>
+          </div>
+        </div>
+
+        <div class="arch-step flex items-center gap-4 rounded-xl border border-emerald/25 bg-emerald/[0.04] px-5 py-4 transition-all hover:border-emerald/50 hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.3)]">
+          <div class="h-8 w-8 rounded-lg bg-emerald/10 flex items-center justify-center text-emerald font-mono text-xs shrink-0">4</div>
+          <div>
+            <p class="font-semibold text-sm text-emerald-300">Response</p>
+            <p class="text-white/35 text-xs">After-hooks in reverse, result returned</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== IDENTITY PROVIDERS ====== -->
+<section class="relative py-32">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <p class="font-mono text-xs text-white/50 tracking-[0.2em] uppercase mb-4">identity providers</p>
+      <h2 class="text-3xl sm:text-4xl font-black tracking-tight">Works with the stack you <span class="bg-gradient-to-r from-cyan to-emerald bg-clip-text text-transparent">already have</span></h2>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+      <div class="idp-card rounded-xl border border-white/[0.06] bg-white/[0.02] py-6 flex items-center justify-center font-mono text-sm text-white/50 transition-all hover:border-white/20 hover:text-white/80 hover:bg-white/[0.04] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">Zitadel</div>
+      <div class="idp-card rounded-xl border border-white/[0.06] bg-white/[0.02] py-6 flex items-center justify-center font-mono text-sm text-white/50 transition-all hover:border-white/20 hover:text-white/80 hover:bg-white/[0.04] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">Entra ID</div>
+      <div class="idp-card rounded-xl border border-white/[0.06] bg-white/[0.02] py-6 flex items-center justify-center font-mono text-sm text-white/50 transition-all hover:border-white/20 hover:text-white/80 hover:bg-white/[0.04] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">Google</div>
+      <div class="idp-card rounded-xl border border-white/[0.06] bg-white/[0.02] py-6 flex items-center justify-center font-mono text-sm text-white/50 transition-all hover:border-white/20 hover:text-white/80 hover:bg-white/[0.04] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">Keycloak</div>
+      <div class="idp-card rounded-xl border border-white/[0.06] bg-white/[0.02] py-6 flex items-center justify-center font-mono text-sm text-white/50 transition-all hover:border-white/20 hover:text-white/80 hover:bg-white/[0.04] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">Okta</div>
+      <div class="idp-card rounded-xl border border-white/[0.06] bg-white/[0.02] py-6 flex items-center justify-center font-mono text-sm text-white/50 transition-all hover:border-white/20 hover:text-white/80 hover:bg-white/[0.04] hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">Auth0</div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== CLI TERMINAL — Typing animation ====== -->
+<section class="relative py-32">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <p class="font-mono text-xs text-cyan/80 tracking-[0.2em] uppercase mb-4">command line</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Zero to authenticated in <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">3 commands</span></h2>
+    </div>
+
+    <div class="rounded-2xl overflow-hidden border border-white/[0.06] bg-panel/80 backdrop-blur-xl shadow-[0_40px_100px_-30px_rgba(0,0,0,0.8)]">
+      <div class="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06] bg-white/[0.02]">
+        <span class="w-3 h-3 rounded-full bg-[#ff5f56]/80"></span>
+        <span class="w-3 h-3 rounded-full bg-[#ffbd2e]/80"></span>
+        <span class="w-3 h-3 rounded-full bg-[#27c93f]/80"></span>
+        <span class="font-mono text-xs text-white/30 ml-3">terminal</span>
+      </div>
+      <div id="terminal" class="font-mono text-sm p-6 min-h-[220px] leading-8 text-white/70"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== COMMUNITY / CTA ====== -->
+<section id="get-started" class="relative py-32">
+  <div class="absolute inset-0 bg-gradient-to-t from-cyan/[0.02] to-transparent"></div>
+  <div class="max-w-4xl mx-auto px-6 relative z-10">
+    <div class="rounded-3xl border border-white/[0.08] bg-panel/60 backdrop-blur-xl p-10 sm:p-14 text-center overflow-hidden relative">
+      <!-- Glow -->
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-gradient-to-b from-cyan/10 to-transparent rounded-full blur-3xl"></div>
+
+      <div class="relative">
+        <h2 class="text-3xl sm:text-5xl font-black tracking-tight mb-6">🚀 We just launched</h2>
+        <p class="text-white/50 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
+          Ceramic is brand new and looking for early adopters and contributors. Try it with your MCP server, integrate your identity provider, write a plugin — we'd love your help building the future of secure MCP.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-4 mb-8">
+          <a href="https://github.com/enzomar/ceramic-fwk" class="group relative px-8 py-4 rounded-xl font-semibold text-ink bg-gradient-to-r from-cyan to-violet overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(34,211,238,0.4)]">
+            <span class="relative z-10">Get Started →</span>
+            <div class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
+          </a>
+          <a href="https://github.com/enzomar/ceramic-fwk/blob/main/docs/GUIDE.md" class="px-8 py-4 rounded-xl font-semibold border border-white/15 text-white/80 hover:border-cyan/40 hover:text-white transition-all duration-300">Read the Docs</a>
+        </div>
+        <div class="flex flex-wrap justify-center gap-3 text-sm">
+          <a href="https://github.com/enzomar/ceramic-fwk/issues" class="text-white/40 hover:text-white/70 transition-colors">Report an issue</a>
+          <span class="text-white/15">•</span>
+          <a href="https://github.com/enzomar/ceramic-fwk/discussions" class="text-white/40 hover:text-white/70 transition-colors">Start a discussion</a>
+          <span class="text-white/15">•</span>
+          <a href="https://github.com/enzomar/ceramic-fwk/blob/main/CONTRIBUTING.md" class="text-white/40 hover:text-white/70 transition-colors">Contribute</a>
+          <span class="text-white/15">•</span>
+          <a href="https://www.paypal.com/ncp/payment/DA8FJHJT5GSZY" class="text-white/40 hover:text-white/70 transition-colors flex items-center gap-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 2.22A.773.773 0 0 1 5.706 1.6h6.574c2.18 0 3.9.575 4.957 1.656.49.502.832 1.09 1.017 1.748.196.703.204 1.54.024 2.487l-.015.076v.215l.168.095c.326.18.588.388.791.625.34.396.56.884.647 1.449.09.584.046 1.264-.127 2.018-.2.87-.525 1.627-.965 2.25a4.678 4.678 0 0 1-1.525 1.442 5.73 5.73 0 0 1-1.934.782c-.7.163-1.49.244-2.354.244H12.38a.95.95 0 0 0-.938.806l-.036.197-.628 3.985-.028.142a.95.95 0 0 1-.937.806H7.076z"/></svg>
+            Support via PayPal
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== FOOTER ====== -->
+<footer class="border-t border-white/[0.06] py-12">
+  <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+    <div class="flex items-center gap-2.5">
+      <span class="relative flex h-6 w-6 items-center justify-center rounded-md" style="background:linear-gradient(135deg,#22d3ee,#8b5cf6)"><span class="h-2 w-2 rounded-sm bg-ink"></span></span>
+      <span class="font-semibold text-sm">ceramic</span>
+      <span class="text-white/25 text-xs font-mono ml-2">Enterprise auth for FastMCP</span>
+    </div>
+    <div class="flex items-center gap-6 text-sm text-white/35 font-mono">
+      <a href="https://github.com/enzomar/ceramic-fwk" class="hover:text-white/70 transition-colors">GitHub</a>
+      <a href="https://github.com/enzomar/ceramic-fwk/blob/main/docs/GUIDE.md" class="hover:text-white/70 transition-colors">Docs</a>
+      <a href="https://github.com/enzomar/ceramic-fwk/blob/main/LICENSE" class="hover:text-white/70 transition-colors">Apache 2.0</a>
+    </div>
+  </div>
 </footer>
+</main>
 
+<!-- ====== STYLES ====== -->
+<style>
+/* Animations */
+@keyframes gradient-x {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-x { animation: gradient-x 4s ease infinite; }
+
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+.animate-float-slow { animation: float-slow 12s ease-in-out infinite; }
+
+@keyframes float-slower {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, 30px) scale(1.08); }
+  66% { transform: translate(30px, -15px) scale(0.92); }
+}
+.animate-float-slower { animation: float-slower 18s ease-in-out infinite; }
+
+@keyframes flow-pulse {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(500%); }
+}
+.animate-flow-pulse { animation: flow-pulse 3s linear infinite; }
+
+/* Hero fade-in */
+@keyframes hero-enter {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-fade {
+  opacity: 0;
+  animation: hero-enter 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scroll reveal */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.reveal { opacity: 0; }
+.reveal.visible {
+  animation: reveal-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toggle switches */
+.toggle-btn {
+  width: 44px; height: 24px; border-radius: 999px;
+  background: rgba(255,255,255,0.08); position: relative;
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.toggle-btn.on {
+  background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+  border-color: transparent;
+  box-shadow: 0 0 20px -5px rgba(34,211,238,0.5);
+}
+.toggle-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 999px;
+  background: white; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.toggle-btn.on .toggle-knob { transform: translateX(20px); }
+
+/* Feature cards stagger */
+.feature-card { opacity: 0; transform: translateY(30px); }
+.feature-card.visible {
+  animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Architecture steps */
+.arch-step { opacity: 0; transform: translateX(-20px); }
+.arch-step.visible {
+  animation: reveal-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Nav glass on scroll */
+.nav-glass {
+  background: rgba(2,4,8,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Particle canvas */
+#hero-canvas { opacity: 0.6; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .hero-fade { opacity: 1; }
+  .feature-card, .arch-step, .reveal { opacity: 1; transform: none; }
+}
+</style>
+
+<!-- ====== JAVASCRIPT ====== -->
 <script>
-gsap.registerPlugin(ScrollTrigger);
-
-/* ---------- Nav background on scroll ---------- */
+// === Nav glass on scroll ===
 const nav = document.getElementById('nav');
 window.addEventListener('scroll', () => {
-  if (window.scrollY > 20) { nav.classList.add('glass-strong'); }
-  else { nav.classList.remove('glass-strong'); }
+  nav.classList.toggle('nav-glass', window.scrollY > 30);
 });
 
-/* ---------- Hero + fade-up entrance ---------- */
-gsap.utils.toArray('.fade-up').forEach((el, i) => {
-  gsap.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, delay: i * 0.08, ease: 'power3.out' });
-});
-
-/* ---------- Capability checks reveal on scroll ---------- */
-gsap.to('.cap-chip', {
-  opacity: 1,
-  y: 0,
-  stagger: 0.12,
-  duration: 0.6,
-  ease: 'power2.out',
-  scrollTrigger: { trigger: '#capability-checks', start: 'top 85%' }
-});
-
-/* ---------- Feature cards reveal ---------- */
-gsap.utils.toArray('.reveal-card').forEach((card) => {
-  gsap.fromTo(card, { opacity: 0, y: 30 }, {
-    opacity: 1, y: 0, duration: 0.7, ease: 'power2.out',
-    scrollTrigger: { trigger: card, start: 'top 90%' }
-  });
-});
-
-/* ---------- Architecture tooltip ---------- */
-const tipEl = document.getElementById('arch-tip');
-document.querySelectorAll('.arch-node').forEach(node => {
-  node.addEventListener('mouseenter', () => { tipEl.textContent = node.dataset.tip; });
-  node.addEventListener('mouseleave', () => { tipEl.textContent = 'Hover a layer above'; });
-});
-
-/* ---------- Config toggles ---------- */
-const pipelineMap = { auth: 'pipeline-auth', authz: 'pipeline-authz', tracing: 'pipeline-tracing', metrics: 'pipeline-metrics' };
-document.querySelectorAll('[data-toggle]').forEach(sw => {
-  sw.addEventListener('click', () => {
-    const key = sw.dataset.toggle;
-    const on = sw.classList.toggle('on');
-    const target = document.getElementById(pipelineMap[key]);
-    if (target) gsap.to(target, { opacity: on ? 1 : 0.12, duration: 0.35 });
-    const boolLabel = document.querySelector(`[data-bool="${key}"]`);
-    if (boolLabel) boolLabel.textContent = on ? 'true' : 'false';
-  });
-});
-
-/* ---------- Migration line swap + checkmark ---------- */
-ScrollTrigger.create({
-  trigger: '#migrate-check',
-  start: 'top 80%',
-  once: true,
-  onEnter: () => {
-    const w = document.getElementById('migrate-word');
-    gsap.to(w, {
-      duration: 0.4, color: '#22d3ee', onComplete: () => {
-        w.textContent = 'ceramic';
-        gsap.fromTo(w, { color: '#22d3ee' }, { color: '#e7e9ee', duration: 0.6, delay: 0.3 });
-      }
-    });
-    gsap.to('#migrate-check', { opacity: 1, duration: 0.6, delay: 0.5 });
-  }
-});
-
-/* ---------- Auth flow progress bar ---------- */
-ScrollTrigger.create({
-  trigger: '#flow-progress',
-  start: 'top 80%',
-  once: true,
-  onEnter: () => gsap.to('#flow-progress', { width: '100%', duration: 2.4, ease: 'power1.inOut' })
-});
-
-/* ---------- Animated counters ---------- */
-function animateCounter(id, end, suffixDecimals = 0) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  ScrollTrigger.create({
-    trigger: el, start: 'top 90%', once: true,
-    onEnter: () => {
-      let obj = { val: 0 };
-      gsap.to(obj, {
-        val: end, duration: 1.8, ease: 'power2.out',
-        onUpdate: () => {
-          const suffix = el.querySelector('span') ? el.querySelector('span').outerHTML : '';
-          el.innerHTML = Math.floor(obj.val).toLocaleString() + suffix;
-        }
-      });
+// === Scroll reveal ===
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('visible'), i * 80);
+      observer.unobserve(entry.target);
     }
   });
-}
-animateCounter('stat-req', 4820);
-animateCounter('stat-lat', 42);
-animateCounter('stat-auth', 99);
-animateCounter('stat-sess', 312);
-animateCounter('stat-stars', 128);
-animateCounter('stat-contrib', 4);
-animateCounter('stat-coverage', 92);
+}, { threshold: 0.1 });
 
-/* ---------- Dashboard sparkline ---------- */
-(function() {
-  const line = document.getElementById('chart-line');
-  const fill = document.getElementById('chart-fill');
-  const w = 600, h = 140, n = 24;
-  function gen() {
-    let pts = [];
-    let y = 80;
-    for (let i = 0; i <= n; i++) {
-      y += (Math.random() - 0.5) * 26;
-      y = Math.max(20, Math.min(120, y));
-      pts.push([i * (w / n), y]);
+document.querySelectorAll('.feature-card, .arch-step, .reveal, .cap-chip').forEach(el => observer.observe(el));
+
+// === Toggle switches → pipeline ===
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const on = btn.classList.toggle('on');
+    const target = btn.dataset.target;
+    const pipe = document.getElementById('pipe-' + target);
+    if (pipe) {
+      pipe.style.opacity = on ? '1' : '0.15';
+      pipe.style.transform = on ? 'scale(1)' : 'scale(0.95)';
     }
-    const linePts = pts.map(p => p.join(',')).join(' ');
-    line.setAttribute('points', linePts);
-    fill.setAttribute('points', `0,${h} ` + linePts + ` ${w},${h}`);
-  }
-  gen();
-  ScrollTrigger.create({ trigger: '#chart', start: 'top 90%', onEnter: () => setInterval(gen, 2200) });
-})();
+  });
+});
 
-/* ---------- CLI typing animation ---------- */
+// === Terminal typing animation ===
 (function() {
-  const out = document.getElementById('cli-output');
+  const el = document.getElementById('terminal');
   const lines = [
     { text: '$ pip install ceramic-fwk', cls: 'text-white/80' },
-    { text: 'Successfully installed ceramic-fwk-0.1.0', cls: 'text-white/40' },
+    { text: 'Successfully installed ceramic-fwk-0.1.0', cls: 'text-white/35' },
     { text: '', cls: '' },
     { text: '$ ceramic login', cls: 'text-white/80' },
-    { text: 'Opening browser for authentication…', cls: 'text-white/40' },
-    { text: '✓ Authenticated as dev@company.com', cls: 'text-[#27c93f]' },
+    { text: 'Opening browser for authentication…', cls: 'text-white/35' },
+    { text: '✓ Authenticated as dev@company.com', cls: 'text-emerald-400' },
     { text: '', cls: '' },
-    { text: '$ ceramic run', cls: 'text-white/80' },
-    { text: 'Starting Ceramic on http://localhost:8000', cls: 'text-white/40' },
-    { text: '✓ Auth · Authz · Observability · Sessions ready', cls: 'text-cyan' },
+    { text: '$ ceramic run --transport sse', cls: 'text-white/80' },
+    { text: '✓ Auth · Observability · Sessions · Circuit Breaker active', cls: 'text-cyan' },
+    { text: 'Ceramic listening on http://localhost:8000', cls: 'text-white/35' },
   ];
   let started = false;
-  ScrollTrigger.create({
-    trigger: out, start: 'top 85%', once: true,
-    onEnter: () => {
-      if (started) return; started = true;
+
+  const termObs = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !started) {
+      started = true;
       let i = 0;
       function typeLine() {
         if (i >= lines.length) return;
         const { text, cls } = lines[i];
-        const span = document.createElement('div');
-        span.className = cls;
-        out.appendChild(span);
+        const div = document.createElement('div');
+        div.className = cls;
+        el.appendChild(div);
         let c = 0;
-        const speed = 14;
         function type() {
-          if (c <= text.length) { span.textContent = text.slice(0, c) + (c < text.length ? '▌' : ''); c++; setTimeout(type, speed); }
-          else { span.textContent = text; i++; setTimeout(typeLine, 220); }
+          if (c <= text.length) {
+            div.textContent = text.slice(0, c) + (c < text.length ? '▌' : '');
+            c++;
+            setTimeout(type, 18);
+          } else {
+            div.textContent = text;
+            i++;
+            setTimeout(typeLine, 250);
+          }
         }
         type();
       }
       typeLine();
     }
-  });
+  }, { threshold: 0.3 });
+  termObs.observe(el);
 })();
+</script>
 
-/* ---------- Ambient particle canvas ---------- */
+<script>
+// === Particle network canvas ===
 (function() {
-  const canvas = document.getElementById('bg-canvas');
+  const canvas = document.getElementById('hero-canvas');
   const ctx = canvas.getContext('2d');
-  let w, h, particles = [];
-  const COLORS = ['rgba(34,211,238,', 'rgba(139,92,246,', 'rgba(59,130,246,'];
+  let w, h, particles = [], mouse = { x: -9999, y: -9999 };
+  const COLORS = ['34,211,238', '139,92,246', '59,130,246', '16,185,129'];
 
   function resize() {
     w = canvas.width = window.innerWidth;
@@ -912,38 +926,74 @@ animateCounter('stat-coverage', 92);
   resize();
   window.addEventListener('resize', resize);
 
-  const count = Math.min(60, Math.floor((window.innerWidth * window.innerHeight) / 26000));
+  const count = Math.min(80, Math.floor((window.innerWidth * window.innerHeight) / 18000));
   for (let i = 0; i < count; i++) {
     particles.push({
       x: Math.random() * w,
       y: Math.random() * h,
-      r: Math.random() * 1.6 + 0.4,
-      vx: (Math.random() - 0.5) * 0.15,
-      vy: (Math.random() - 0.5) * 0.15,
+      r: Math.random() * 1.8 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
       c: COLORS[Math.floor(Math.random() * COLORS.length)],
-      a: Math.random() * 0.5 + 0.15,
+      a: Math.random() * 0.5 + 0.2,
+      pulse: Math.random() * Math.PI * 2,
     });
   }
 
-  let mx = w / 2, my = h / 2;
-  window.addEventListener('mousemove', (e) => { mx = e.clientX; my = e.clientY; });
+  window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
 
   function tick() {
     ctx.clearRect(0, 0, w, h);
-    const dx = (mx - w / 2) * 0.01;
-    const dy = (my - h / 2) * 0.01;
-    particles.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
-      if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+
+    particles.forEach((p, i) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.pulse += 0.02;
+      if (p.x < -10) p.x = w + 10;
+      if (p.x > w + 10) p.x = -10;
+      if (p.y < -10) p.y = h + 10;
+      if (p.y > h + 10) p.y = -10;
+
+      // Mouse attraction
+      const dx = mouse.x - p.x;
+      const dy = mouse.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 200) {
+        p.vx += dx * 0.00003;
+        p.vy += dy * 0.00003;
+      }
+      // Damping
+      p.vx *= 0.999;
+      p.vy *= 0.999;
+
+      const alpha = p.a * (0.7 + 0.3 * Math.sin(p.pulse));
       ctx.beginPath();
-      ctx.arc(p.x + dx, p.y + dy, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = p.c + p.a + ')';
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.c},${alpha})`;
       ctx.fill();
+
+      // Draw connections
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        const d = Math.hypot(p.x - p2.x, p.y - p2.y);
+        if (d < 120) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = `rgba(${p.c},${0.08 * (1 - d / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
     });
+
     requestAnimationFrame(tick);
   }
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) tick();
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    tick();
+  }
 })();
 </script>
 </body>

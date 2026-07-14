@@ -33,14 +33,10 @@ def config_file(tmp_path: Path) -> Path:
             "enabled": True,
             "log_level": "info",
         },
-        "authorization": {
-            "role_claim": "realm_access.roles",
-            "policies": [],
-        },
         "hot_reload": {
             "enabled": True,
             "watch_interval": 1,
-            "reloadable_sections": ["observability", "authorization"],
+            "reloadable_sections": ["observability"],
         },
     }
     config_path = tmp_path / "ceramic.yaml"
@@ -67,14 +63,10 @@ def full_config_file(tmp_path: Path) -> Path:
             "enabled": True,
             "log_level": "info",
         },
-        "authorization": {
-            "role_claim": "realm_access.roles",
-            "policies": [],
-        },
         "hot_reload": {
             "enabled": True,
             "watch_interval": 1,
-            "reloadable_sections": ["observability", "authorization"],
+            "reloadable_sections": ["observability"],
         },
     }
     config_path = tmp_path / "ceramic.yaml"
@@ -99,14 +91,10 @@ class TestWatchDetectsChanges:
                     "enabled": True,
                     "log_level": "debug",
                 },
-                "authorization": {
-                    "role_claim": "realm_access.roles",
-                    "policies": [],
-                },
                 "hot_reload": {
                     "enabled": True,
                     "watch_interval": 1,
-                    "reloadable_sections": ["observability", "authorization"],
+                    "reloadable_sections": ["observability"],
                 },
             }
             config_file.write_text(yaml.dump(new_config), encoding="utf-8")
@@ -205,14 +193,10 @@ class TestNonReloadableSectionsBlocked:
                     "enabled": True,
                     "log_level": "debug",
                 },
-                "authorization": {
-                    "role_claim": "realm_access.roles",
-                    "policies": [],
-                },
                 "hot_reload": {
                     "enabled": True,
                     "watch_interval": 1,
-                    "reloadable_sections": ["observability", "authorization"],
+                    "reloadable_sections": ["observability"],
                 },
             }
             full_config_file.write_text(yaml.dump(new_config), encoding="utf-8")
@@ -253,14 +237,10 @@ class TestNonReloadableSectionsBlocked:
                     "enabled": True,
                     "log_level": "warning",
                 },
-                "authorization": {
-                    "role_claim": "realm_access.roles",
-                    "policies": [],
-                },
                 "hot_reload": {
                     "enabled": True,
                     "watch_interval": 1,
-                    "reloadable_sections": ["observability", "authorization"],
+                    "reloadable_sections": ["observability"],
                 },
             }
             full_config_file.write_text(yaml.dump(new_config), encoding="utf-8")
@@ -293,14 +273,10 @@ class TestLogging:
                         "enabled": True,
                         "log_level": "debug",
                     },
-                    "authorization": {
-                        "role_claim": "realm_access.roles",
-                        "policies": [],
-                    },
                     "hot_reload": {
                         "enabled": True,
                         "watch_interval": 1,
-                        "reloadable_sections": ["observability", "authorization"],
+                        "reloadable_sections": ["observability"],
                     },
                 }
                 config_file.write_text(yaml.dump(new_config), encoding="utf-8")
@@ -364,43 +340,3 @@ class TestStopWatching:
         loader = ConfigLoader()
         # Should not raise
         loader.stop_watching()
-
-
-class TestAuthorizationReload:
-    """Test that authorization section is correctly reloaded."""
-
-    def test_authorization_policies_updated(self, config_file: Path):
-        """Authorization policies are updated on reload."""
-        loader = ConfigLoader()
-        callback = MagicMock()
-
-        loader.watch(callback, config_path=config_file, interval=1)
-        try:
-            time.sleep(0.5)
-            new_config = {
-                "observability": {
-                    "enabled": True,
-                    "log_level": "info",
-                },
-                "authorization": {
-                    "role_claim": "custom_roles",
-                    "policies": [
-                        {"tool": "admin_*", "require_role": "admin"},
-                    ],
-                },
-                "hot_reload": {
-                    "enabled": True,
-                    "watch_interval": 1,
-                    "reloadable_sections": ["observability", "authorization"],
-                },
-            }
-            config_file.write_text(yaml.dump(new_config), encoding="utf-8")
-            time.sleep(2.5)
-
-            assert callback.call_count >= 1
-            reloaded_config = callback.call_args[0][0]
-            assert reloaded_config.authorization.role_claim == "custom_roles"
-            assert len(reloaded_config.authorization.policies) == 1
-            assert reloaded_config.authorization.policies[0].tool == "admin_*"
-        finally:
-            loader.stop_watching()

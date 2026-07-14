@@ -15,10 +15,6 @@ class AuthenticationError(CeramicError):
     """Authentication flow failure."""
 
 
-class AuthorizationError(CeramicError):
-    """Insufficient permissions."""
-
-
 class ProviderError(CeramicError):
     """Identity provider communication failure."""
 

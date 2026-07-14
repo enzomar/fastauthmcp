@@ -9,7 +9,7 @@ auth:
   issuer: https://your-idp.example.com
   client_id: your-client-id
   # client_secret: ${CLIENT_SECRET}  # Use env var for secrets
-  # grant_type: authorization_code   # authorization_code (browser login) or client_credentials (M2M)
+  # grant_type: authorization_code   # authorization_code (browser login) or client_credentials (M2M) or token_exchange (headless/cloud)
   scopes:
     - openid
     - profile
@@ -17,15 +17,12 @@ auth:
   callback_timeout: 120    # Seconds to wait for browser callback (authorization_code only)
   token_exchange_timeout: 30
 
-# Authorization (role/group-based access control)
-authorization:
-  role_claim: realm_access.roles   # JSONPath to roles in the JWT
-  group_claim: groups              # JSONPath to groups in the JWT
-  policies:
-    - tool: "admin_*"
-      require_role: admin
-    - tool: "deploy_*"
-      require_group: ops-team
+  # Token Exchange (RFC 8693) — for headless/cloud MCP deployments
+  # When grant_type is token_exchange, Ceramic expects an upstream user token
+  # in the request metadata and exchanges it for a downstream scoped token.
+  # upstream_token_header: "x-user-token"     # Metadata key with the upstream token
+  # token_exchange_audience: "https://api.internal.com"  # Target downstream API
+  # token_exchange_scope: "read:orders write:orders"     # Scopes for downstream token
 
 # Observability (traces, metrics, structured logging)
 observability:
@@ -56,4 +53,3 @@ hot_reload:
   watch_interval: 5            # Seconds between file checks
   reloadable_sections:
     - observability
-    - authorization

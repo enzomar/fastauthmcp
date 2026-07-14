@@ -79,52 +79,13 @@ class AuthenticationMiddleware:
     from config sections (which pass a single `config` argument).
     """
 
-    def __init__(
-        self,
-        config: Any,
-        role_claim_path: str = "realm_access.roles",
-        group_claim_path: str = "groups",
-    ) -> None:
+    def __init__(self, config: Any, ssl_context: Any = None) -> None:
         from ceramic.middleware.authentication import (
             AuthenticationMiddleware as _RealAuthMiddleware,
         )
 
         self.config = config
-        self._impl = _RealAuthMiddleware(
-            auth_config=config,
-            role_claim_path=role_claim_path,
-            group_claim_path=group_claim_path,
-        )
-
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
-        return await self._impl(ctx, next)
-
-
-class AuthorizationMiddleware:
-    """Authorization middleware: evaluates decorator and YAML policies.
-
-    This is a thin wrapper that delegates to the full implementation in
-    ceramic.middleware.authorization for backward-compatible instantiation
-    from config sections (which pass a single `config` argument).
-    """
-
-    def __init__(self, config: Any, tool_functions: dict | None = None) -> None:
-        from ceramic.middleware.authorization import (
-            AuthorizationMiddleware as _RealAuthzMiddleware,
-        )
-
-        self.config = config
-        self._tool_functions = tool_functions or {}
-        self._impl = _RealAuthzMiddleware(
-            authz_config=config, tool_functions=self._tool_functions
-        )
-
-    def set_tool_functions(self, tool_functions: dict) -> None:
-        """Update the tool functions mapping (called after tools are registered)."""
-        self._tool_functions = tool_functions
-        self._impl._tool_functions = tool_functions
+        self._impl = _RealAuthMiddleware(auth_config=config, ssl_context=ssl_context)
 
     async def __call__(
         self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]

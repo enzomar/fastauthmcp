@@ -2,7 +2,6 @@
 
 from ceramic.exceptions import (
     AuthenticationError,
-    AuthorizationError,
     CeramicError,
     ConfigurationError,
     PluginError,
@@ -19,9 +18,6 @@ class TestExceptionHierarchy:
 
     def test_authentication_error_is_ceramic_error(self):
         assert issubclass(AuthenticationError, CeramicError)
-
-    def test_authorization_error_is_ceramic_error(self):
-        assert issubclass(AuthorizationError, CeramicError)
 
     def test_provider_error_is_ceramic_error(self):
         assert issubclass(ProviderError, CeramicError)
@@ -40,7 +36,6 @@ class TestExceptionHierarchy:
         for exc_class in (
             ConfigurationError,
             AuthenticationError,
-            AuthorizationError,
             ProviderError,
             SessionError,
             PluginError,

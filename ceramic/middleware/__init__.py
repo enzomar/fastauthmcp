@@ -9,7 +9,6 @@ from ceramic.middleware.pipeline import (
 )
 from ceramic.middleware.builtin import (
     AuthenticationMiddleware,
-    AuthorizationMiddleware,
     ObservabilityMiddleware,
     SessionMiddleware,
 )
@@ -21,7 +20,6 @@ __all__ = [
     "MiddlewarePlugin",
     "RequestContext",
     "AuthenticationMiddleware",
-    "AuthorizationMiddleware",
     "ObservabilityMiddleware",
     "SessionMiddleware",
 ]

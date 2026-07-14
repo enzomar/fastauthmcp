@@ -1,4 +1,4 @@
-"""Authenticated Ceramic server with role-based access control.
+"""Authenticated Ceramic server with identity access.
 
 Requires a ceramic.yaml with an auth section configured.
 See ceramic.yaml.example for reference.
@@ -7,7 +7,7 @@ Run with:
     ceramic run
 """
 
-from ceramic import FastMCP, require_role, require_group, identity
+from ceramic import FastMCP, identity
 
 mcp = FastMCP("auth-server")
 
@@ -25,9 +25,8 @@ def whoami() -> dict:
 
 
 @mcp.tool()
-@require_role("analyst")
 def get_report(report_id: str) -> dict:
-    """Fetch a report. Only accessible to users with the 'analyst' role."""
+    """Fetch a report. Requires authentication."""
     user = identity()
     return {
         "report_id": report_id,
@@ -37,19 +36,10 @@ def get_report(report_id: str) -> dict:
 
 
 @mcp.tool()
-@require_group("ops-team")
 def deploy(service: str, version: str) -> str:
-    """Deploy a service. Only accessible to members of 'ops-team'."""
+    """Deploy a service. Requires authentication."""
     user = identity()
     return f"{user.email} deployed {service}@{version}"
-
-
-@mcp.tool()
-@require_role("admin")
-@require_group("platform")
-def admin_action(action: str) -> str:
-    """Admin-only action requiring both 'admin' role and 'platform' group."""
-    return f"Executed: {action}"
 
 
 if __name__ == "__main__":

@@ -15,8 +15,11 @@ import time
 from types import MappingProxyType
 from typing import Any
 
-from ceramic.identity import IdentityContext, _identity_context_var
-from ceramic.middleware.pipeline import MiddlewarePipeline as MiddlewarePipeline, RequestContext
+from ceramic.identity import IdentityContext, _identity_context_var, _access_token_var
+from ceramic.middleware.pipeline import (
+    MiddlewarePipeline as MiddlewarePipeline,
+    RequestContext,
+)
 from ceramic.server import CeramicFastMCP
 
 
@@ -24,7 +27,7 @@ class CeramicTestClient:
     """Test client that simulates authenticated requests.
 
     Bypasses OAuth flows and injects identity directly into the middleware
-    pipeline, triggering all authorization middleware as if a real request.
+    pipeline.
 
     Example::
 
@@ -74,17 +77,15 @@ class CeramicTestClient:
         """Simulate a tool invocation with the configured identity.
 
         Creates a RequestContext, injects the identity, and runs through
-        the authorization middleware (skipping authentication and session
-        middleware since identity is already provided). This triggers all
-        authorization checks identically to production.
+        the middleware pipeline (skipping authentication and session
+        middleware since identity is already provided).
 
         Args:
             tool_name: The name of the tool to invoke.
             **kwargs: Arguments to pass to the tool function.
 
         Returns:
-            The tool result if authorized, or an authorization error dict
-            if the request is denied.
+            The tool result.
         """
         # Create the request context
         ctx = RequestContext(tool_name=tool_name)
@@ -94,10 +95,12 @@ class CeramicTestClient:
 
         # Set the identity context var so ceramic.identity() works
         token = _identity_context_var.set(self._identity)
+        # Set a test access token so ceramic.access_token() works
+        access_tok = _access_token_var.set("ceramic-test-token")
 
         try:
             # Build a test-only pipeline that skips auth/session middleware
-            # but preserves authorization and observability behavior.
+            # but preserves observability behavior.
             from ceramic.middleware.builtin import (
                 AuthenticationMiddleware as BuiltinAuthMW,
                 SessionMiddleware as BuiltinSessionMW,
@@ -145,44 +148,24 @@ class CeramicTestClient:
             result = await test_pipeline.execute(ctx, handler)
             return result
         finally:
-            # Reset the context var
+            # Reset the context vars
             _identity_context_var.reset(token)
+            _access_token_var.reset(access_tok)
 
     @staticmethod
-    def assert_authorized(response: Any) -> None:
-        """Assert that the response does NOT indicate authorization denial.
+    def assert_success(response: Any) -> None:
+        """Assert that the response does NOT indicate an error.
 
         Args:
             response: The response from call_tool().
 
         Raises:
-            AssertionError: If the response contains an authorization_denied error.
+            AssertionError: If the response contains an error field.
         """
-        if (
-            isinstance(response, dict)
-            and response.get("error") == "authorization_denied"
-        ):
+        if isinstance(response, dict) and response.get("error"):
             raise AssertionError(
-                f"Expected authorized response but got authorization_denied: "
-                f"{response.get('message', '')}"
-            )
-
-    @staticmethod
-    def assert_unauthorized(response: Any) -> None:
-        """Assert that the response DOES indicate authorization denial.
-
-        Args:
-            response: The response from call_tool().
-
-        Raises:
-            AssertionError: If the response does not contain an authorization_denied error.
-        """
-        if (
-            not isinstance(response, dict)
-            or response.get("error") != "authorization_denied"
-        ):
-            raise AssertionError(
-                f"Expected authorization_denied error but got: {response!r}"
+                f"Expected successful response but got error: "
+                f"{response.get('message', response.get('error', ''))}"
             )
 
 

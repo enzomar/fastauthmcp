@@ -115,8 +115,8 @@ class ConfigLoader:
         Starts a daemonic background thread that polls the config file's
         modification time at the specified interval. When a change is detected:
         - Re-reads and validates the YAML
-        - If valid: atomically swaps only reloadable sections (observability,
-          authorization), retaining auth and sessions from the previous config
+        - If valid: atomically swaps only reloadable sections (observability),
+          retaining auth and sessions from the previous config
         - If invalid: logs WARNING and retains the previous config
 
         Args:
@@ -159,7 +159,7 @@ class ConfigLoader:
                     continue
 
                 # Determine reloadable sections from the hot_reload config
-                reloadable = {"observability", "authorization"}
+                reloadable = {"observability"}
                 if new_config.hot_reload:
                     reloadable = set(new_config.hot_reload.reloadable_sections)
 

@@ -8,8 +8,6 @@ from unittest.mock import patch
 
 import pytest
 
-from ceramic.authorization import require_group, require_role
-from ceramic.config import AuthorizationConfig
 from ceramic.identity import identity
 from ceramic.testing import CeramicTestClient, MockIdentityProvider
 
@@ -21,7 +19,7 @@ from ceramic.testing import CeramicTestClient, MockIdentityProvider
 
 @pytest.fixture
 def mock_app():
-    """Create a minimal mock CeramicFastMCP app with authorization pipeline."""
+    """Create a minimal mock CeramicFastMCP app."""
     from ceramic.middleware.pipeline import MiddlewarePipeline
 
     class FakeApp:
@@ -30,27 +28,6 @@ def mock_app():
         def __init__(self):
             self._tool_functions: dict = {}
             self._pipeline = MiddlewarePipeline()
-
-    app = FakeApp()
-    return app
-
-
-@pytest.fixture
-def mock_app_with_authz():
-    """Create a mock app with authorization middleware configured."""
-    from ceramic.middleware.authorization import AuthorizationMiddleware
-    from ceramic.middleware.pipeline import MiddlewarePipeline
-
-    class FakeApp:
-        def __init__(self):
-            self._tool_functions: dict = {}
-            self._pipeline = MiddlewarePipeline()
-            self._authz_config = AuthorizationConfig(policies=[])
-            self._authz_mw = AuthorizationMiddleware(
-                authz_config=self._authz_config,
-                tool_functions=self._tool_functions,
-            )
-            self._pipeline.add_before(self._authz_mw)
 
     app = FakeApp()
     return app
@@ -103,7 +80,7 @@ class TestCeramicTestClientCallTool:
 
     @pytest.mark.asyncio
     async def test_calls_tool_function_when_no_middleware(self, mock_app):
-        """Tool function is invoked when no authorization middleware blocks it."""
+        """Tool function is invoked when no middleware blocks it."""
 
         async def my_tool(x: int = 0) -> dict:
             return {"result": x * 2}
@@ -121,114 +98,6 @@ class TestCeramicTestClientCallTool:
 
         result = await client.call_tool("nonexistent_tool")
         assert result["error"] == "tool_not_found"
-
-    @pytest.mark.asyncio
-    async def test_authorization_granted_with_correct_role(self, mock_app_with_authz):
-        """User with required role is authorized."""
-
-        @require_role("admin")
-        async def admin_tool() -> dict:
-            return {"status": "ok"}
-
-        mock_app_with_authz._tool_functions["admin_tool"] = admin_tool
-        mock_app_with_authz._authz_mw._tool_functions = (
-            mock_app_with_authz._tool_functions
-        )
-
-        client = CeramicTestClient(
-            mock_app_with_authz, email="admin@example.com", roles=["admin"]
-        )
-
-        result = await client.call_tool("admin_tool")
-        assert result == {"status": "ok"}
-
-    @pytest.mark.asyncio
-    async def test_authorization_denied_without_role(self, mock_app_with_authz):
-        """User without required role is denied."""
-
-        @require_role("admin")
-        async def admin_tool() -> dict:
-            return {"status": "ok"}
-
-        mock_app_with_authz._tool_functions["admin_tool"] = admin_tool
-        mock_app_with_authz._authz_mw._tool_functions = (
-            mock_app_with_authz._tool_functions
-        )
-
-        client = CeramicTestClient(
-            mock_app_with_authz, email="user@example.com", roles=["viewer"]
-        )
-
-        result = await client.call_tool("admin_tool")
-        assert result["error"] == "authorization_denied"
-
-    @pytest.mark.asyncio
-    async def test_authorization_granted_with_correct_group(self, mock_app_with_authz):
-        """User in required group is authorized."""
-
-        @require_group("ops-team")
-        async def deploy_tool() -> dict:
-            return {"deployed": True}
-
-        mock_app_with_authz._tool_functions["deploy_tool"] = deploy_tool
-        mock_app_with_authz._authz_mw._tool_functions = (
-            mock_app_with_authz._tool_functions
-        )
-
-        client = CeramicTestClient(
-            mock_app_with_authz, email="dev@example.com", groups=["ops-team"]
-        )
-
-        result = await client.call_tool("deploy_tool")
-        assert result == {"deployed": True}
-
-    @pytest.mark.asyncio
-    async def test_authorization_denied_without_group(self, mock_app_with_authz):
-        """User not in required group is denied."""
-
-        @require_group("ops-team")
-        async def deploy_tool() -> dict:
-            return {"deployed": True}
-
-        mock_app_with_authz._tool_functions["deploy_tool"] = deploy_tool
-        mock_app_with_authz._authz_mw._tool_functions = (
-            mock_app_with_authz._tool_functions
-        )
-
-        client = CeramicTestClient(
-            mock_app_with_authz, email="dev@example.com", groups=["dev-team"]
-        )
-
-        result = await client.call_tool("deploy_tool")
-        assert result["error"] == "authorization_denied"
-
-    @pytest.mark.asyncio
-    async def test_multiple_policies_and_semantics(self, mock_app_with_authz):
-        """All policies must pass (AND semantics)."""
-
-        @require_role("admin")
-        @require_group("ops-team")
-        async def critical_tool() -> dict:
-            return {"critical": True}
-
-        mock_app_with_authz._tool_functions["critical_tool"] = critical_tool
-        mock_app_with_authz._authz_mw._tool_functions = (
-            mock_app_with_authz._tool_functions
-        )
-
-        # Has role but not group
-        client = CeramicTestClient(
-            mock_app_with_authz, roles=["admin"], groups=["dev-team"]
-        )
-        result = await client.call_tool("critical_tool")
-        assert result["error"] == "authorization_denied"
-
-        # Has both
-        client_ok = CeramicTestClient(
-            mock_app_with_authz, roles=["admin"], groups=["ops-team"]
-        )
-        result_ok = await client_ok.call_tool("critical_tool")
-        assert result_ok == {"critical": True}
 
     @pytest.mark.asyncio
     async def test_identity_context_var_is_set_during_call(self, mock_app):
@@ -269,47 +138,26 @@ class TestCeramicTestClientCallTool:
 class TestCeramicTestClientAssertions:
     """Tests for CeramicTestClient static assertion helpers."""
 
-    def test_assert_authorized_passes_for_normal_response(self):
-        """assert_authorized passes for a non-error response."""
-        CeramicTestClient.assert_authorized({"result": "success"})
+    def test_assert_success_passes_for_normal_response(self):
+        """assert_success passes for a non-error response."""
+        CeramicTestClient.assert_success({"result": "success"})
 
-    def test_assert_authorized_passes_for_non_dict(self):
-        """assert_authorized passes for non-dict responses."""
-        CeramicTestClient.assert_authorized("hello")
-        CeramicTestClient.assert_authorized(42)
-        CeramicTestClient.assert_authorized(None)
+    def test_assert_success_passes_for_non_dict(self):
+        """assert_success passes for non-dict responses."""
+        CeramicTestClient.assert_success("hello")
+        CeramicTestClient.assert_success(42)
+        CeramicTestClient.assert_success(None)
 
-    def test_assert_authorized_fails_for_authorization_denied(self):
-        """assert_authorized raises AssertionError for authorization_denied."""
-        with pytest.raises(AssertionError, match="authorization_denied"):
-            CeramicTestClient.assert_authorized(
-                {"error": "authorization_denied", "message": "Insufficient permissions"}
+    def test_assert_success_fails_for_error_response(self):
+        """assert_success raises AssertionError for error responses."""
+        with pytest.raises(AssertionError):
+            CeramicTestClient.assert_success(
+                {"error": "internal_error", "message": "Something went wrong"}
             )
 
-    def test_assert_authorized_passes_for_other_errors(self):
-        """assert_authorized passes for non-authorization errors."""
-        CeramicTestClient.assert_authorized({"error": "internal_error"})
-
-    def test_assert_unauthorized_passes_for_authorization_denied(self):
-        """assert_unauthorized passes for authorization_denied."""
-        CeramicTestClient.assert_unauthorized(
-            {"error": "authorization_denied", "message": "Insufficient permissions"}
-        )
-
-    def test_assert_unauthorized_fails_for_normal_response(self):
-        """assert_unauthorized raises AssertionError for normal responses."""
-        with pytest.raises(AssertionError, match="Expected authorization_denied"):
-            CeramicTestClient.assert_unauthorized({"result": "success"})
-
-    def test_assert_unauthorized_fails_for_non_dict(self):
-        """assert_unauthorized raises AssertionError for non-dict responses."""
-        with pytest.raises(AssertionError):
-            CeramicTestClient.assert_unauthorized("hello")
-
-    def test_assert_unauthorized_fails_for_other_errors(self):
-        """assert_unauthorized raises AssertionError for non-authorization errors."""
-        with pytest.raises(AssertionError):
-            CeramicTestClient.assert_unauthorized({"error": "internal_error"})
+    def test_assert_success_passes_for_empty_dict(self):
+        """assert_success passes for a dict without 'error' key."""
+        CeramicTestClient.assert_success({"data": "value"})
 
 
 # ---------------------------------------------------------------------------
@@ -362,7 +210,6 @@ class TestMockIdentityProvider:
     def test_issue_token_payload_has_exp(self):
         """JWT payload contains exp (expiration) timestamp 1h from now."""
         provider = MockIdentityProvider()
-        now = int(time.time())
         token = provider.issue_token({"sub": "user-123"})
 
         _, payload = MockIdentityProvider.decode_token(token)

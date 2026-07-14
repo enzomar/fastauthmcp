@@ -1,29 +1,158 @@
 # Ceramic Framework
 
-[![CI](https://github.com/vincenzo/ceramic-fwk/actions/workflows/ci.yml/badge.svg)](https://github.com/vincenzo/ceramic-fwk/actions/workflows/ci.yml)
+<p align="center">
+  <img src="docs/logo.svg" alt="Ceramic logo" width="64" height="64">
+</p>
+
+[![CI](https://github.com/enzomar/ceramic-fwk/actions/workflows/ci.yml/badge.svg)](https://github.com/enzomar/ceramic-fwk/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/ceramic-fwk.svg)](https://pypi.org/project/ceramic-fwk/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-**Enterprise capabilities on top of [FastMCP](https://github.com/jlowin/fastmcp) — authentication, authorization, observability, and session management — activated by a single import change.**
+**A production-grade Python framework built on top of [FastMCP](https://github.com/jlowin/fastmcp) — adding authentication, observability, and session management with a single import change.**
 
 ---
 
 ## What is Ceramic?
 
-Ceramic is a **drop-in replacement** for FastMCP that adds production-grade enterprise features through a middleware pipeline. It wraps FastMCP via composition — your existing tools, prompts, and resources work unchanged.
+Ceramic is a **production-grade Python framework built on top of [FastMCP](https://github.com/jlowin/fastmcp)** that adds enterprise features through a middleware pipeline. It wraps FastMCP via composition — your existing tools, prompts, and resources work unchanged.
+
+> **Note:** Ceramic currently supports Python only. Node.js and Go SDKs are planned for future releases.
 
 Key design principles:
 - **Zero tool changes** — change one import line, everything else stays the same
 - **Configuration-driven** — all features controlled by a single `ceramic.yaml` file
 - **Passthrough by default** — without a config file, Ceramic behaves identically to vanilla FastMCP
-- **Composable middleware** — authentication, authorization, observability, and sessions are independent layers that activate based on config sections present
+- **Composable middleware** — authentication, observability, and sessions are independent layers that activate based on config sections present
+
+## See It In Action
+
+<p align="center">
+  <img src="docs/demo.gif" alt="Ceramic demo: login → authenticate → tool call succeeds" width="700">
+</p>
+
+> `ceramic login` → browser opens → token stored → tool call authenticated. 30 seconds, zero code changes.
+
+## Why Ceramic? (Comparison)
+
+| | **Ceramic** | **DIY Middleware** | **API Gateway (Kong, etc.)** |
+|---|---|---|---|
+| **Setup time** | 5 minutes | Days to weeks | Hours + infrastructure |
+| **Code changes to tools** | 0 (one import change) | Extensive | 0 (external proxy) |
+| **MCP-aware** | ✅ Native | ❌ Must build | ❌ Protocol-unaware |
+| **OAuth2/OIDC built-in** | ✅ PKCE, client_credentials, token exchange | Must implement | ✅ Usually available |
+| **Token forwarding to downstream APIs** | ✅ `access_token()` | Must build | Depends on gateway |
+| **Identity inside tool functions** | ✅ `identity()` | Must propagate manually | ❌ Not possible |
+| **Per-tool authorization** | ✅ Decorators + config | Must build | ❌ Route-level only |
+| **OpenTelemetry tracing** | ✅ Automatic | Must integrate | Varies |
+| **Prometheus metrics** | ✅ Zero config | Must build | ✅ Usually available |
+| **Session management** | ✅ Built-in | Must build | ❌ Stateless |
+| **Circuit breaker / resilience** | ✅ Built-in for all IDP calls | Must build | ✅ Usually available |
+| **Testing support** | ✅ `CeramicTestClient` | Must mock everything | Must mock gateway |
+| **Lock-in** | None (remove import, back to FastMCP) | N/A | Vendor lock-in |
+| **Infrastructure required** | None (runs in-process) | None | Separate service |
+| **Language** | Python | Any | Any |
+| **Cost** | Free (Apache 2.0) | Engineering time | $ to $$$$ |
+
+### When to use what
+
+- **Use Ceramic** when you're building MCP servers with FastMCP in Python and need authentication, observability, or authorization without touching your tools.
+- **Roll your own** when you have very custom requirements that don't fit a middleware pipeline, or you're not using FastMCP/Python.
+- **Use an API gateway** when your MCP server is one of many services behind a shared ingress layer and you already have gateway infrastructure.
+
+### Real-World Deployment Scenarios
+
+Most MCP servers need to call downstream APIs (Stripe, internal services, SOAP endpoints) **on behalf of the authenticated user** — not with a shared service account. Here's how Ceramic handles the two most common deployment patterns:
+
+#### Scenario 1: Local MCP via stdio (Claude Desktop, Cursor, etc.)
+
+You're a developer running an MCP server locally. Claude Desktop or Cursor spawns it as a subprocess. Your tools call downstream APIs that require user-scoped tokens.
+
+**Without Ceramic:** You hand-roll OAuth PKCE, build a local callback server, manage token refresh, store credentials securely, and wire the token into every HTTP call. That's days of work before you write a single tool.
+
+**With Ceramic:**
+
+```yaml
+# ceramic.yaml
+auth:
+  provider: oidc
+  issuer: https://your-idp.example.com
+  client_id: my-dev-app
+  scopes: [openid, profile, email]
+```
+
+```python
+from ceramic import FastMCP, access_token
+import httpx
+
+mcp = FastMCP("my-tools", config="ceramic.yaml")
+
+@mcp.tool()
+def get_orders() -> list:
+    token = access_token()  # ← user-scoped, auto-refreshed
+    return httpx.get(
+        "https://api.internal.com/orders",
+        headers={"Authorization": f"Bearer {token}"},
+    ).json()
+```
+
+Run `ceramic login` once → browser opens → token stored in macOS Keychain → every tool call is authenticated. 30 seconds to set up.
+
+#### Scenario 2: Cloud MCP on Claude/Gemini (remote, headless)
+
+Your MCP server runs in the cloud as a remote endpoint. Claude or Gemini calls it over HTTP. The platform already authenticated the user — but your downstream API needs a token scoped to *your* resource server, not the platform's.
+
+**Without Ceramic:** You implement RFC 8693 token exchange yourself — parse the upstream token from request headers, POST to your IDP's token endpoint with the correct grant type and parameters, handle errors, add retry logic, cache tokens, build a circuit breaker for IDP outages. Weeks of security-sensitive code.
+
+**With Ceramic:**
+
+```yaml
+# ceramic.yaml
+auth:
+  provider: oidc
+  issuer: https://your-idp.example.com
+  client_id: my-cloud-mcp
+  client_secret: ${CERAMIC_AUTH_CLIENT_SECRET}
+  grant_type: token_exchange
+  upstream_token_header: x-user-token
+  token_exchange_audience: https://api.internal.com
+  token_exchange_scope: "read:data write:data"
+  token_exchange_provider: rfc8693  # or google, entra
+```
+
+```python
+from ceramic import FastMCP, access_token
+
+mcp = FastMCP("cloud-tools", config="ceramic.yaml")
+
+@mcp.tool()
+def get_orders() -> list:
+    token = access_token()  # ← exchanged downstream token, user-scoped
+    return httpx.get(
+        "https://api.internal.com/orders",
+        headers={"Authorization": f"Bearer {token}"},
+    ).json()
+```
+
+The platform passes the user's token → Ceramic exchanges it at the IDP → your tool gets a downstream-scoped token. Circuit breaker, retry with backoff, and JWKS validation are all built in. Same tool code works in both scenarios — only the config changes.
+
+#### Summary: One codebase, two deployment modes
+
+| | Local (stdio) | Cloud (HTTP/SSE) |
+|---|---|---|
+| **Grant type** | `authorization_code` (PKCE) | `token_exchange` (RFC 8693) |
+| **User interaction** | Browser login once | None (platform passes token) |
+| **Token source** | IDP directly | Exchange upstream → downstream |
+| **Tool code changes** | 0 | 0 |
+| **Config change** | `grant_type` + exchange settings | Same |
 
 ## Installation
 
 ```bash
 pip install ceramic-fwk
 ```
+
+Core dependencies installed automatically: FastMCP, httpx, PyJWT, OpenTelemetry, Prometheus client, zeep (SOAP support), and more.
 
 Optional extras:
 
@@ -125,6 +254,57 @@ auth:
 
 This is the recommended mode when running Ceramic as a remote MCP server (e.g., `ceramic run --transport sse` or `--transport streamable-http`) since the server cannot open a browser for interactive login.
 
+### Token Exchange (headless/cloud with user-scoped tokens)
+
+Uses the **OAuth 2.0 Token Exchange grant** (RFC 8693) for cloud MCP deployments where the calling platform (Claude, Gemini, etc.) passes a user token in the request. Ceramic exchanges it at the IDP for a downstream-scoped token:
+
+- No browser needed — the upstream platform already authenticated the user
+- Ceramic exchanges the incoming token for a token scoped to your downstream API
+- Tool code calls `access_token()` to get the downstream token
+- Each request is user-scoped (not a shared service account)
+
+```yaml
+# ceramic.yaml for cloud/headless deployment with token exchange
+auth:
+  provider: oidc
+  issuer: https://your-idp.example.com
+  client_id: my-mcp-server
+  client_secret: ${CERAMIC_AUTH_CLIENT_SECRET}
+  grant_type: token_exchange
+  upstream_token_header: x-user-token        # Where to find the incoming token
+  token_exchange_audience: https://api.internal.com  # Target downstream API
+  token_exchange_scope: "read:data write:data"       # Scopes for downstream token
+  token_exchange_provider: rfc8693           # rfc8693 (default), google, or entra
+```
+
+```python
+from ceramic import FastMCP, access_token
+
+mcp = FastMCP("cloud-server", config="ceramic.yaml")
+
+@mcp.tool()
+def get_orders() -> list:
+    """Call downstream API with the user-scoped exchanged token."""
+    token = access_token()  # ← downstream-scoped token from token exchange
+    resp = httpx.get(
+        "https://api.internal.com/orders",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    return resp.json()
+```
+
+**Built-in Token Exchange Adapters:**
+
+| Provider | Adapter ID | Protocol |
+|----------|-----------|----------|
+| Standard (default) | `rfc8693` | OAuth 2.0 Token Exchange (RFC 8693) |
+| Google Cloud | `google` | Google Security Token Service API |
+| Microsoft Entra ID | `entra` | On-Behalf-Of (OBO) flow |
+
+Custom adapters can be registered via the `AdapterRegistry` by implementing the `TokenExchangeAdapter` protocol.
+
+This is the recommended mode for cloud-hosted MCP servers where you need **user-scoped** (not service-account) access to downstream APIs.
+
 ## Public API
 
 All public symbols are accessible from the top-level `ceramic` package:
@@ -133,9 +313,8 @@ All public symbols are accessible from the top-level `ceramic` package:
 from ceramic import (
     FastMCP,           # Drop-in replacement for fastmcp.FastMCP
     CeramicFastMCP,   # Same class (FastMCP is an alias)
-    require_role,      # Decorator: restrict tool to users with a specific role
-    require_group,     # Decorator: restrict tool to users in a specific group
     identity,          # Function: get the current user's IdentityContext
+    access_token,      # Function: get the raw access token for downstream API calls
     IdentityContext,   # Dataclass: email, subject, claims, roles, groups
     CeramicTestClient, # Test client for auth flows without a live IDP
 )
@@ -169,34 +348,6 @@ mcp.run()
 - `config` (str | Path | None) — Path to `ceramic.yaml`. If None, uses `CERAMIC_CONFIG` env var or `./ceramic.yaml`. If no config found, runs in passthrough mode.
 - `**kwargs` — All additional kwargs forwarded to FastMCP
 
-### `require_role(role_name)`
-
-Decorator that restricts tool access to users with the specified role. Multiple decorators stack with AND semantics (all roles required).
-
-```python
-@mcp.tool()
-@require_role("admin")
-def admin_only_tool() -> str:
-    return "secret"
-
-@mcp.tool()
-@require_role("editor")
-@require_role("reviewer")
-def needs_both_roles() -> str:
-    return "approved"
-```
-
-### `require_group(group_name)`
-
-Same as `require_role` but checks group membership instead.
-
-```python
-@mcp.tool()
-@require_group("ops-team")
-def deploy(service: str) -> str:
-    return f"Deployed {service}"
-```
-
 ### `identity()`
 
 Returns the current request's `IdentityContext`. Call this inside any tool function to access the authenticated user's information.
@@ -215,6 +366,27 @@ def whoami() -> dict:
 
 **Raises** `RuntimeError` if called outside an active request context.
 
+### `access_token()`
+
+Returns the current request's raw access token for propagating to downstream APIs. The token is always valid — the middleware auto-refreshes before your tool code runs.
+
+```python
+from ceramic import access_token
+import httpx
+
+@mcp.tool()
+def get_orders() -> list:
+    """Fetch orders from downstream API using the user's token."""
+    token = access_token()
+    resp = httpx.get(
+        "https://api.internal.com/v1/orders",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    return resp.json()
+```
+
+**Raises** `RuntimeError` if called outside an active request context or if no token is available.
+
 ### `IdentityContext`
 
 Frozen (immutable) dataclass with the authenticated user's identity:
@@ -229,12 +401,12 @@ Frozen (immutable) dataclass with the authenticated user's identity:
 
 ### `CeramicTestClient`
 
-Test client that bypasses OAuth flows and injects identity directly. Triggers all authorization middleware as if a real request.
+Test client that bypasses OAuth flows and injects identity directly:
 
 ```python
 from ceramic.testing import CeramicTestClient
 
-async def test_admin_access():
+async def test_identity_available():
     client = CeramicTestClient(
         app=mcp,
         email="admin@example.com",
@@ -242,17 +414,8 @@ async def test_admin_access():
         roles=["admin"],
         groups=["ops-team"],
     )
-    result = await client.call_tool("admin_only_tool")
-    CeramicTestClient.assert_authorized(result)
-
-async def test_unauthorized():
-    client = CeramicTestClient(
-        app=mcp,
-        email="reader@example.com",
-        roles=["viewer"],
-    )
-    result = await client.call_tool("admin_only_tool")
-    CeramicTestClient.assert_unauthorized(result)
+    result = await client.call_tool("whoami")
+    assert result["email"] == "admin@example.com"
 ```
 
 ### `MockIdentityProvider`
@@ -263,7 +426,7 @@ Generates structurally valid JWTs without network calls (for testing):
 from ceramic.testing import MockIdentityProvider
 
 provider = MockIdentityProvider()
-token = provider.issue_token({"sub": "user-123", "email": "test@example.com", "roles": ["admin"]})
+token = provider.issue_token({"sub": "user-123", "email": "test@example.com"})
 
 # Decode without verification
 header, payload = MockIdentityProvider.decode_token(token)
@@ -305,12 +468,43 @@ ceramic_app.run()
 
 If the config is invalid, `enable_ceramic()` raises `ConfigurationError` and leaves the original FastMCP instance completely unmodified.
 
+## Resilience
+
+All outbound IDP HTTP calls are protected by a built-in circuit breaker and resilient JWKS key management:
+
+### Circuit Breaker
+
+Prevents cascading failures when the identity provider is temporarily unavailable:
+
+- **CLOSED → OPEN**: After `failure_threshold` (default 5) consecutive failures (5xx or network errors)
+- **OPEN → HALF_OPEN**: After `cooldown_seconds` (default 30s) elapse
+- **HALF_OPEN → CLOSED**: When a single probe request succeeds
+- Only one probe request is allowed in HALF_OPEN state
+
+```yaml
+auth:
+  # ...
+  circuit_breaker:
+    failure_threshold: 5
+    cooldown_seconds: 30
+```
+
+### JWKS Key Management
+
+Production-grade JWKS handling for token signature verification:
+
+- **Request coalescing** — Concurrent requests share a single outbound fetch
+- **Exponential backoff** — 1s base, 2× multiplier, 60s cap, 25% jitter, 3 retries
+- **Stale-while-revalidate** — Cached keys served while background refresh runs
+- **Max staleness guard** — Rejects verification after max staleness without successful refresh
+- **Automatic key rotation** — Background refresh detects new keys without downtime
+
 ## Middleware Pipeline
 
 When config sections are present, Ceramic executes middleware in this fixed order:
 
 ```
-Request → Observability → Session → Authentication → Authorization → [Plugins] → Tool
+Request → Observability → Session → Authentication → [Plugins] → Tool
 ```
 
 After-hooks execute in reverse order. Each layer is independent:
@@ -320,7 +514,6 @@ After-hooks execute in reverse order. Each layer is independent:
 | **Observability** | `observability:` section present | Assigns request ID, starts OTel span, records metrics, emits structured logs |
 | **Session** | `sessions:` section present | Restores identity from session, creates sessions on auth, enforces TTL |
 | **Authentication** | `auth:` section present | Validates token, auto-refreshes, initiates OAuth if needed |
-| **Authorization** | `authorization:` section present | Evaluates `@require_role`/`@require_group` decorators + YAML policies |
 | **Plugins** | `plugins:` section present | Custom middleware registered via `app.use()` or config |
 
 ### Custom plugins
@@ -366,25 +559,24 @@ auth:
   issuer: https://idp.example.com   # OIDC issuer URL (must be HTTPS in production)
   client_id: your-client-id         # OAuth2 client ID
   client_secret: null               # Optional for authorization_code, required for client_credentials
-  grant_type: authorization_code    # authorization_code (interactive) or client_credentials (M2M)
+  grant_type: authorization_code    # authorization_code | client_credentials | token_exchange
   scopes:                           # OAuth2 scopes to request
     - openid
     - profile
     - email
-  callback_port: 9876               # Local port for OAuth callback server (1-65535, authorization_code only)
-  callback_timeout: 120             # Seconds to wait for browser callback (1-600, authorization_code only)
   callback_port: 9876               # Local port for OAuth callback server (1-65535, default: 9876)
+  callback_timeout: 120             # Seconds to wait for browser callback (1-600)
   token_exchange_timeout: 30        # Seconds for token exchange HTTP call (1-120)
-
-# Authorization (role/group-based access control)
-authorization:
-  role_claim: realm_access.roles    # JSONPath to roles in the JWT
-  group_claim: groups               # JSONPath to groups in the JWT
-  policies:                         # YAML-based policies (glob patterns supported)
-    - tool: "admin_*"
-      require_role: admin
-    - tool: "deploy_*"
-      require_group: ops-team
+  # Token exchange settings (for grant_type: token_exchange)
+  upstream_token_header: null       # Metadata key with the upstream user token
+  token_exchange_audience: null     # Target downstream API audience
+  token_exchange_scope: null        # Scopes for the downstream token
+  token_exchange_provider: null     # Adapter: rfc8693 (default), google, entra
+  # Resilience
+  circuit_breaker:                  # Circuit breaker for all IDP HTTP calls
+    failure_threshold: 5            # Consecutive failures before opening circuit (1-100)
+    cooldown_seconds: 30            # Seconds before allowing a probe request (1-300)
+  jwks_cache_ttl: 600              # JWKS key cache TTL in seconds (60-86400)
 
 # Observability (traces, metrics, structured logging)
 observability:
@@ -414,7 +606,6 @@ hot_reload:
   watch_interval: 5                 # Seconds between file checks (1-60)
   reloadable_sections:              # Only these sections can be hot-reloaded
     - observability
-    - authorization
 ```
 
 ### Environment variable overrides
@@ -472,8 +663,7 @@ All Ceramic exceptions inherit from `CeramicError`:
 |-----------|-------------|
 | `ConfigurationError` | Invalid YAML, unknown keys, missing required fields, invalid config path |
 | `AuthenticationError` | OAuth flow failure, token exchange error, expired refresh token |
-| `AuthorizationError` | User lacks required role or group |
-| `ProviderError` | IDP unreachable, discovery endpoint failure, HTTP errors |
+| `ProviderError` | IDP unreachable, discovery endpoint failure, HTTP errors, circuit breaker open |
 | `SessionError` | Session creation/restoration failure |
 | `PluginError` | Plugin doesn't conform to protocol, invalid hook names |
 
@@ -482,29 +672,22 @@ All Ceramic exceptions inherit from `CeramicError`:
 Ceramic provides first-class testing support without requiring a live identity provider:
 
 ```python
-from ceramic import FastMCP, require_role, identity
+from ceramic import FastMCP, identity
 from ceramic.testing import CeramicTestClient
 
 # Your server
 mcp = FastMCP("test-server")
 
 @mcp.tool()
-@require_role("admin")
-def protected_tool() -> str:
+def whoami() -> str:
     user = identity()
     return f"Hello {user.email}"
 
 # Test
-async def test_authorized_user():
+async def test_identity_injected():
     client = CeramicTestClient(app=mcp, email="admin@co.com", roles=["admin"])
-    result = await client.call_tool("protected_tool")
-    CeramicTestClient.assert_authorized(result)
+    result = await client.call_tool("whoami")
     assert result == "Hello admin@co.com"
-
-async def test_unauthorized_user():
-    client = CeramicTestClient(app=mcp, email="viewer@co.com", roles=["viewer"])
-    result = await client.call_tool("protected_tool")
-    CeramicTestClient.assert_unauthorized(result)
 ```
 
 ## Examples
@@ -512,14 +695,15 @@ async def test_unauthorized_user():
 | Example | Description |
 |---------|-------------|
 | [`examples/basic_server.py`](examples/basic_server.py) | Minimal drop-in replacement |
-| [`examples/auth_server.py`](examples/auth_server.py) | Roles, groups, and identity access |
+| [`examples/auth_server.py`](examples/auth_server.py) | Identity access in tools |
+| [`examples/headless_server.py`](examples/headless_server.py) | Token propagation to downstream APIs |
 | [`examples/migration_example.py`](examples/migration_example.py) | Middleware-attachment for gradual adoption |
 | [`examples/testing_example.py`](examples/testing_example.py) | Test auth flows without a live IDP |
 | [`examples/zitadel/`](examples/zitadel/) | Full working example with Zitadel as IDP |
-| [`examples/zitadel/demo.py`](examples/zitadel/demo.py) | Chat UI demo with AI tool calling through the full Ceramic pipeline |
-| [`examples/zitadel/live_client.py`](examples/zitadel/live_client.py) | Interactive MCP client over SSE (real OAuth2 flow) |
+| [`examples/zitadel/petstore_server.py`](examples/zitadel/petstore_server.py) | Pet Store MCP server with authentication |
+| [`examples/zitadel/mcp_client.py`](examples/zitadel/mcp_client.py) | E2E demo — emulates LLM tool calls through Ceramic |
 
-The **Zitadel example** is a complete project management API with role-based access control (viewer/editor/admin), audit logging, and tests — ready to run against the Ceramic OSS Zitadel instance or your own.
+The **Zitadel example** includes a Pet Store MCP server with real OAuth2 login, session reuse, and identity propagation — narrated step by step.
 
 ## Development
 
@@ -531,7 +715,7 @@ The **Zitadel example** is a complete project management API with role-based acc
 ### Setup
 
 ```bash
-git clone https://github.com/vincenzo/ceramic-fwk.git
+git clone https://github.com/enzomar/ceramic-fwk.git
 cd ceramic-fwk
 
 # Install in development mode
@@ -547,26 +731,44 @@ pytest tests/unit/
 pytest tests/properties/
 ```
 
-### Dev demo (sandbox install + Zitadel example)
+### Demo
 
-Two standalone scripts — no arguments needed:
+Run the E2E demo with a real OAuth2 flow:
 
 ```bash
-# Web UI demo: starts server + chat interface, opens browser automatically
-./scripts/demo-web.sh
+# SSE transport (default) — starts Pet Store server + client
+./scripts/demo.sh
 
-# Terminal demo: starts server in background, drops into interactive REPL
-# First tool call opens browser for real OAuth2 login
-./scripts/demo-terminal.sh
+# stdio transport — client spawns server as subprocess
+./scripts/demo.sh stdio
+
+# streamable-http transport
+./scripts/demo.sh http
 ```
 
-The original multi-action script is still available for individual commands:
+Utility commands:
 
 ```bash
-./scripts/dev-demo.sh login        # Run OAuth2 login flow
-./scripts/dev-demo.sh whoami       # Show authenticated identity
-./scripts/dev-demo.sh client       # In-process REPL with simulated identity (no server needed)
-./scripts/dev-demo.sh clean        # Remove sandbox venv
+./scripts/demo.sh login        # Run OAuth2 login flow
+./scripts/demo.sh whoami       # Show authenticated identity
+./scripts/demo.sh run          # Start Pet Store server (SSE)
+./scripts/demo.sh test         # Run example tests
+./scripts/demo.sh clean        # Remove sandbox venv
+```
+
+### Headless / Token Propagation Demo
+
+Demonstrates `access_token()` and token exchange for downstream API calls:
+
+```bash
+# Interactive login + show token propagation to downstream APIs
+./scripts/demo-headless.sh interactive
+
+# Prove the token works by calling the IDP's userinfo endpoint
+./scripts/demo-headless.sh propagate
+
+# Explain the token exchange (RFC 8693) configuration for cloud deployments
+./scripts/demo-headless.sh exchange
 ```
 
 ### Project structure
@@ -574,27 +776,28 @@ The original multi-action script is still available for individual commands:
 ```
 ceramic-fwk/
 ├── ceramic/                  # Main package
-│   ├── __init__.py           # Public API (FastMCP, require_role, identity, etc.)
+│   ├── __init__.py           # Public API (FastMCP, identity, etc.)
 │   ├── server.py             # CeramicFastMCP facade (composition over FastMCP)
 │   ├── config.py             # Pydantic config models
 │   ├── config_loader.py      # YAML loading + env overrides + hot reload
 │   ├── identity.py           # IdentityContext + contextvars propagation
-│   ├── authorization.py      # @require_role / @require_group decorators
 │   ├── security.py           # LogRedactor, TLSEnforcer
 │   ├── exceptions.py         # Exception hierarchy
 │   ├── models.py             # TokenSet, Session, OIDCEndpoints, LogEntry
 │   ├── observability.py      # TelemetryService (OpenTelemetry)
 │   ├── metrics.py            # Prometheus MetricsExporter
+│   ├── resilience.py         # CircuitBreaker + ResilientHttpClient
 │   ├── sessions.py           # SessionStore protocol + InMemorySessionStore
 │   ├── middleware/            # Middleware pipeline + built-in middleware
 │   │   ├── pipeline.py       # RequestContext, MiddlewarePipeline, protocols
-│   │   ├── authentication.py # OAuth token validation + auto-refresh
-│   │   ├── authorization.py  # Policy evaluation (decorators + YAML)
+│   │   ├── authentication.py # OAuth token validation + auto-refresh + JWKS verification
 │   │   ├── observability.py  # Span creation, metrics recording, structured logs
 │   │   ├── session.py        # Session restore/create/invalidate
 │   │   └── builtin.py        # Re-exports all built-in middleware
 │   ├── auth/                  # OAuth2/OIDC implementation
 │   │   ├── oauth.py          # OAuthService (PKCE, discovery, token exchange)
+│   │   ├── adapters.py       # Token exchange adapters (RFC8693, Google STS, Entra OBO)
+│   │   ├── jwks_manager.py   # Resilient JWKS key management (coalescing, stale-while-revalidate)
 │   │   └── token_storage.py  # Platform-native secure token storage
 │   ├── cli/                   # Click CLI commands
 │   └── testing/               # CeramicTestClient, MockIdentityProvider
@@ -605,7 +808,7 @@ ceramic-fwk/
 ├── examples/                  # Example projects
 │   └── zitadel/               # Full Zitadel IDP example (ready to run)
 ├── scripts/
-│   ├── dev-demo.sh            # Sandbox install + run Zitadel example
+│   ├── demo.sh                # E2E demo + utility commands
 │   └── release.sh             # Version bump + tag + push
 ├── docs/                      # Landing page (GitHub Pages)
 ├── pyproject.toml             # Package metadata + dependencies
@@ -617,9 +820,9 @@ ceramic-fwk/
 
 Ceramic works with any standard OIDC-compliant provider:
 
-- **Zitadel** (tested, see `examples/zitadel/`)
-- **Google** (OAuth2 + OIDC)
-- **Microsoft Entra ID** (formerly Azure AD)
+- **Zitadel** (tested, see `examples/zitadel/`) — native RFC 8693 token exchange
+- **Google** (OAuth2 + OIDC) — built-in Google STS adapter for token exchange
+- **Microsoft Entra ID** (formerly Azure AD) — built-in On-Behalf-Of adapter
 - **Okta**
 - **Auth0**
 - **Keycloak**
@@ -629,6 +832,16 @@ Ceramic works with any standard OIDC-compliant provider:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## Support the Project
+
+If Ceramic is useful to you, consider supporting its development:
+
+[![PayPal](https://img.shields.io/badge/Support-PayPal-blue.svg?logo=paypal)](https://www.paypal.com/ncp/payment/DA8FJHJT5GSZY)
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
+
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+Apache 2.0 — see [LICENSE](LICENSE) for details.

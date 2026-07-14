@@ -11,7 +11,7 @@ from typing import Any, Awaitable, Callable
 
 from ceramic.config import SessionsConfig
 from ceramic.identity import IdentityContext, _identity_context_var
-from ceramic.middleware.authentication import _build_identity_context, _parse_jwt_claims
+from ceramic.auth.claims import build_identity_context, parse_jwt_claims
 from ceramic.middleware.pipeline import RequestContext
 from ceramic.sessions import InMemorySessionStore
 
@@ -118,8 +118,8 @@ class SessionMiddleware:
         Returns None if the token cannot be parsed.
         """
         try:
-            claims = _parse_jwt_claims(access_token)
-            return _build_identity_context(claims)
+            claims = parse_jwt_claims(access_token)
+            return build_identity_context(claims)
         except (ValueError, Exception):
             logger.warning("Failed to parse identity from stored session token")
             return None

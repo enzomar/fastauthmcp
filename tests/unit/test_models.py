@@ -1,6 +1,6 @@
 """Tests for the Ceramic data models."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from ceramic.models import LogEntry, OIDCEndpoints, Session, TokenSet
 
@@ -36,9 +36,11 @@ class TestSession:
             session_id="s1",
             subject="user@example.com",
             token_set=TokenSet(
-                access_token="a", refresh_token=None, expires_at=datetime(2099, 1, 1)
+                access_token="a",
+                refresh_token=None,
+                expires_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
             ),
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             ttl=3600,
         )
         assert not session.is_expired
@@ -48,9 +50,11 @@ class TestSession:
             session_id="s2",
             subject="user@example.com",
             token_set=TokenSet(
-                access_token="a", refresh_token=None, expires_at=datetime(2099, 1, 1)
+                access_token="a",
+                refresh_token=None,
+                expires_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
             ),
-            created_at=datetime.utcnow() - timedelta(seconds=7200),
+            created_at=datetime.now(timezone.utc) - timedelta(seconds=7200),
             ttl=3600,
         )
         assert session.is_expired

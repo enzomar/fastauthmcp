@@ -22,7 +22,6 @@ HOOK_POINTS: frozenset[str] = frozenset(
         "before_tool",
         "after_tool",
         "on_authentication",
-        "on_authorization",
         "on_exception",
         "on_shutdown",
     }

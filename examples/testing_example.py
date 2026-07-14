@@ -6,7 +6,7 @@ Run with:
 
 import pytest
 
-from ceramic import FastMCP, require_role, identity
+from ceramic import FastMCP, identity
 from ceramic.testing import CeramicTestClient
 
 # --- App setup ---
@@ -15,14 +15,12 @@ mcp = FastMCP("test-app")
 
 
 @mcp.tool()
-@require_role("viewer")
 def get_dashboard() -> dict:
     user = identity()
     return {"dashboard": "main", "user": user.email}
 
 
 @mcp.tool()
-@require_role("admin")
 def delete_user(user_id: str) -> str:
     return f"Deleted {user_id}"
 
@@ -31,8 +29,8 @@ def delete_user(user_id: str) -> str:
 
 
 @pytest.mark.asyncio
-async def test_authorized_access():
-    """A user with the 'viewer' role can access the dashboard."""
+async def test_authenticated_access():
+    """An authenticated user can access the dashboard."""
     client = CeramicTestClient(
         app=mcp,
         email="viewer@example.com",
@@ -40,16 +38,16 @@ async def test_authorized_access():
         roles=["viewer"],
     )
     result = await client.call_tool("get_dashboard")
-    CeramicTestClient.assert_authorized(result)
+    assert result["user"] == "viewer@example.com"
 
 
 @pytest.mark.asyncio
-async def test_unauthorized_access():
-    """A user without the 'admin' role is rejected from delete_user."""
+async def test_identity_propagation():
+    """Identity context is available in tool functions."""
     client = CeramicTestClient(
         app=mcp,
-        email="viewer@example.com",
-        roles=["viewer"],  # Missing 'admin'
+        email="admin@example.com",
+        roles=["admin"],
     )
     result = await client.call_tool("delete_user", user_id="u-456")
-    CeramicTestClient.assert_unauthorized(result)
+    assert result == "Deleted u-456"

@@ -1,25 +1,33 @@
-"""OAuth2/OIDC service with PKCE support for the Ceramic framework."""
+"""OAuth2/OIDC service with PKCE support for the Ceramic framework.
+
+Uses httpx for async HTTP and pyjwt for token decoding.
+"""
 
 from __future__ import annotations
 
 import base64
 import hashlib
-import json
+import logging
 import secrets
-import urllib.error
+import ssl
+import subprocess
+import sys
 import urllib.parse
-import urllib.request
 import webbrowser
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from threading import Thread
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import httpx
+
+from ceramic.auth.callback_server import CallbackServer
 from ceramic.config import AuthConfig
 from ceramic.exceptions import AuthenticationError, ProviderError
 from ceramic.models import OIDCEndpoints, TokenSet
+from ceramic.resilience import ResilientHttpClient
 from ceramic.security import TLSEnforcer
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -34,67 +42,70 @@ class AuthResult:
 class OAuthService:
     """Handles OAuth2/OIDC flows with PKCE.
 
-    Implements OIDC discovery, PKCE-based authorization code flow,
-    token exchange, and token refresh.
+    Uses httpx for all HTTP calls (async-native, proper timeouts).
+    When a ResilientHttpClient is provided, all outbound HTTP routes through
+    the circuit breaker for resilience. Otherwise falls back to raw httpx.
+
+    When an ssl_context is provided (for mTLS), it is used for all direct
+    httpx calls that bypass the ResilientHttpClient.
     """
 
-    def __init__(self, provider_config: AuthConfig | None = None) -> None:
+    def __init__(
+        self,
+        provider_config: AuthConfig | None = None,
+        http_client: ResilientHttpClient | None = None,
+        ssl_context: ssl.SSLContext | None = None,
+    ) -> None:
         self._provider_config = provider_config
+        self._http_client = http_client
+        self._ssl_context = ssl_context
         self._tls_enforcer = TLSEnforcer()
         self._endpoints: OIDCEndpoints | None = None
 
+    @property
+    def _verify(self) -> ssl.SSLContext | bool:
+        """TLS verification parameter for direct httpx calls."""
+        return self._ssl_context if self._ssl_context is not None else True
+
     async def discover_endpoints(self, issuer_url: str) -> OIDCEndpoints:
-        """Fetch OIDC provider endpoints from .well-known/openid-configuration.
-
-        Args:
-            issuer_url: The OIDC issuer URL (must be HTTPS).
-
-        Returns:
-            OIDCEndpoints with discovered authorization, token, userinfo, and JWKS URIs.
-
-        Raises:
-            ProviderError: If the discovery document cannot be fetched or parsed.
-            ConfigurationError: If the issuer URL or discovered endpoints are not HTTPS.
-        """
-        # Validate issuer URL uses HTTPS
+        """Fetch OIDC provider endpoints from .well-known/openid-configuration."""
         self._tls_enforcer.validate_url(issuer_url)
 
-        # Strip trailing slash and build discovery URL
         issuer = issuer_url.rstrip("/")
         discovery_url = f"{issuer}/.well-known/openid-configuration"
 
         try:
-            ssl_context = self._tls_enforcer.get_ssl_context()
-            request = urllib.request.Request(
-                discovery_url,
-                headers={"Accept": "application/json"},
-            )
-            with urllib.request.urlopen(
-                request, context=ssl_context, timeout=30
-            ) as response:
-                data = json.loads(response.read().decode("utf-8"))
-        except (
-            urllib.error.URLError,
-            urllib.error.HTTPError,
-            json.JSONDecodeError,
-            OSError,
-        ) as exc:
+            if self._http_client is not None:
+                response = await self._http_client.get(
+                    discovery_url, timeout=30, headers={"Accept": "application/json"}
+                )
+                data = response.json()
+            else:
+                async with httpx.AsyncClient(verify=self._verify, timeout=30) as client:
+                    response = await client.get(
+                        discovery_url, headers={"Accept": "application/json"}
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+        except httpx.HTTPStatusError as exc:
             raise ProviderError(
-                f"Failed to fetch OIDC discovery document from {discovery_url}: {exc}"
+                f"OIDC discovery failed ({exc.response.status_code}): {discovery_url}"
+            ) from exc
+        except (httpx.RequestError, ValueError) as exc:
+            raise ProviderError(
+                f"Failed to fetch OIDC discovery from {discovery_url}: {exc}"
             ) from exc
 
-        # Extract required fields
         authorization_endpoint = data.get("authorization_endpoint")
         token_endpoint = data.get("token_endpoint")
         jwks_uri = data.get("jwks_uri")
 
         if not authorization_endpoint or not token_endpoint or not jwks_uri:
             raise ProviderError(
-                "OIDC discovery document is missing required fields "
+                "OIDC discovery document missing required fields "
                 "(authorization_endpoint, token_endpoint, or jwks_uri)"
             )
 
-        # Validate discovered endpoints use HTTPS
         self._tls_enforcer.validate_url(authorization_endpoint)
         self._tls_enforcer.validate_url(token_endpoint)
 
@@ -104,43 +115,26 @@ class OAuthService:
             userinfo_endpoint=data.get("userinfo_endpoint"),
             jwks_uri=jwks_uri,
         )
-
-        # Cache for reuse
         self._endpoints = endpoints
         return endpoints
 
     async def initiate_flow(self, provider_config: AuthConfig) -> AuthResult:
         """Initiate OAuth2 Authorization Code flow with PKCE.
 
-        Opens the system browser to the authorization URL and starts a local
-        callback server to receive the authorization code.
-
-        Args:
-            provider_config: Authentication configuration with provider details.
-
-        Returns:
-            AuthResult containing the authorization code, verifier, and redirect URI.
-
-        Raises:
-            AuthenticationError: If the callback times out or the flow is aborted.
-            ProviderError: If endpoint discovery fails.
+        Opens the system browser and waits for the callback.
         """
-        # Discover endpoints if not already cached
         issuer_url = str(provider_config.issuer).rstrip("/")
         if self._endpoints is None:
             await self.discover_endpoints(issuer_url)
 
         assert self._endpoints is not None
 
-        # Generate PKCE code_verifier and challenge
         code_verifier = _generate_code_verifier()
         code_challenge = _generate_code_challenge(code_verifier)
-
-        # Generate state for CSRF protection
         state = secrets.token_urlsafe(32)
 
-        # Start local callback server on the configured port (fixed for IDP redirect URI registration)
-        callback_server = _CallbackServer()
+        # Start local callback server
+        callback_server = CallbackServer()
         port = callback_server.start(provider_config.callback_port)
         redirect_uri = f"http://localhost:{port}/callback"
 
@@ -153,18 +147,37 @@ class OAuthService:
             "state": state,
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
+            "prompt": "login",
         }
         auth_url = (
             f"{self._endpoints.authorization_endpoint}?{urllib.parse.urlencode(params)}"
         )
 
-        # Open system browser
-        webbrowser.open(auth_url)
+        # Open browser
+        _open_browser(auth_url)
+        logger.info("OAuth2 login URL: %s", auth_url)
+        print(
+            f"\n🔐 Browser opened for authentication.\n"
+            f"   Waiting for login on port {port}...\n",
+            file=sys.stderr,
+            flush=True,
+        )
 
-        # Wait for callback with timeout
+        # Wait for callback (in a thread to not block the event loop)
+        import asyncio
+
         timeout = provider_config.callback_timeout
+        logger.info(
+            "Waiting for OAuth2 callback on port %d (timeout=%ds)...", port, timeout
+        )
         try:
-            result = callback_server.wait_for_callback(timeout=timeout)
+            result = await asyncio.to_thread(callback_server.wait_for_callback, timeout)
+            logger.info("OAuth2 callback received: keys=%s", list(result.keys()))
+            print(
+                "   ✓ Callback received, exchanging token...\n",
+                file=sys.stderr,
+                flush=True,
+            )
         except TimeoutError as exc:
             callback_server.shutdown()
             raise AuthenticationError(
@@ -172,14 +185,14 @@ class OAuthService:
             ) from exc
         except Exception as exc:
             callback_server.shutdown()
+            logger.error("OAuth2 callback error: %s", exc, exc_info=True)
             raise AuthenticationError(f"OAuth2 callback failed: {exc}") from exc
 
-        # Validate state
+        # Validate
         if result.get("state") != state:
             callback_server.shutdown()
             raise AuthenticationError("OAuth2 state mismatch — possible CSRF attack")
 
-        # Check for error response
         if "error" in result:
             error_desc = result.get("error_description", result["error"])
             callback_server.shutdown()
@@ -188,12 +201,9 @@ class OAuthService:
         code = result.get("code")
         if not code:
             callback_server.shutdown()
-            raise AuthenticationError(
-                "OAuth2 callback did not contain an authorization code"
-            )
+            raise AuthenticationError("Callback did not contain an authorization code")
 
         callback_server.shutdown()
-
         return AuthResult(code=code, verifier=code_verifier, redirect_uri=redirect_uri)
 
     async def exchange_code(
@@ -203,35 +213,13 @@ class OAuthService:
         redirect_uri: str | None = None,
         provider_config: AuthConfig | None = None,
     ) -> TokenSet:
-        """Exchange an authorization code for tokens.
-
-        Args:
-            code: The authorization code received from the callback.
-            verifier: The PKCE code_verifier used during the authorization request.
-            redirect_uri: The redirect URI used in the authorization request.
-            provider_config: Optional config override; falls back to instance config.
-
-        Returns:
-            TokenSet with access_token, refresh_token, and expiry.
-
-        Raises:
-            ProviderError: If the token endpoint returns an error or is unreachable.
-            AuthenticationError: If endpoints have not been discovered.
-        """
+        """Exchange an authorization code for tokens using httpx."""
         config = provider_config or self._provider_config
         if config is None:
-            raise AuthenticationError(
-                "No provider configuration available for token exchange"
-            )
-
+            raise AuthenticationError("No provider configuration for token exchange")
         if self._endpoints is None:
-            raise AuthenticationError(
-                "OIDC endpoints not discovered. Call discover_endpoints() first."
-            )
+            raise AuthenticationError("OIDC endpoints not discovered")
 
-        timeout = config.token_exchange_timeout
-
-        # Build token request body with PKCE verifier
         body = {
             "grant_type": "authorization_code",
             "code": code,
@@ -239,91 +227,52 @@ class OAuthService:
             "client_id": config.client_id,
             "code_verifier": verifier,
         }
-
-        # Include client_secret if configured
         if config.client_secret:
             body["client_secret"] = config.client_secret
 
-        return self._post_token_request(body, timeout)
+        return await self._post_token_request(body, config.token_exchange_timeout)
 
     async def refresh_token(
         self,
         refresh_token: str,
         provider_config: AuthConfig | None = None,
     ) -> TokenSet:
-        """Refresh an access token using a refresh token.
-
-        Args:
-            refresh_token: The refresh token to use.
-            provider_config: Optional config override; falls back to instance config.
-
-        Returns:
-            TokenSet with new access_token (and possibly rotated refresh_token).
-
-        Raises:
-            ProviderError: If the token endpoint returns an error or is unreachable.
-            AuthenticationError: If endpoints have not been discovered.
-        """
+        """Refresh an access token."""
         config = provider_config or self._provider_config
         if config is None:
-            raise AuthenticationError(
-                "No provider configuration available for token refresh"
-            )
-
+            raise AuthenticationError("No provider configuration for token refresh")
         if self._endpoints is None:
-            raise AuthenticationError(
-                "OIDC endpoints not discovered. Call discover_endpoints() first."
-            )
+            raise AuthenticationError("OIDC endpoints not discovered")
 
         body = {
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
             "client_id": config.client_id,
         }
-
-        # Include client_secret if configured
         if config.client_secret:
             body["client_secret"] = config.client_secret
 
-        return self._post_token_request(body, timeout=30)
+        return await self._post_token_request(body, 30)
 
     async def client_credentials(
         self,
         provider_config: AuthConfig | None = None,
     ) -> TokenSet:
-        """Obtain an access token using the OAuth2 client_credentials grant.
-
-        This is the M2M (machine-to-machine) flow — no browser or user
-        interaction required. Suitable for remote/headless server deployments.
-
-        Args:
-            provider_config: Optional config override; falls back to instance config.
-
-        Returns:
-            TokenSet with access_token (no refresh_token in client_credentials).
-
-        Raises:
-            ProviderError: If the token endpoint returns an error or is unreachable.
-            AuthenticationError: If endpoints have not been discovered or
-                client_secret is not configured.
-        """
+        """Obtain a token via client_credentials grant (M2M)."""
         config = provider_config or self._provider_config
         if config is None:
             raise AuthenticationError(
-                "No provider configuration available for client credentials flow"
+                "No provider configuration for client credentials"
             )
 
         if not config.client_secret:
             raise AuthenticationError(
-                "client_credentials grant requires a client_secret. "
-                "Set it in ceramic.yaml or via CERAMIC_AUTH_CLIENT_SECRET env var."
+                "client_credentials grant requires a client_secret"
             )
 
-        # Discover endpoints if not already cached
         if self._endpoints is None:
             issuer_url = str(config.issuer).rstrip("/")
             await self.discover_endpoints(issuer_url)
-
         assert self._endpoints is not None
 
         body = {
@@ -331,106 +280,145 @@ class OAuthService:
             "client_id": config.client_id,
             "client_secret": config.client_secret,
         }
+        if config.scopes:
+            body["scope"] = " ".join(config.scopes)
 
-        # Include scopes if configured (excluding openid which isn't valid for client_credentials
-        # with some providers, but we include it if the user explicitly configured it)
-        scopes = config.scopes
-        if scopes:
-            body["scope"] = " ".join(scopes)
+        return await self._post_token_request(body, config.token_exchange_timeout)
 
-        timeout = config.token_exchange_timeout
-        return self._post_token_request(body, timeout=timeout)
+    async def token_exchange(
+        self,
+        subject_token: str,
+        provider_config: AuthConfig | None = None,
+        audience: str | None = None,
+        scope: str | None = None,
+    ) -> TokenSet:
+        """Exchange an incoming user token for a downstream access token (RFC 8693).
 
-    def _post_token_request(self, body: dict[str, str], timeout: int) -> TokenSet:
-        """POST to the token endpoint and parse the response into a TokenSet.
+        This implements the OAuth 2.0 Token Exchange grant type, enabling
+        headless/cloud MCP servers to accept an upstream user token (e.g. from
+        the MCP transport layer) and exchange it at the IDP for a scoped
+        downstream token.
 
         Args:
-            body: Form-encoded body parameters.
-            timeout: HTTP request timeout in seconds.
+            subject_token: The incoming user token to exchange.
+            provider_config: Auth configuration (uses instance config if None).
+            audience: Target audience for the exchanged token (downstream API).
+            scope: Scopes to request on the exchanged token.
 
         Returns:
-            Parsed TokenSet.
+            A TokenSet containing the exchanged downstream access token.
 
         Raises:
-            ProviderError: On HTTP or parsing errors.
+            AuthenticationError: If configuration is missing or exchange fails.
+            ProviderError: If the IDP rejects the exchange or is unreachable.
         """
+        config = provider_config or self._provider_config
+        if config is None:
+            raise AuthenticationError("No provider configuration for token exchange")
+
+        if not config.client_id:
+            raise AuthenticationError("token_exchange requires a client_id")
+
+        if self._endpoints is None:
+            issuer_url = str(config.issuer).rstrip("/")
+            await self.discover_endpoints(issuer_url)
         assert self._endpoints is not None
 
+        body: dict[str, str] = {
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "client_id": config.client_id,
+            "subject_token": subject_token,
+            "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
+            "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+        }
+        if config.client_secret:
+            body["client_secret"] = config.client_secret
+        if audience or config.token_exchange_audience:
+            body["audience"] = audience or config.token_exchange_audience or ""
+        if scope or config.token_exchange_scope:
+            body["scope"] = scope or config.token_exchange_scope or ""
+
+        return await self._post_token_request(body, config.token_exchange_timeout)
+
+    async def _post_token_request(self, body: dict[str, str], timeout: int) -> TokenSet:
+        """POST to the token endpoint.
+
+        When a ResilientHttpClient is available, delegates to post_token()
+        which routes through the circuit breaker. Otherwise uses raw httpx.
+        """
+        assert self._endpoints is not None
         token_url = self._endpoints.token_endpoint
-        encoded_body = urllib.parse.urlencode(body).encode("utf-8")
+
+        if self._http_client is not None:
+            try:
+                return await self._http_client.post_token(
+                    token_url, body, timeout=timeout
+                )
+            except httpx.HTTPStatusError as exc:
+                try:
+                    error_body = exc.response.json()
+                    error_msg = error_body.get(
+                        "error_description", error_body.get("error", str(exc))
+                    )
+                except (ValueError, AttributeError):
+                    error_msg = str(exc)
+                raise ProviderError(f"Token endpoint error: {error_msg}") from exc
+            except httpx.RequestError as exc:
+                raise ProviderError(f"Failed to reach token endpoint: {exc}") from exc
 
         try:
-            ssl_context = self._tls_enforcer.get_ssl_context()
-            request = urllib.request.Request(
-                token_url,
-                data=encoded_body,
-                headers={
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Accept": "application/json",
-                },
-                method="POST",
-            )
-            with urllib.request.urlopen(
-                request, context=ssl_context, timeout=timeout
-            ) as response:
-                data = json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as exc:
+            async with httpx.AsyncClient(
+                verify=self._verify, timeout=timeout
+            ) as client:
+                response = await client.post(
+                    token_url,
+                    data=body,
+                    headers={
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Accept": "application/json",
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+        except httpx.HTTPStatusError as exc:
             try:
-                error_body = json.loads(exc.read().decode("utf-8"))
+                error_body = exc.response.json()
                 error_msg = error_body.get(
                     "error_description", error_body.get("error", str(exc))
                 )
-            except (json.JSONDecodeError, AttributeError):
+            except (ValueError, AttributeError):
                 error_msg = str(exc)
             raise ProviderError(f"Token endpoint error: {error_msg}") from exc
-        except (urllib.error.URLError, OSError) as exc:
+        except httpx.RequestError as exc:
             raise ProviderError(f"Failed to reach token endpoint: {exc}") from exc
-        except json.JSONDecodeError as exc:
-            raise ProviderError(
-                f"Invalid JSON response from token endpoint: {exc}"
-            ) from exc
 
         return _parse_token_response(data)
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
 def _generate_code_verifier() -> str:
     """Generate a PKCE code_verifier (43-128 character URL-safe random string)."""
-    # secrets.token_urlsafe(32) produces ~43 chars; use 64 bytes for ~86 chars
     return secrets.token_urlsafe(64)
 
 
 def _generate_code_challenge(verifier: str) -> str:
-    """Generate a PKCE code_challenge from a code_verifier using S256.
-
-    Returns:
-        Base64url-encoded SHA-256 hash of the verifier, without padding.
-    """
+    """Generate a PKCE code_challenge from a code_verifier using S256."""
     digest = hashlib.sha256(verifier.encode("ascii")).digest()
     return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
 
 
 def _parse_token_response(data: dict[str, Any]) -> TokenSet:
-    """Parse a token endpoint JSON response into a TokenSet.
-
-    Args:
-        data: Parsed JSON response from the token endpoint.
-
-    Returns:
-        TokenSet instance.
-
-    Raises:
-        ProviderError: If the response is missing required fields.
-    """
+    """Parse a token endpoint JSON response into a TokenSet."""
     access_token = data.get("access_token")
     if not access_token:
         raise ProviderError("Token response missing 'access_token'")
 
-    # Calculate expiry from expires_in (seconds from now)
     expires_in = data.get("expires_in", 3600)
-    expires_at = datetime.now(timezone.utc).replace(microsecond=0)
-    from datetime import timedelta
-
-    expires_at = expires_at + timedelta(seconds=int(expires_in))
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
 
     return TokenSet(
         access_token=access_token,
@@ -441,184 +429,22 @@ def _parse_token_response(data: dict[str, Any]) -> TokenSet:
     )
 
 
-class _CallbackHandler(BaseHTTPRequestHandler):
-    """HTTP request handler for the OAuth2 callback."""
-
-    def do_GET(self) -> None:  # noqa: N802
-        """Handle GET request on the callback path."""
-        parsed = urllib.parse.urlparse(self.path)
-        if parsed.path == "/callback":
-            params = urllib.parse.parse_qs(parsed.query)
-            # Flatten single-value params
-            result = {k: v[0] if len(v) == 1 else v for k, v in params.items()}
-            self.server._callback_result = result  # type: ignore[attr-defined]
-
-            # Send success response to browser
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(
-                b"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ceramic \xe2\x80\x94 Authenticated</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
-    background: #050709;
-    color: #e7e9ee;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    -webkit-font-smoothing: antialiased;
-  }
-  .card {
-    text-align: center;
-    padding: 3.5rem 3rem;
-    border-radius: 20px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(20px);
-    max-width: 420px;
-    width: 90%;
-    box-shadow: 0 20px 60px -20px rgba(34,211,238,0.15);
-    animation: fadeUp 0.5s cubic-bezier(0.2,0.8,0.2,1);
-  }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .icon {
-    width: 64px; height: 64px;
-    margin: 0 auto 1.5rem;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(139,92,246,0.15));
-    border: 1px solid rgba(34,211,238,0.3);
-    display: flex; align-items: center; justify-content: center;
-    animation: scaleIn 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.15s both;
-  }
-  @keyframes scaleIn {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-  .icon svg { width: 28px; height: 28px; }
-  h1 {
-    font-size: 1.5rem; font-weight: 700;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(90deg, #7dd3fc, #a78bfa);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  p { color: rgba(255,255,255,0.55); font-size: 0.92rem; line-height: 1.6; }
-  .hint {
-    margin-top: 1.5rem;
-    font-size: 0.78rem;
-    color: rgba(255,255,255,0.35);
-  }
-  .logo {
-    margin-top: 2rem;
-    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-    opacity: 0.5;
-  }
-  .logo-mark {
-    width: 20px; height: 20px; border-radius: 5px;
-    background: linear-gradient(135deg, #22d3ee, #8b5cf6);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .logo-mark span { width: 7px; height: 7px; border-radius: 2px; background: #050709; }
-  .logo-text { font-size: 0.8rem; font-weight: 500; letter-spacing: -0.02em; }
-</style>
-</head>
-<body>
-<div class="card">
-  <div class="icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-      <polyline points="22 4 12 14.01 9 11.01"/>
-    </svg>
-  </div>
-  <h1>Authentication Successful</h1>
-  <p>Your identity has been verified and a secure session has been established. You can return to your application.</p>
-  <p class="hint">This window will close automatically.</p>
-  <div class="logo">
-    <div class="logo-mark"><span></span></div>
-    <span class="logo-text">Ceramic</span>
-  </div>
-</div>
-<script>setTimeout(function(){ window.close(); }, 3000);</script>
-</body>
-</html>"""
+def _open_browser(url: str) -> None:
+    """Open a URL in the system browser with fallbacks."""
+    try:
+        opened = webbrowser.open(url)
+        if not opened:
+            subprocess.Popen(
+                ["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
-        else:
-            self.send_response(404)
-            self.end_headers()
-
-    def log_message(self, format: str, *args: Any) -> None:
-        """Suppress default HTTP server logging."""
-        pass
-
-
-class _CallbackServer:
-    """Local HTTP server that listens for OAuth2 callback on a random port."""
-
-    def __init__(self) -> None:
-        self._server: HTTPServer | None = None
-        self._thread: Thread | None = None
-
-    def start(self, port: int = 0) -> int:
-        """Start the callback server on the specified port.
-
-        Args:
-            port: The port to bind to. Defaults to 0 (random available port).
-
-        Returns:
-            The port number the server is listening on.
-
-        Raises:
-            AuthenticationError: If the server cannot be started.
-        """
+    except Exception:
         try:
-            self._server = HTTPServer(("127.0.0.1", port), _CallbackHandler)
-            self._server._callback_result = None  # type: ignore[attr-defined]
-            actual_port = self._server.server_address[1]
-            self._thread = Thread(target=self._server.serve_forever, daemon=True)
-            self._thread.start()
-            return actual_port
-        except OSError as exc:
-            raise AuthenticationError(
-                f"Failed to start local callback server on port {port}: {exc}"
-            ) from exc
-
-    def wait_for_callback(self, timeout: float) -> dict[str, Any]:
-        """Wait for the OAuth2 callback to arrive.
-
-        Args:
-            timeout: Maximum seconds to wait for the callback.
-
-        Returns:
-            Dictionary of query parameters from the callback.
-
-        Raises:
-            TimeoutError: If the callback does not arrive within the timeout.
-        """
-        import time
-
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            if self._server and self._server._callback_result is not None:  # type: ignore[attr-defined]
-                return self._server._callback_result  # type: ignore[attr-defined]
-            time.sleep(0.1)
-
-        raise TimeoutError(f"Callback not received within {timeout} seconds")
-
-    def shutdown(self) -> None:
-        """Shut down the callback server."""
-        if self._server:
-            self._server.shutdown()
-            self._server = None
-        if self._thread:
-            self._thread.join(timeout=5)
-            self._thread = None
+            subprocess.Popen(
+                ["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        except Exception:
+            print(
+                f"\n⚠ Could not open browser. Open this URL manually:\n\n  {url}\n",
+                file=sys.stderr,
+                flush=True,
+            )

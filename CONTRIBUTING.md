@@ -65,12 +65,47 @@ pytest tests/integration/    # Integration tests only
 - Include tests for new behavior
 - Update documentation if you change public APIs
 - All CI checks must pass before merge
+- Update CHANGELOG.md under `[Unreleased]` for user-facing changes
+
+### Commit Conventions
+
+Use clear, imperative commit messages:
+
+```
+feat: add Redis session backend
+fix: prevent token refresh race condition
+docs: update token exchange configuration guide
+refactor: extract PKCE helpers into separate module
+test: add property tests for circuit breaker state machine
+ci: add dependency audit to security workflow
+```
+
+Prefix categories: `feat`, `fix`, `docs`, `refactor`, `test`, `ci`, `chore`
+
+### PR Requirements
+
+1. **Title**: Short, imperative (`Add X`, `Fix Y`, not `Added X` or `Fixing Y`)
+2. **Description**: What changed, why, how to test
+3. **Tests**: Every PR must include tests (unit minimum, property-based for security)
+4. **Lint**: `ruff check` and `ruff format --check` must pass
+5. **Types**: `mypy ceramic/ --ignore-missing-imports` must pass
+6. **No network in tests**: All HTTP mocked via pytest-mock or test utilities
+7. **Backward compatible**: Config changes must have defaults; public API preserved
+
+### Security-Sensitive Changes
+
+Changes to auth, tokens, TLS, or identity require:
+- Reading `.ai/security.md` before starting
+- Tests for rejection/failure cases (not just happy path)
+- Property-based tests for invariants (e.g., "redactor never leaks secrets")
+- Explicit mention in PR description of security implications
 
 ## Reporting Issues
 
-- Use GitHub Issues
+- Use GitHub Issues with the appropriate template
 - Include: Python version, OS, ceramic-fwk version, steps to reproduce
 - A minimal reproducing example is appreciated
+- For security vulnerabilities: use GitHub Security Advisories (private), NOT public issues
 
 ## Architecture
 
