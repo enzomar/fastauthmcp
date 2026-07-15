@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Ceramic E2E Demo
+# FastAuthMCP E2E Demo
 # ═══════════════════════════════════════════════════════════════════════════════
 #
-# Demonstrates Ceramic's auth pipeline with a real OAuth2 flow.
+# Demonstrates FastAuthMCP's auth pipeline with a real OAuth2 flow.
 #
 # Usage:
 #   ./scripts/demo.sh              # default: stdio (most reliable)
@@ -28,10 +28,10 @@ SERVER_PID=""
 # --- Setup ---
 
 echo "┌────────────────────────────────────────────────────────────────────┐"
-echo "│                    Ceramic E2E Demo                                │"
+echo "│                    FastAuthMCP E2E Demo                                │"
 echo "├────────────────────────────────────────────────────────────────────┤"
 echo "│  Transport: $TRANSPORT"
-echo "│  IDP:       Zitadel Cloud (ceramic-oss)"
+echo "│  IDP:       Zitadel Cloud (fastauthmcp-oss)"
 echo "└────────────────────────────────────────────────────────────────────┘"
 echo ""
 
@@ -46,13 +46,13 @@ fi
 # Activate
 source "$VENV_DIR/bin/activate"
 
-# Install ceramic-fwk in editable mode
-echo "→ Installing ceramic-fwk..."
+# Install fastauthmcp in editable mode
+echo "→ Installing fastauthmcp..."
 pip install -e "$PROJECT_ROOT[dev]" --quiet
-echo "→ Installed: $(pip show ceramic-fwk 2>/dev/null | grep Version || echo 'editable')"
+echo "→ Installed: $(pip show fastauthmcp 2>/dev/null | grep Version || echo 'editable')"
 echo ""
 
-# Change to example directory so ceramic.yaml is found
+# Change to example directory so fastauthmcp.yaml is found
 cd "$EXAMPLE_DIR"
 
 # --- Clear stored tokens so the demo always starts fresh ---
@@ -60,7 +60,7 @@ echo "→ Clearing stored tokens (fresh OAuth flow)..."
 python3 -c "
 try:
     import keyring
-    keyring.delete_password('ceramic-fwk', 'ceramic-oss-agq8i8.eu1.zitadel.cloud')
+    keyring.delete_password('fastauthmcp', 'fastauthmcp-oss-agq8i8.eu1.zitadel.cloud')
     print('  ✓ Cleared token from Keychain')
 except Exception:
     print('  ✓ No stored token to clear')
@@ -92,7 +92,7 @@ case "$TRANSPORT" in
 
   sse)
     echo "→ Starting Pet Store server (SSE on :${MCP_PORT})..."
-    CERAMIC_TRANSPORT=sse CERAMIC_PORT="$MCP_PORT" CERAMIC_LOG_LEVEL=INFO python petstore_server.py > "$SERVER_LOG" 2>&1 &
+    FASTAUTHMCP_TRANSPORT=sse FASTAUTHMCP_PORT="$MCP_PORT" FASTAUTHMCP_LOG_LEVEL=INFO python petstore_server.py > "$SERVER_LOG" 2>&1 &
     SERVER_PID=$!
     printf "  Waiting for server"
     for i in $(seq 1 30); do
@@ -106,7 +106,7 @@ case "$TRANSPORT" in
 
   http|streamable-http)
     echo "→ Starting Pet Store server (streamable-http on :${MCP_PORT})..."
-    CERAMIC_TRANSPORT=streamable-http CERAMIC_PORT="$MCP_PORT" CERAMIC_LOG_LEVEL=INFO python petstore_server.py > "$SERVER_LOG" 2>&1 &
+    FASTAUTHMCP_TRANSPORT=streamable-http FASTAUTHMCP_PORT="$MCP_PORT" FASTAUTHMCP_LOG_LEVEL=INFO python petstore_server.py > "$SERVER_LOG" 2>&1 &
     SERVER_PID=$!
     printf "  Waiting for server"
     for i in $(seq 1 30); do
@@ -119,23 +119,23 @@ case "$TRANSPORT" in
     ;;
 
   login)
-    ceramic login
+    fastauthmcp login
     ;;
 
   logout)
-    ceramic logout
+    fastauthmcp logout
     ;;
 
   whoami)
-    ceramic whoami
+    fastauthmcp whoami
     ;;
 
   doctor)
-    ceramic doctor
+    fastauthmcp doctor
     ;;
 
   run)
-    exec env CERAMIC_TRANSPORT=sse CERAMIC_HOST=localhost CERAMIC_PORT="$MCP_PORT" CERAMIC_LOG_LEVEL=INFO python petstore_server.py
+    exec env FASTAUTHMCP_TRANSPORT=sse FASTAUTHMCP_HOST=localhost FASTAUTHMCP_PORT="$MCP_PORT" FASTAUTHMCP_LOG_LEVEL=INFO python petstore_server.py
     ;;
 
   test)

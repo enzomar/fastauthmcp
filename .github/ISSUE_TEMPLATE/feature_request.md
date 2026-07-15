@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Propose a new feature for Ceramic
+about: Propose a new feature for FastAuthMCP
 title: "[Feature] "
 labels: enhancement
 assignees: ''
@@ -16,7 +16,7 @@ Describe the feature you'd like.
 
 ## Configuration (if applicable)
 
-How would this be configured in `ceramic.yaml`?
+How would this be configured in `fastauthmcp.yaml`?
 
 ```yaml
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Ceramic Headless Demo — Token Exchange & Downstream Token Propagation
+# FastAuthMCP Headless Demo — Token Exchange & Downstream Token Propagation
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # Simulates a CLOUD-DEPLOYED MCP server that:
@@ -33,7 +33,7 @@ MCP_PORT="${DEMO_MCP_PORT:-8001}"
 SERVER_PID=""
 
 echo "┌────────────────────────────────────────────────────────────────────┐"
-echo "│              Ceramic Headless Demo                                 │"
+echo "│              FastAuthMCP Headless Demo                                 │"
 echo "├────────────────────────────────────────────────────────────────────┤"
 echo "│  Mode: $MODE"
 echo "│  Transport: SSE (cloud deployment, no browser)                     │"
@@ -41,7 +41,7 @@ echo "│  Port: $MCP_PORT"
 echo "│                                                                    │"
 echo "│  Scenario:                                                         │"
 echo "│    Your MCP server runs in the cloud. The calling platform         │"
-echo "│    (Claude, Gemini) passes a user token. Ceramic exchanges it      │"
+echo "│    (Claude, Gemini) passes a user token. FastAuthMCP exchanges it      │"
 echo "│    for a downstream-scoped token. Your tool calls access_token()   │"
 echo "│    to authenticate downstream API calls.                           │"
 echo "└────────────────────────────────────────────────────────────────────┘"
@@ -59,7 +59,7 @@ setup_venv() {
 
   source "$VENV_DIR/bin/activate"
   pip install -e "$PROJECT_ROOT[dev]" --quiet
-  echo "→ Installed: $(pip show ceramic-fwk 2>/dev/null | grep Version || echo 'editable')"
+  echo "→ Installed: $(pip show fastauthmcp 2>/dev/null | grep Version || echo 'editable')"
   echo ""
 }
 
@@ -90,7 +90,7 @@ case "$MODE" in
     echo "  The Solution: Token Exchange (RFC 8693)"
     echo ""
     echo "  ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐"
-    echo "  │ Claude/Gemini│────▶│ Ceramic MCP (SSE) │────▶│ Downstream   │"
+    echo "  │ Claude/Gemini│────▶│ FastAuthMCP MCP (SSE) │────▶│ Downstream   │"
     echo "  │  (has user   │     │                    │     │ API          │"
     echo "  │   token)     │     │ 1. Extract token   │     │              │"
     echo "  └──────────────┘     │ 2. Exchange at IDP │     │ Authed with  │"
@@ -98,13 +98,13 @@ case "$MODE" in
     echo "                       │    → downstream    │     │ token        │"
     echo "                       └──────────────────┘     └──────────────┘"
     echo ""
-    echo "  Configuration (ceramic.yaml):"
+    echo "  Configuration (fastauthmcp.yaml):"
     echo ""
     echo "    auth:"
     echo "      provider: oidc"
     echo "      issuer: https://your-idp.example.com"
     echo "      client_id: my-mcp-server"
-    echo "      client_secret: \${CERAMIC_AUTH_CLIENT_SECRET}"
+    echo "      client_secret: \${FASTAUTHMCP_AUTH_CLIENT_SECRET}"
     echo "      grant_type: token_exchange              # ← RFC 8693"
     echo "      upstream_token_header: x-user-token     # ← where to find it"
     echo "      token_exchange_audience: https://api.internal.com"
@@ -112,9 +112,9 @@ case "$MODE" in
     echo ""
     echo "  In your tool code:"
     echo ""
-    echo "    from ceramic import FastMCP, access_token"
+    echo "    from fastauthmcp import FastMCP, access_token"
     echo ""
-    echo "    mcp = FastMCP(\"cloud-server\", config=\"ceramic.yaml\")"
+    echo "    mcp = FastMCP(\"cloud-server\", config=\"fastauthmcp.yaml\")"
     echo ""
     echo "    @mcp.tool()"
     echo "    def get_orders() -> list:"
@@ -126,7 +126,7 @@ case "$MODE" in
     echo "        return resp.json()"
     echo ""
     echo "  The calling platform (Claude, Gemini) sends the user's token"
-    echo "  in the MCP request metadata. Ceramic:"
+    echo "  in the MCP request metadata. FastAuthMCP:"
     echo "    1. Extracts it from the configured header/key"
     echo "    2. Exchanges it at the IDP token endpoint (RFC 8693)"
     echo "    3. Makes the downstream token available via access_token()"
@@ -169,7 +169,7 @@ case "$MODE" in
 # Headless demo config — token_exchange mode
 auth:
   provider: oidc
-  issuer: https://ceramic-oss-agq8i8.eu1.zitadel.cloud
+  issuer: https://fastauthmcp-oss-agq8i8.eu1.zitadel.cloud
   client_id: "380842820363183891"
   grant_type: token_exchange
   upstream_token_header: x-user-token
@@ -194,11 +194,11 @@ EOF
     echo "  (Press Ctrl+C to stop)"
     echo ""
 
-    CERAMIC_CONFIG="$VENV_DIR/headless-demo.yaml" \
-    CERAMIC_TRANSPORT=sse \
-    CERAMIC_HOST=localhost \
-    CERAMIC_PORT="$MCP_PORT" \
-    CERAMIC_LOG_LEVEL=INFO \
+    FASTAUTHMCP_CONFIG="$VENV_DIR/headless-demo.yaml" \
+    FASTAUTHMCP_TRANSPORT=sse \
+    FASTAUTHMCP_HOST=localhost \
+    FASTAUTHMCP_PORT="$MCP_PORT" \
+    FASTAUTHMCP_LOG_LEVEL=INFO \
       python headless_server.py
     ;;
 
@@ -212,7 +212,7 @@ EOF
     echo "    1. User is logged in on the platform"
     echo "    2. Platform has a user token"
     echo "    3. Platform sends MCP tool call + user token in metadata"
-    echo "    4. Ceramic exchanges the token and makes it available"
+    echo "    4. FastAuthMCP exchanges the token and makes it available"
     echo "═══════════════════════════════════════════════════════════════"
     echo ""
 
@@ -228,15 +228,15 @@ import asyncio
 import sys
 
 async def main():
-    from ceramic.auth.token_storage import get_token_storage
+    from fastauthmcp.auth.token_storage import get_token_storage
 
     storage = get_token_storage()
-    token_set = await storage.retrieve('ceramic-oss-agq8i8.eu1.zitadel.cloud')
+    token_set = await storage.retrieve('fastauthmcp-oss-agq8i8.eu1.zitadel.cloud')
     if not token_set:
         token_set = await storage.retrieve('default')
     if not token_set:
         print('❌ No stored token. Run the interactive demo first:')
-        print('   cd examples/zitadel && CERAMIC_CONFIG=ceramic.yaml ceramic login')
+        print('   cd examples/zitadel && FASTAUTHMCP_CONFIG=fastauthmcp.yaml fastauthmcp login')
         sys.exit(1)
 
     token = token_set.access_token
@@ -246,7 +246,7 @@ async def main():
     print('  include this token in the MCP request metadata as:')
     print(f'  {{\"x-user-token\": \"{token[:20]}...\"}}')
     print()
-    print('→ Ceramic would then:')
+    print('→ FastAuthMCP would then:')
     print('  1. Extract it from metadata[\"x-user-token\"]')
     print('  2. POST to IDP: grant_type=urn:ietf:params:oauth:grant-type:token-exchange')
     print('  3. Get back a scoped downstream token')
@@ -262,7 +262,7 @@ async def main():
     print('→ Proving the token is valid (calling IDP userinfo)...')
     try:
         resp = httpx.get(
-            'https://ceramic-oss-agq8i8.eu1.zitadel.cloud/oidc/v1/userinfo',
+            'https://fastauthmcp-oss-agq8i8.eu1.zitadel.cloud/oidc/v1/userinfo',
             headers={'Authorization': f'Bearer {token}'},
             timeout=10,
         )
@@ -271,7 +271,7 @@ async def main():
             print(f'  ✓ Token is valid! User: {info.get(\"email\", info.get(\"sub\", \"unknown\"))}')
         else:
             print(f'  ⚠ Userinfo returned {resp.status_code} (token may be expired)')
-            print(f'    Re-login: cd examples/zitadel && CERAMIC_CONFIG=ceramic.yaml ceramic login')
+            print(f'    Re-login: cd examples/zitadel && FASTAUTHMCP_CONFIG=fastauthmcp.yaml fastauthmcp login')
     except Exception as e:
         print(f'  ⚠ Could not reach IDP: {e}')
 

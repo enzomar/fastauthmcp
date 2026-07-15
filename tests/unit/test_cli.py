@@ -1,4 +1,4 @@
-"""Unit tests for the Ceramic CLI commands."""
+"""Unit tests for the FastAuthMCP CLI commands."""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from ceramic.cli import cli
-from ceramic.exceptions import ConfigurationError, ProviderError
-from ceramic.models import TokenSet
+from fastauthmcp.cli import cli
+from fastauthmcp.exceptions import ConfigurationError, ProviderError
+from fastauthmcp.models import TokenSet
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def runner():
 
 @pytest.fixture
 def valid_config_yaml(tmp_path):
-    """Create a valid ceramic.yaml."""
+    """Create a valid fastauthmcp.yaml."""
     content = """\
 auth:
   provider: oidc
@@ -38,19 +38,19 @@ observability:
 sessions:
   ttl: 3600
 """
-    path = tmp_path / "ceramic.yaml"
+    path = tmp_path / "fastauthmcp.yaml"
     path.write_text(content)
     return path
 
 
 @pytest.fixture
 def minimal_config_yaml(tmp_path):
-    """Create a minimal ceramic.yaml without auth."""
+    """Create a minimal fastauthmcp.yaml without auth."""
     content = """\
 observability:
   enabled: true
 """
-    path = tmp_path / "ceramic.yaml"
+    path = tmp_path / "fastauthmcp.yaml"
     path.write_text(content)
     return path
 
@@ -99,7 +99,7 @@ def _make_token_set(
 
 
 class TestRunCommand:
-    """Tests for `ceramic run`."""
+    """Tests for `fastauthmcp run`."""
 
     def test_run_exits_error_on_invalid_config(self, runner, tmp_path):
         """Test that `run` exits with error on invalid config path."""
@@ -117,8 +117,8 @@ class TestRunCommand:
         result = runner.invoke(cli, ["run", "--config", str(bad_yaml)])
         assert result.exit_code != 0
 
-    @patch("ceramic.cli.CeramicFastMCP")
-    @patch("ceramic.cli.ConfigLoader")
+    @patch("fastauthmcp.cli.FastAuthMCP")
+    @patch("fastauthmcp.cli.ConfigLoader")
     def test_run_prints_ready_message(
         self, mock_loader_cls, mock_server_cls, runner, tmp_path
     ):
@@ -132,20 +132,20 @@ class TestRunCommand:
         mock_server.run.return_value = None
         mock_server_cls.return_value = mock_server
 
-        config_file = tmp_path / "ceramic.yaml"
+        config_file = tmp_path / "fastauthmcp.yaml"
         config_file.write_text("observability:\n  enabled: true\n")
 
         result = runner.invoke(cli, ["run", "--config", str(config_file)])
         assert result.exit_code == 0
-        assert "Ceramic server starting (stdio transport)" in result.output
+        assert "FastAuthMCP server starting (stdio transport)" in result.output
 
 
 class TestLoginCommand:
-    """Tests for `ceramic login`."""
+    """Tests for `fastauthmcp login`."""
 
-    @patch("ceramic.cli.get_token_storage")
-    @patch("ceramic.cli.OAuthService")
-    @patch("ceramic.cli.ConfigLoader")
+    @patch("fastauthmcp.cli.get_token_storage")
+    @patch("fastauthmcp.cli.OAuthService")
+    @patch("fastauthmcp.cli.ConfigLoader")
     def test_login_stores_tokens_and_outputs_email(
         self, mock_loader_cls, mock_oauth_cls, mock_storage_fn, runner
     ):
@@ -182,7 +182,7 @@ class TestLoginCommand:
         assert "alice@example.com" in result.output
         mock_storage.store.assert_called_once()
 
-    @patch("ceramic.cli.ConfigLoader")
+    @patch("fastauthmcp.cli.ConfigLoader")
     def test_login_exits_error_when_no_auth_config(self, mock_loader_cls, runner):
         """Test login exits with error when no auth section in config."""
         mock_loader = MagicMock()
@@ -195,9 +195,9 @@ class TestLoginCommand:
         assert result.exit_code != 0
         assert "No auth configuration" in result.output
 
-    @patch("ceramic.cli.get_token_storage")
-    @patch("ceramic.cli.OAuthService")
-    @patch("ceramic.cli.ConfigLoader")
+    @patch("fastauthmcp.cli.get_token_storage")
+    @patch("fastauthmcp.cli.OAuthService")
+    @patch("fastauthmcp.cli.ConfigLoader")
     def test_login_exits_error_on_auth_failure(
         self, mock_loader_cls, mock_oauth_cls, mock_storage_fn, runner
     ):
@@ -223,9 +223,9 @@ class TestLoginCommand:
 
 
 class TestLogoutCommand:
-    """Tests for `ceramic logout`."""
+    """Tests for `fastauthmcp logout`."""
 
-    @patch("ceramic.cli.get_token_storage")
+    @patch("fastauthmcp.cli.get_token_storage")
     def test_logout_clears_tokens(self, mock_storage_fn, runner):
         """Test that logout clears stored tokens."""
         mock_storage = MagicMock()
@@ -237,7 +237,7 @@ class TestLogoutCommand:
         assert "Logged out successfully." in result.output
         mock_storage.delete.assert_called_once_with("default")
 
-    @patch("ceramic.cli.get_token_storage")
+    @patch("fastauthmcp.cli.get_token_storage")
     def test_logout_exits_error_on_failure(self, mock_storage_fn, runner):
         """Test that logout exits with error if deletion fails."""
         mock_storage = MagicMock()
@@ -250,9 +250,9 @@ class TestLogoutCommand:
 
 
 class TestWhoamiCommand:
-    """Tests for `ceramic whoami`."""
+    """Tests for `fastauthmcp whoami`."""
 
-    @patch("ceramic.cli.get_token_storage")
+    @patch("fastauthmcp.cli.get_token_storage")
     def test_whoami_displays_user_info(self, mock_storage_fn, runner):
         """Test that whoami displays email, subject, and roles."""
         token_set = _make_token_set(
@@ -271,7 +271,7 @@ class TestWhoamiCommand:
         assert "admin" in result.output
         assert "user" in result.output
 
-    @patch("ceramic.cli.get_token_storage")
+    @patch("fastauthmcp.cli.get_token_storage")
     def test_whoami_exits_nonzero_when_no_session(self, mock_storage_fn, runner):
         """Test that whoami exits non-zero when no tokens are stored."""
         mock_storage = MagicMock()
@@ -282,7 +282,7 @@ class TestWhoamiCommand:
         assert result.exit_code != 0
         assert "No authenticated session" in result.output
 
-    @patch("ceramic.cli.get_token_storage")
+    @patch("fastauthmcp.cli.get_token_storage")
     def test_whoami_shows_no_roles(self, mock_storage_fn, runner):
         """Test whoami with user that has no roles."""
         claims = {"email": "norole@example.com", "sub": "user-789"}
@@ -305,10 +305,10 @@ class TestWhoamiCommand:
 
 
 class TestDoctorCommand:
-    """Tests for `ceramic doctor`."""
+    """Tests for `fastauthmcp doctor`."""
 
-    @patch("ceramic.cli.get_token_storage")
-    @patch("ceramic.cli.ConfigLoader")
+    @patch("fastauthmcp.cli.get_token_storage")
+    @patch("fastauthmcp.cli.ConfigLoader")
     def test_doctor_all_checks_pass(self, mock_loader_cls, mock_storage_fn, runner):
         """Test doctor reports all checks passing."""
         # Config check passes
@@ -327,8 +327,8 @@ class TestDoctorCommand:
         assert result.exit_code == 0
         assert "Configuration file is valid" in result.output
 
-    @patch("ceramic.cli.get_token_storage")
-    @patch("ceramic.cli.ConfigLoader")
+    @patch("fastauthmcp.cli.get_token_storage")
+    @patch("fastauthmcp.cli.ConfigLoader")
     def test_doctor_reports_expired_token(
         self, mock_loader_cls, mock_storage_fn, runner
     ):
@@ -348,8 +348,8 @@ class TestDoctorCommand:
         assert result.exit_code != 0
         assert "expired" in result.output
 
-    @patch("ceramic.cli.get_token_storage")
-    @patch("ceramic.cli.ConfigLoader")
+    @patch("fastauthmcp.cli.get_token_storage")
+    @patch("fastauthmcp.cli.ConfigLoader")
     def test_doctor_reports_config_error(
         self, mock_loader_cls, mock_storage_fn, runner
     ):
@@ -366,9 +366,9 @@ class TestDoctorCommand:
         assert result.exit_code != 0
         assert "Invalid YAML" in result.output
 
-    @patch("ceramic.cli.get_token_storage")
-    @patch("ceramic.cli.OAuthService")
-    @patch("ceramic.cli.ConfigLoader")
+    @patch("fastauthmcp.cli.get_token_storage")
+    @patch("fastauthmcp.cli.OAuthService")
+    @patch("fastauthmcp.cli.ConfigLoader")
     def test_doctor_reports_idp_unreachable(
         self, mock_loader_cls, mock_oauth_cls, mock_storage_fn, runner
     ):
@@ -400,27 +400,27 @@ class TestDoctorCommand:
 
 
 class TestConfigValidateCommand:
-    """Tests for `ceramic config validate`."""
+    """Tests for `fastauthmcp config validate`."""
 
     def test_config_validate_valid_file(self, runner, valid_config_yaml, monkeypatch):
         """Test validate reports success for valid config."""
-        monkeypatch.setenv("CERAMIC_CONFIG", str(valid_config_yaml))
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(valid_config_yaml))
         result = runner.invoke(cli, ["config", "validate"])
         assert result.exit_code == 0
         assert "Configuration is valid" in result.output
 
     def test_config_validate_invalid_yaml(self, runner, tmp_path, monkeypatch):
         """Test validate reports errors for invalid YAML."""
-        bad_yaml = tmp_path / "ceramic.yaml"
+        bad_yaml = tmp_path / "fastauthmcp.yaml"
         bad_yaml.write_text("unknown_top_key: true\n")
-        monkeypatch.setenv("CERAMIC_CONFIG", str(bad_yaml))
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(bad_yaml))
         result = runner.invoke(cli, ["config", "validate"])
         assert result.exit_code != 0
         assert "Error" in result.output
 
     def test_config_validate_missing_file(self, runner, tmp_path, monkeypatch):
         """Test validate reports error for missing file."""
-        monkeypatch.setenv("CERAMIC_CONFIG", str(tmp_path / "nope.yaml"))
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(tmp_path / "nope.yaml"))
         result = runner.invoke(cli, ["config", "validate"])
         assert result.exit_code != 0
         assert "Error" in result.output
@@ -436,9 +436,9 @@ auth:
   client_id: my-app
   client_secret: supersecret
 """
-        yaml_path = tmp_path / "ceramic.yaml"
+        yaml_path = tmp_path / "fastauthmcp.yaml"
         yaml_path.write_text(content)
-        monkeypatch.setenv("CERAMIC_CONFIG", str(yaml_path))
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(yaml_path))
         result = runner.invoke(cli, ["config", "validate"])
         assert result.exit_code == 0
         assert "Warning" in result.output

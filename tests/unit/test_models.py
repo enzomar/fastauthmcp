@@ -1,8 +1,8 @@
-"""Tests for the Ceramic data models."""
+"""Tests for the FastAuthMCP data models."""
 
 from datetime import datetime, timedelta, timezone
 
-from ceramic.models import LogEntry, OIDCEndpoints, Session, TokenSet
+from fastauthmcp.models import LogEntry, OIDCEndpoints, Session, TokenSet
 
 
 class TestTokenSet:

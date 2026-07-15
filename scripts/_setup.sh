@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared setup logic for Ceramic demo scripts.
+# Shared setup logic for FastAuthMCP demo scripts.
 # Sources the virtualenv and installs the package.
 # After sourcing this, CWD is examples/zitadel/.
 #
@@ -13,7 +13,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 VENV_DIR="$PROJECT_ROOT/.venv-demo"
 EXAMPLE_DIR="$PROJECT_ROOT/examples/zitadel"
 
-echo "=== Ceramic Dev Demo ==="
+echo "=== FastAuthMCP Dev Demo ==="
 echo "Project root: $PROJECT_ROOT"
 echo "Virtualenv:   $VENV_DIR"
 echo ""
@@ -29,12 +29,12 @@ fi
 # Activate
 source "$VENV_DIR/bin/activate"
 
-# Install ceramic-fwk in editable mode with dev deps
-echo "→ Installing ceramic-fwk (editable + dev dependencies)..."
+# Install fastauthmcp in editable mode with dev deps
+echo "→ Installing fastauthmcp (editable + dev dependencies)..."
 pip install -e "$PROJECT_ROOT[dev]" --quiet
 
-echo "→ Installed: $(pip show ceramic-fwk 2>/dev/null | grep Version || echo 'ceramic-fwk (editable)')"
+echo "→ Installed: $(pip show fastauthmcp 2>/dev/null | grep Version || echo 'fastauthmcp (editable)')"
 echo ""
 
-# Change to example directory so ceramic.yaml is picked up
+# Change to example directory so fastauthmcp.yaml is picked up
 cd "$EXAMPLE_DIR"

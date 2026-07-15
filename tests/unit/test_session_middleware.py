@@ -11,11 +11,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ceramic.config import SessionsConfig
-from ceramic.identity import IdentityContext
-from ceramic.middleware.pipeline import RequestContext
-from ceramic.middleware.session import SessionMiddleware
-from ceramic.models import TokenSet
+from fastauthmcp.config import SessionsConfig
+from fastauthmcp.identity import IdentityContext
+from fastauthmcp.middleware.pipeline import RequestContext
+from fastauthmcp.middleware.session import SessionMiddleware
+from fastauthmcp.models import TokenSet
 
 import base64
 import json
@@ -146,7 +146,7 @@ class TestSessionMiddleware:
     @pytest.mark.asyncio
     async def test_disabled_passthrough(self):
         """Disabled session middleware passes through without touching identity."""
-        from ceramic.middleware.builtin import SessionMiddleware as BuiltinSession
+        from fastauthmcp.middleware.builtin import SessionMiddleware as BuiltinSession
 
         mw = BuiltinSession(config=SessionsConfig(enabled=False, ttl=3600))
         ctx = RequestContext()

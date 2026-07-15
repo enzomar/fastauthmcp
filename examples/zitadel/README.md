@@ -1,6 +1,6 @@
-# Zitadel + Ceramic Example
+# Zitadel + FastAuthMCP Example
 
-A working example that demonstrates Ceramic authentication using [Zitadel](https://zitadel.com/) as the identity provider. Includes two MCP servers (Project API and Pet Store) with identity-aware tools, plus an MCP client that emulates LLM tool-calling through the full Ceramic pipeline.
+A working example that demonstrates FastAuthMCP authentication using [Zitadel](https://zitadel.com/) as the identity provider. Includes two MCP servers (Project API and Pet Store) with identity-aware tools, plus an MCP client that emulates LLM tool-calling through the full FastAuthMCP pipeline.
 
 ## What's in this directory
 
@@ -8,13 +8,13 @@ A working example that demonstrates Ceramic authentication using [Zitadel](https
 |------|-------------|
 | `server.py` | **Project API** — MCP server with project management tools |
 | `petstore_server.py` | **Pet Store** — MCP server with CRUD pet operations |
-| `mcp_client.py` | **MCP Client** — Textual TUI emulating LLM tool calls through Ceramic |
-| `test_server.py` | Unit tests using `CeramicTestClient` (no live IDP needed) |
-| `ceramic.yaml` | Ceramic config pointing to the Ceramic OSS Zitadel instance |
+| `mcp_client.py` | **MCP Client** — Textual TUI emulating LLM tool calls through FastAuthMCP |
+| `test_server.py` | Unit tests using `FastAuthMCPTestClient` (no live IDP needed) |
+| `fastauthmcp.yaml` | FastAuthMCP config pointing to the FastAuthMCP OSS Zitadel instance |
 
 ## Quick Start — E2E Demo
 
-The fastest way to see Ceramic in action:
+The fastest way to see FastAuthMCP in action:
 
 ```bash
 # From the repo root
@@ -29,7 +29,7 @@ This launches a **Textual TUI** with three panels:
 │                         │                         │
 │  Step-by-step           │  Simulated LLM          │
 │  explanation of         │  conversation with      │
-│  what Ceramic is        │  tool calls & results   │
+│  what FastAuthMCP is        │  tool calls & results   │
 │  doing under the hood   │                         │
 ├─────────────────────────┴─────────────────────────┤
 │              ⚡ MIDDLEWARE PIPELINE                │
@@ -67,12 +67,12 @@ This makes it immediately clear that authentication and observability happen tra
 # Pet Store (recommended for the E2E demo)
 cd examples/zitadel
 python petstore_server.py                                        # stdio
-CERAMIC_TRANSPORT=sse python petstore_server.py                  # SSE on :8000
-CERAMIC_TRANSPORT=streamable-http python petstore_server.py      # HTTP on :8000
+FASTAUTHMCP_TRANSPORT=sse python petstore_server.py                  # SSE on :8000
+FASTAUTHMCP_TRANSPORT=streamable-http python petstore_server.py      # HTTP on :8000
 
 # Project API (the original example)
 python server.py
-CERAMIC_TRANSPORT=sse python server.py
+FASTAUTHMCP_TRANSPORT=sse python server.py
 ```
 
 ## Running the MCP client manually
@@ -90,16 +90,16 @@ python mcp_client.py --transport stdio
 
 ## Zitadel Setup
 
-### Option A: Use the provided Ceramic OSS instance
+### Option A: Use the provided FastAuthMCP OSS instance
 
-The included `ceramic.yaml` is pre-configured to use the Ceramic OSS Zitadel Cloud project. No setup needed — just run the demo.
+The included `fastauthmcp.yaml` is pre-configured to use the FastAuthMCP OSS Zitadel Cloud project. No setup needed — just run the demo.
 
 ### Option B: Your own Zitadel instance
 
 1. Sign up at [zitadel.cloud](https://zitadel.cloud) or run Zitadel locally
 2. Create a project → add a **Native** application (PKCE, no client secret)
 3. Set redirect URI: `http://localhost:9876/callback`
-4. Update `ceramic.yaml`:
+4. Update `fastauthmcp.yaml`:
 
 ```yaml
 auth:
@@ -115,7 +115,7 @@ auth:
   provider: oidc
   issuer: https://your-instance.zitadel.cloud
   client_id: "YOUR_SERVICE_ACCOUNT_CLIENT_ID"
-  client_secret: ${CERAMIC_AUTH_CLIENT_SECRET}
+  client_secret: ${FASTAUTHMCP_AUTH_CLIENT_SECRET}
   grant_type: client_credentials
   scopes:
     - openid
@@ -128,7 +128,7 @@ auth:
 pytest test_server.py -v
 ```
 
-Uses `CeramicTestClient` to inject identity and verify tool behavior without any network calls or browser interaction.
+Uses `FastAuthMCPTestClient` to inject identity and verify tool behavior without any network calls or browser interaction.
 
 ## Pet Store tools
 

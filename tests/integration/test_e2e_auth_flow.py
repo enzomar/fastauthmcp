@@ -1,6 +1,6 @@
 """End-to-end integration test for the full authentication pipeline.
 
-Creates a CeramicFastMCP server with auth config, issues a token via
+Creates a FastAuthMCP server with auth config, issues a token via
 MockIdentityProvider, makes a tool call through the full pipeline,
 and verifies identity()/access_token() work inside the tool.
 """
@@ -9,18 +9,18 @@ from __future__ import annotations
 
 import pytest
 
-from ceramic.identity import access_token, identity
-from ceramic.server import CeramicFastMCP
-from ceramic.testing import CeramicTestClient, MockIdentityProvider
+from fastauthmcp.identity import access_token, identity
+from fastauthmcp.server import FastAuthMCP
+from fastauthmcp.testing import FastAuthMCPTestClient, MockIdentityProvider
 
 
 @pytest.fixture
 def auth_server(tmp_path, monkeypatch):
-    """Create a CeramicFastMCP server with auth enabled."""
+    """Create a FastAuthMCP server with auth enabled."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
+    monkeypatch.delenv("FASTAUTHMCP_CONFIG", raising=False)
 
-    config_file = tmp_path / "ceramic.yaml"
+    config_file = tmp_path / "fastauthmcp.yaml"
     config_file.write_text(
         "auth:\n"
         "  provider: oidc\n"
@@ -31,7 +31,7 @@ def auth_server(tmp_path, monkeypatch):
         "  enabled: true\n"
     )
 
-    server = CeramicFastMCP(name="e2e-server", config=str(config_file))
+    server = FastAuthMCP(name="e2e-server", config=str(config_file))
 
     @server.tool()
     def whoami() -> dict:
@@ -76,7 +76,7 @@ class TestE2EAuthFlow:
         assert payload["email"] == "alice@example.com"
 
         # Create a test client that simulates the authenticated user
-        client = CeramicTestClient(
+        client = FastAuthMCPTestClient(
             auth_server,
             email="alice@example.com",
             subject="user-42",
@@ -97,14 +97,14 @@ class TestE2EAuthFlow:
     @pytest.mark.asyncio
     async def test_unauthenticated_tool_call(self, auth_server):
         """Tool call without identity returns tool_not_found or works depending on config."""
-        client = CeramicTestClient(
+        client = FastAuthMCPTestClient(
             auth_server,
             email=None,
             subject=None,
         )
 
         # Even an unauthenticated client can call tools that don't require auth
-        # (CeramicTestClient injects identity directly)
+        # (FastAuthMCPTestClient injects identity directly)
         result = await client.call_tool("whoami")
 
         # identity() still works — returns the injected (None) values
@@ -114,7 +114,7 @@ class TestE2EAuthFlow:
     @pytest.mark.asyncio
     async def test_nonexistent_tool(self, auth_server):
         """Calling a nonexistent tool returns an error dict."""
-        client = CeramicTestClient(
+        client = FastAuthMCPTestClient(
             auth_server,
             email="user@example.com",
             subject="user-1",

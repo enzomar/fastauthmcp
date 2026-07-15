@@ -13,7 +13,7 @@ from hypothesis import given, settings, assume
 from hypothesis import strategies as st
 from unittest.mock import MagicMock
 
-from ceramic.resilience import CircuitBreaker, CircuitState
+from fastauthmcp.resilience import CircuitBreaker, CircuitState
 
 
 # ---------------------------------------------------------------------------

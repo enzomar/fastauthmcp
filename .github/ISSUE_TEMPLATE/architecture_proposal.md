@@ -26,14 +26,14 @@ How should it work after this change?
 
 ### Components Affected
 
-- [ ] `ceramic/server.py` (CeramicFastMCP)
-- [ ] `ceramic/middleware/` (pipeline)
-- [ ] `ceramic/auth/` (OAuth/OIDC)
-- [ ] `ceramic/config.py` (configuration models)
-- [ ] `ceramic/identity.py` (identity propagation)
-- [ ] `ceramic/resilience.py` (circuit breaker)
-- [ ] `ceramic/security.py` (TLS/redaction)
-- [ ] Public API (`ceramic/__init__.py`)
+- [ ] `fastauthmcp/server.py` (FastAuthMCP)
+- [ ] `fastauthmcp/middleware/` (pipeline)
+- [ ] `fastauthmcp/auth/` (OAuth/OIDC)
+- [ ] `fastauthmcp/config.py` (configuration models)
+- [ ] `fastauthmcp/identity.py` (identity propagation)
+- [ ] `fastauthmcp/resilience.py` (circuit breaker)
+- [ ] `fastauthmcp/security.py` (TLS/redaction)
+- [ ] Public API (`fastauthmcp/__init__.py`)
 - [ ] Other: 
 
 ### Migration Path

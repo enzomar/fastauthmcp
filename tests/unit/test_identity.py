@@ -1,11 +1,11 @@
-"""Tests for the Ceramic identity context module."""
+"""Tests for the FastAuthMCP identity context module."""
 
 import contextvars
 from types import MappingProxyType
 
 import pytest
 
-from ceramic.identity import IdentityContext, _identity_context_var, identity
+from fastauthmcp.identity import IdentityContext, _identity_context_var, identity
 
 
 class TestIdentityContext:

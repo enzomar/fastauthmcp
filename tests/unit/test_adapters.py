@@ -11,16 +11,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from ceramic.auth.adapters import (
+from fastauthmcp.auth.adapters import (
     AdapterRegistry,
     EntraOBOAdapter,
     GoogleSTSAdapter,
     RFC8693Adapter,
 )
-from ceramic.config import AuthConfig
-from ceramic.exceptions import AuthenticationError, ConfigurationError, ProviderError
-from ceramic.models import OIDCEndpoints, TokenSet
-from ceramic.resilience import CircuitBreaker, ResilientHttpClient
+from fastauthmcp.config import AuthConfig
+from fastauthmcp.exceptions import (
+    AuthenticationError,
+    ConfigurationError,
+    ProviderError,
+)
+from fastauthmcp.models import OIDCEndpoints, TokenSet
+from fastauthmcp.resilience import CircuitBreaker, ResilientHttpClient
 
 
 # ---------------------------------------------------------------------------

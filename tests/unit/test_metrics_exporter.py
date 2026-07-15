@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from ceramic.config import ObservabilityConfig
-from ceramic.metrics import MetricsExporter
-from ceramic.observability import TelemetryService, get_registry
+from fastauthmcp.config import ObservabilityConfig
+from fastauthmcp.metrics import MetricsExporter
+from fastauthmcp.observability import TelemetryService, get_registry
 
 
 # Ensure the TelemetryService has been instantiated at least once so the
@@ -99,7 +99,7 @@ class TestMetricsASGIApp:
         assert isinstance(body, bytes)
         text = body.decode("utf-8")
         # Prometheus format includes HELP and TYPE lines
-        assert "ceramic_tool_requests_total" in text
+        assert "fastauthmcp_tool_requests_total" in text
 
     async def test_non_metrics_path_returns_404(self, app) -> None:
         scope = {"type": "http", "path": "/other", "method": "GET"}
@@ -166,15 +166,15 @@ class TestMetricsASGIApp:
         await app(scope, mock_receive, send)
 
         text = send.events[1]["body"].decode("utf-8")
-        assert "ceramic_tool_requests_total" in text
-        assert "ceramic_tool_errors_total" in text
-        assert "ceramic_tool_duration_milliseconds" in text
+        assert "fastauthmcp_tool_requests_total" in text
+        assert "fastauthmcp_tool_errors_total" in text
+        assert "fastauthmcp_tool_duration_milliseconds" in text
 
     async def test_uses_shared_registry(self, app) -> None:
         """Ensure the ASGI app uses the same registry from observability module."""
         from prometheus_client import generate_latest
 
-        from ceramic.observability import get_registry
+        from fastauthmcp.observability import get_registry
 
         # The output from the app should match generate_latest with our registry
         scope = {"type": "http", "path": "/metrics", "method": "GET"}

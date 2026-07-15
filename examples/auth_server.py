@@ -1,13 +1,13 @@
-"""Authenticated Ceramic server with identity access.
+"""Authenticated FastAuthMCP server with identity access.
 
-Requires a ceramic.yaml with an auth section configured.
-See ceramic.yaml.example for reference.
+Requires a fastauthmcp.yaml with an auth section configured.
+See fastauthmcp.yaml.example for reference.
 
 Run with:
-    ceramic run
+    fastauthmcp run
 """
 
-from ceramic import FastMCP, identity
+from fastauthmcp import FastMCP, identity
 
 mcp = FastMCP("auth-server")
 

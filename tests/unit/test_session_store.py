@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from ceramic.exceptions import SessionError
-from ceramic.models import Session, TokenSet
-from ceramic.sessions import InMemorySessionStore
+from fastauthmcp.exceptions import SessionError
+from fastauthmcp.models import Session, TokenSet
+from fastauthmcp.sessions import InMemorySessionStore
 
 
 def _make_token_set(access: str = "access-123") -> TokenSet:

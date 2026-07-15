@@ -8,8 +8,8 @@ from __future__ import annotations
 import pytest
 from hypothesis import given, strategies as st
 
-from ceramic.exceptions import ConfigurationError
-from ceramic.security import TLSEnforcer
+from fastauthmcp.exceptions import ConfigurationError
+from fastauthmcp.security import TLSEnforcer
 
 enforcer = TLSEnforcer()
 

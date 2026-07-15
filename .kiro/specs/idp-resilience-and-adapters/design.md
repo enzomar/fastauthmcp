@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design introduces three new subsystems into Ceramic's auth layer: a pluggable token exchange adapter system, a circuit breaker for IDP HTTP calls, and a resilient JWKS manager with request coalescing and stale-while-revalidate caching. All three integrate into the existing `OAuthService` and `JWKSVerifier` without changing the public API surface.
+This design introduces three new subsystems into FastAuthMCP's auth layer: a pluggable token exchange adapter system, a circuit breaker for IDP HTTP calls, and a resilient JWKS manager with request coalescing and stale-while-revalidate caching. All three integrate into the existing `OAuthService` and `JWKSVerifier` without changing the public API surface.
 
 ## Architecture
 
@@ -10,7 +10,7 @@ This design introduces three new subsystems into Ceramic's auth layer: a pluggab
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        CeramicFastMCP                                │
+│                        FastAuthMCPFastMCP                                │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │                  AuthenticationMiddleware                       │  │
 │  │  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐  │  │
@@ -67,36 +67,36 @@ Token arrives → JWKSManager.get_signing_key(kid)
 
 | File | Purpose |
 |------|---------|
-| `ceramic/auth/adapters/__init__.py` | Re-exports: TokenExchangeAdapter, AdapterRegistry, RFC8693Adapter, GoogleSTSAdapter, EntraOBOAdapter |
-| `ceramic/auth/adapters/base.py` | TokenExchangeAdapter Protocol definition |
-| `ceramic/auth/adapters/registry.py` | AdapterRegistry class (provider selection logic) |
-| `ceramic/auth/adapters/rfc8693.py` | RFC8693Adapter — default RFC 8693 token exchange |
-| `ceramic/auth/adapters/google.py` | GoogleSTSAdapter — Google Cloud STS with camelCase params |
-| `ceramic/auth/adapters/entra.py` | EntraOBOAdapter — Microsoft Entra ID on-behalf-of flow |
-| `ceramic/resilience.py` | CircuitBreaker, ResilientHttpClient |
-| `ceramic/auth/jwks_manager.py` | JWKSManager with coalescing, backoff, stale-while-revalidate |
+| `fastauthmcp/auth/adapters/__init__.py` | Re-exports: TokenExchangeAdapter, AdapterRegistry, RFC8693Adapter, GoogleSTSAdapter, EntraOBOAdapter |
+| `fastauthmcp/auth/adapters/base.py` | TokenExchangeAdapter Protocol definition |
+| `fastauthmcp/auth/adapters/registry.py` | AdapterRegistry class (provider selection logic) |
+| `fastauthmcp/auth/adapters/rfc8693.py` | RFC8693Adapter — default RFC 8693 token exchange |
+| `fastauthmcp/auth/adapters/google.py` | GoogleSTSAdapter — Google Cloud STS with camelCase params |
+| `fastauthmcp/auth/adapters/entra.py` | EntraOBOAdapter — Microsoft Entra ID on-behalf-of flow |
+| `fastauthmcp/resilience.py` | CircuitBreaker, ResilientHttpClient |
+| `fastauthmcp/auth/jwks_manager.py` | JWKSManager with coalescing, backoff, stale-while-revalidate |
 
 ## Modified Files
 
 | File | Changes |
 |------|---------|
-| `ceramic/config.py` | Add `CircuitBreakerConfig`, `token_exchange_provider` field, `jwks_cache_ttl` field |
-| `ceramic/auth/oauth.py` | Use `ResilientHttpClient` instead of raw httpx; delegate token exchange to `AdapterRegistry` |
-| `ceramic/middleware/authentication.py` | Replace `JWKSVerifier` with `JWKSManager`; pass circuit breaker to OAuthService |
-| `ceramic/server.py` | Instantiate CircuitBreaker and share it across OAuthService and JWKSManager |
+| `fastauthmcp/config.py` | Add `CircuitBreakerConfig`, `token_exchange_provider` field, `jwks_cache_ttl` field |
+| `fastauthmcp/auth/oauth.py` | Use `ResilientHttpClient` instead of raw httpx; delegate token exchange to `AdapterRegistry` |
+| `fastauthmcp/middleware/authentication.py` | Replace `JWKSVerifier` with `JWKSManager`; pass circuit breaker to OAuthService |
+| `fastauthmcp/server.py` | Instantiate CircuitBreaker and share it across OAuthService and JWKSManager |
 
 ---
 
 ## Detailed Design
 
-### 1. Token Exchange Adapter System (`ceramic/auth/adapters.py`)
+### 1. Token Exchange Adapter System (`fastauthmcp/auth/adapters.py`)
 
 #### Protocol
 
 ```python
 from typing import Protocol
-from ceramic.config import AuthConfig
-from ceramic.models import OIDCEndpoints, TokenSet
+from fastauthmcp.config import AuthConfig
+from fastauthmcp.models import OIDCEndpoints, TokenSet
 
 class TokenExchangeAdapter(Protocol):
     """Protocol for provider-specific token exchange implementations."""
@@ -221,7 +221,7 @@ class EntraOBOAdapter:
 
 ---
 
-### 2. Circuit Breaker (`ceramic/resilience.py`)
+### 2. Circuit Breaker (`fastauthmcp/resilience.py`)
 
 #### State Machine
 
@@ -229,7 +229,7 @@ class EntraOBOAdapter:
 import asyncio
 import time
 from enum import Enum
-from ceramic.exceptions import ProviderError
+from fastauthmcp.exceptions import ProviderError
 
 class CircuitState(Enum):
     CLOSED = "closed"
@@ -380,7 +380,7 @@ class ResilientHttpClient:
 
 ---
 
-### 3. JWKS Manager (`ceramic/auth/jwks_manager.py`)
+### 3. JWKS Manager (`fastauthmcp/auth/jwks_manager.py`)
 
 The new `JWKSManager` replaces the current `JWKSVerifier` class, implementing request coalescing, exponential backoff with jitter, and stale-while-revalidate caching.
 
@@ -531,7 +531,7 @@ class JWKSManager:
 
 ---
 
-### 4. Configuration Changes (`ceramic/config.py`)
+### 4. Configuration Changes (`fastauthmcp/config.py`)
 
 #### New Models
 
@@ -566,7 +566,7 @@ class AuthConfig(BaseModel):
     )
 ```
 
-#### Example ceramic.yaml
+#### Example fastauthmcp.yaml
 
 ```yaml
 auth:
@@ -585,9 +585,9 @@ auth:
 
 ---
 
-### 5. Integration in `ceramic/server.py`
+### 5. Integration in `fastauthmcp/server.py`
 
-The `CeramicFastMCP._build_pipeline()` method changes to:
+The `FastAuthMCPFastMCP._build_pipeline()` method changes to:
 
 ```python
 def _build_pipeline(self) -> MiddlewarePipeline:
@@ -687,7 +687,7 @@ The `_populate_identity_async` method uses `JWKSManager.verify_token()` instead 
 
 ## Backward Compatibility
 
-- **No breaking changes to public API.** `identity()`, `access_token()`, `FastMCP`, and `CeramicTestClient` all remain unchanged.
+- **No breaking changes to public API.** `identity()`, `access_token()`, `FastMCP`, and `FastAuthMCPTestClient` all remain unchanged.
 - **No new required config fields.** All new fields (`token_exchange_provider`, `circuit_breaker`, `jwks_cache_ttl`) are optional with sensible defaults.
 - **Default adapter is RFC 8693.** Existing `grant_type: token_exchange` configs continue to work without adding `token_exchange_provider`.
 - **JWKSVerifier → JWKSManager**: Internal replacement. The verification API (`verify_token(token) -> claims`) stays the same.

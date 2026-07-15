@@ -1,9 +1,9 @@
 """Tests for IdentityContext propagation via contextvars.
 
 Validates:
-- ceramic.identity() raises RuntimeError outside request context
-- ceramic.identity() returns the correct IdentityContext during a request
-- ctx.identity is ceramic.identity() (same object, not just equal)
+- fastauthmcp.identity() raises RuntimeError outside request context
+- fastauthmcp.identity() returns the correct IdentityContext during a request
+- ctx.identity is fastauthmcp.identity() (same object, not just equal)
 - IdentityContext is immutable (assignment raises AttributeError)
 - ctx.identity is None when auth is disabled (no middleware sets it)
 
@@ -21,12 +21,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-import ceramic
-from ceramic.config import AuthConfig
-from ceramic.identity import IdentityContext, _identity_context_var, identity
-from ceramic.middleware.authentication import AuthenticationMiddleware
-from ceramic.middleware.pipeline import RequestContext
-from ceramic.models import TokenSet
+import fastauthmcp
+from fastauthmcp.config import AuthConfig
+from fastauthmcp.identity import IdentityContext, _identity_context_var, identity
+from fastauthmcp.middleware.authentication import AuthenticationMiddleware
+from fastauthmcp.middleware.pipeline import RequestContext
+from fastauthmcp.models import TokenSet
 
 
 # --- Helpers ---
@@ -66,7 +66,7 @@ def _make_token_set(claims: dict | None = None) -> TokenSet:
 
 
 class TestIdentityOutsideContext:
-    """ceramic.identity() must raise RuntimeError when no request context is active."""
+    """fastauthmcp.identity() must raise RuntimeError when no request context is active."""
 
     def test_raises_runtime_error_in_clean_context(self):
         """Calling identity() in a fresh context (no contextvar set) raises RuntimeError."""
@@ -82,13 +82,13 @@ class TestIdentityOutsideContext:
         ctx.run(_run)
 
     def test_module_level_function_raises(self):
-        """The module-level ceramic.identity() also raises RuntimeError."""
+        """The module-level fastauthmcp.identity() also raises RuntimeError."""
 
         def _run():
             with pytest.raises(
                 RuntimeError, match="outside of an active request context"
             ):
-                ceramic.identity()
+                fastauthmcp.identity()
 
         ctx = contextvars.copy_context()
         ctx.run(_run)
@@ -110,7 +110,7 @@ class TestIdentityOutsideContext:
 
 
 class TestIdentityReturnsCorrectContext:
-    """ceramic.identity() returns the correct IdentityContext when set."""
+    """fastauthmcp.identity() returns the correct IdentityContext when set."""
 
     def test_returns_identity_when_contextvar_set(self):
         """identity() returns the IdentityContext from the contextvar."""
@@ -142,11 +142,11 @@ class TestIdentityReturnsCorrectContext:
 
 
 class TestDualIdentityAccessEquivalence:
-    """ctx.identity and ceramic.identity() must return the SAME object (is, not ==)."""
+    """ctx.identity and fastauthmcp.identity() must return the SAME object (is, not ==)."""
 
     @pytest.mark.asyncio
-    async def test_ctx_identity_is_ceramic_identity(self):
-        """After middleware runs, ctx.identity is ceramic.identity() (same object)."""
+    async def test_ctx_identity_is_fastauthmcp_identity(self):
+        """After middleware runs, ctx.identity is fastauthmcp.identity() (same object)."""
         auth_config = AuthConfig(
             provider="oidc",
             issuer="https://idp.example.com",
@@ -170,20 +170,20 @@ class TestDualIdentityAccessEquivalence:
 
         async def handler():
             nonlocal identity_during_request
-            # Capture what ceramic.identity() returns during handler execution
-            identity_during_request = ceramic.identity()
+            # Capture what fastauthmcp.identity() returns during handler execution
+            identity_during_request = fastauthmcp.identity()
             return {"result": "ok"}
 
         await middleware(request_ctx, handler)
 
-        # ctx.identity and what ceramic.identity() returned must be the same object
+        # ctx.identity and what fastauthmcp.identity() returned must be the same object
         assert request_ctx.identity is not None
         assert identity_during_request is not None
         assert request_ctx.identity is identity_during_request
 
     @pytest.mark.asyncio
     async def test_both_access_paths_have_same_fields(self):
-        """Both ctx.identity and ceramic.identity() expose identical field values."""
+        """Both ctx.identity and fastauthmcp.identity() expose identical field values."""
         claims = {
             "sub": "user-99",
             "email": "dual@test.com",
@@ -211,7 +211,7 @@ class TestDualIdentityAccessEquivalence:
 
         async def handler():
             nonlocal captured_identity
-            captured_identity = ceramic.identity()
+            captured_identity = fastauthmcp.identity()
             return {"result": "ok"}
 
         await middleware(request_ctx, handler)

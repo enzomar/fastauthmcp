@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from ceramic import FastMCP, identity
-from ceramic.testing import CeramicTestClient
+from fastauthmcp import FastMCP, identity
+from fastauthmcp.testing import FastAuthMCPTestClient
 
 
 # --- Test server ---
@@ -42,7 +42,7 @@ def greet(name: str) -> str:
 @pytest.mark.asyncio
 async def test_full_tool_call_with_identity():
     """A tool call receives the full identity context through the pipeline."""
-    client = CeramicTestClient(
+    client = FastAuthMCPTestClient(
         app=mcp,
         email="engineer@company.com",
         subject="user-42",
@@ -60,7 +60,7 @@ async def test_full_tool_call_with_identity():
 @pytest.mark.asyncio
 async def test_tool_with_arguments_and_identity():
     """Tool arguments are passed correctly alongside identity."""
-    client = CeramicTestClient(
+    client = FastAuthMCPTestClient(
         app=mcp,
         email="admin@company.com",
         subject="admin-1",
@@ -72,7 +72,7 @@ async def test_tool_with_arguments_and_identity():
 @pytest.mark.asyncio
 async def test_tool_not_found():
     """Calling a non-existent tool returns an error dict."""
-    client = CeramicTestClient(
+    client = FastAuthMCPTestClient(
         app=mcp,
         email="test@example.com",
     )
@@ -84,8 +84,8 @@ async def test_tool_not_found():
 @pytest.mark.asyncio
 async def test_multiple_calls_isolated():
     """Each call has its own identity (no leakage between calls)."""
-    client_a = CeramicTestClient(app=mcp, email="alice@co.com", subject="a-1")
-    client_b = CeramicTestClient(app=mcp, email="bob@co.com", subject="b-2")
+    client_a = FastAuthMCPTestClient(app=mcp, email="alice@co.com", subject="a-1")
+    client_b = FastAuthMCPTestClient(app=mcp, email="bob@co.com", subject="b-2")
 
     result_a = await client_a.call_tool("get_profile")
     result_b = await client_b.call_tool("get_profile")

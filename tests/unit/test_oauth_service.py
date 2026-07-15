@@ -9,16 +9,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from ceramic.auth.callback_server import CallbackServer
-from ceramic.auth.oauth import (
+from fastauthmcp.auth.callback_server import CallbackServer
+from fastauthmcp.auth.oauth import (
     OAuthService,
     _generate_code_challenge,
     _generate_code_verifier,
     _parse_token_response,
 )
-from ceramic.config import AuthConfig
-from ceramic.exceptions import AuthenticationError, ConfigurationError, ProviderError
-from ceramic.models import OIDCEndpoints, TokenSet
+from fastauthmcp.config import AuthConfig
+from fastauthmcp.exceptions import (
+    AuthenticationError,
+    ConfigurationError,
+    ProviderError,
+)
+from fastauthmcp.models import OIDCEndpoints, TokenSet
 
 
 # --- Fixtures ---
@@ -128,7 +132,9 @@ class TestDiscoverEndpoints:
         mock_resp = _mock_httpx_response(discovery_response)
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             endpoints = await oauth_service.discover_endpoints(
                 "https://idp.example.com"
             )
@@ -143,7 +149,9 @@ class TestDiscoverEndpoints:
         mock_resp = _mock_httpx_response(discovery_response)
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             await oauth_service.discover_endpoints("https://idp.example.com")
 
         assert oauth_service._endpoints is not None
@@ -166,7 +174,9 @@ class TestDiscoverEndpoints:
         mock_resp = _mock_httpx_response(insecure_response)
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             with pytest.raises(ConfigurationError, match="Non-TLS endpoint"):
                 await oauth_service.discover_endpoints("https://idp.example.com")
 
@@ -179,7 +189,9 @@ class TestDiscoverEndpoints:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             with pytest.raises(ProviderError, match="Failed to fetch OIDC discovery"):
                 await oauth_service.discover_endpoints("https://idp.example.com")
 
@@ -189,7 +201,9 @@ class TestDiscoverEndpoints:
         mock_resp = _mock_httpx_response(incomplete)
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             with pytest.raises(ProviderError, match="missing required fields"):
                 await oauth_service.discover_endpoints("https://idp.example.com")
 
@@ -210,7 +224,9 @@ class TestExchangeCode:
         mock_resp = _mock_httpx_response(token_response)
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             token_set = await oauth_service.exchange_code(
                 code="auth-code-123",
                 verifier="test-verifier",
@@ -247,7 +263,9 @@ class TestExchangeCode:
         mock_resp = _mock_httpx_response(token_response)
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             await service.exchange_code(
                 code="auth-code",
                 verifier="verifier",
@@ -277,7 +295,9 @@ class TestExchangeCode:
         )
         mock_client = _mock_async_client(error_resp)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             with pytest.raises(ProviderError, match="Code expired"):
                 await oauth_service.exchange_code(
                     code="bad-code",
@@ -302,7 +322,9 @@ class TestRefreshToken:
         mock_resp = _mock_httpx_response(token_response)
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             token_set = await oauth_service.refresh_token(
                 refresh_token="old-refresh-token"
             )

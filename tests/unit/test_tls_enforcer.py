@@ -6,8 +6,8 @@ import ssl
 
 import pytest
 
-from ceramic.exceptions import ConfigurationError
-from ceramic.security import TLSEnforcer
+from fastauthmcp.exceptions import ConfigurationError
+from fastauthmcp.security import TLSEnforcer
 
 
 class TestValidateUrl:

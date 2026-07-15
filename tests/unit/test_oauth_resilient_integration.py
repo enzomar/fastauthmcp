@@ -14,11 +14,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from ceramic.auth.oauth import OAuthService
-from ceramic.config import AuthConfig
-from ceramic.exceptions import ProviderError
-from ceramic.models import OIDCEndpoints, TokenSet
-from ceramic.resilience import CircuitBreaker, ResilientHttpClient
+from fastauthmcp.auth.oauth import OAuthService
+from fastauthmcp.config import AuthConfig
+from fastauthmcp.exceptions import ProviderError
+from fastauthmcp.models import OIDCEndpoints, TokenSet
+from fastauthmcp.resilience import CircuitBreaker, ResilientHttpClient
 
 
 # --- Fixtures ---
@@ -364,7 +364,9 @@ class TestBackwardCompatibility:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             result = await service.refresh_token(refresh_token="old-token")
 
         assert result.access_token == "raw-httpx-token"
@@ -391,7 +393,9 @@ class TestBackwardCompatibility:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("ceramic.auth.oauth.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
+        ):
             result = await service.discover_endpoints("https://idp.example.com")
 
         assert result.token_endpoint == "https://idp.example.com/token"

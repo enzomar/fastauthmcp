@@ -1,4 +1,4 @@
-# Contributing to Ceramic Framework
+# Contributing to FastAuthMCP Framework
 
 Thanks for your interest in contributing! Here's how to get started.
 
@@ -6,8 +6,8 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ```bash
 # Fork and clone
-git clone https://github.com/YOUR_USERNAME/ceramic-fwk.git
-cd ceramic-fwk
+git clone https://github.com/YOUR_USERNAME/fastauthmcp.git
+cd fastauthmcp
 
 # Install in dev mode
 pip install -e ".[dev]"
@@ -88,7 +88,7 @@ Prefix categories: `feat`, `fix`, `docs`, `refactor`, `test`, `ci`, `chore`
 2. **Description**: What changed, why, how to test
 3. **Tests**: Every PR must include tests (unit minimum, property-based for security)
 4. **Lint**: `ruff check` and `ruff format --check` must pass
-5. **Types**: `mypy ceramic/ --ignore-missing-imports` must pass
+5. **Types**: `mypy fastauthmcp/ --ignore-missing-imports` must pass
 6. **No network in tests**: All HTTP mocked via pytest-mock or test utilities
 7. **Backward compatible**: Config changes must have defaults; public API preserved
 
@@ -103,17 +103,17 @@ Changes to auth, tokens, TLS, or identity require:
 ## Reporting Issues
 
 - Use GitHub Issues with the appropriate template
-- Include: Python version, OS, ceramic-fwk version, steps to reproduce
+- Include: Python version, OS, fastauthmcp version, steps to reproduce
 - A minimal reproducing example is appreciated
 - For security vulnerabilities: use GitHub Security Advisories (private), NOT public issues
 
 ## Architecture
 
-Ceramic uses composition (not inheritance) over FastMCP. The key architectural principles:
+FastAuthMCP uses composition (not inheritance) over FastMCP. The key architectural principles:
 
-1. **CeramicFastMCP** holds a `FastMCP` instance as a private delegate
+1. **FastAuthMCP** holds a `FastMCP` instance as a private delegate
 2. **Middleware pipeline** intercepts requests before/after FastMCP handling
-3. **Configuration-driven** — features activate based on `ceramic.yaml` sections
+3. **Configuration-driven** — features activate based on `fastauthmcp.yaml` sections
 4. **contextvars** propagate request-scoped state (identity, session, trace)
 
-See `.kiro/specs/ceramic-framework/design.md` for the full design document.
+See `.kiro/specs/fastauthmcp-framework/design.md` for the full design document.

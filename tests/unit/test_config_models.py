@@ -11,9 +11,9 @@ We verify only the 5 essential behaviors:
 import pytest
 from pydantic import ValidationError
 
-from ceramic.config import (
+from fastauthmcp.config import (
     AuthConfig,
-    CeramicConfig,
+    FastAuthMCPConfig,
     ObservabilityConfig,
     SessionsConfig,
 )
@@ -26,8 +26,8 @@ class TestConfigModels:
         assert cfg.client_id == "my-app"
         assert cfg.provider == "oidc"
 
-    def test_full_ceramic_config(self):
-        cfg = CeramicConfig(
+    def test_full_fastauthmcp_config(self):
+        cfg = FastAuthMCPConfig(
             auth=AuthConfig(issuer="https://idp.example.com", client_id="app"),
             observability=ObservabilityConfig(log_level="debug"),
             sessions=SessionsConfig(ttl=7200),
@@ -42,7 +42,7 @@ class TestConfigModels:
 
     def test_unknown_keys_rejected(self):
         with pytest.raises(ValidationError, match="extra_forbidden"):
-            CeramicConfig(unknown_field="value")
+            FastAuthMCPConfig(unknown_field="value")
 
     def test_required_fields_enforced(self):
         with pytest.raises(ValidationError, match="issuer"):

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from hypothesis import given, strategies as st
 
-from ceramic.security import LogRedactor
+from fastauthmcp.security import LogRedactor
 
 redactor = LogRedactor()
 

@@ -1,6 +1,6 @@
 """Headless MCP server demonstrating token propagation to downstream APIs.
 
-This example shows two key Ceramic features for cloud/headless deployments:
+This example shows two key FastAuthMCP features for cloud/headless deployments:
 
 1. **access_token()** — Exposes the authenticated user's token to tool code
    so it can be propagated to downstream API calls.
@@ -14,16 +14,16 @@ headless = no browser = cloud deployment.
 
 Usage:
     # Start as SSE server (the headless/cloud way)
-    CERAMIC_TRANSPORT=sse python examples/headless_server.py
+    FASTAUTHMCP_TRANSPORT=sse python examples/headless_server.py
 
     # Start as streamable-http server
-    CERAMIC_TRANSPORT=streamable-http python examples/headless_server.py
+    FASTAUTHMCP_TRANSPORT=streamable-http python examples/headless_server.py
 
     # Or use the demo script:
     ./scripts/demo-headless.sh server
 
 Configuration:
-    See examples/headless_ceramic.yaml for the token_exchange config.
+    See examples/headless_fastauthmcp.yaml for the token_exchange config.
 """
 
 from __future__ import annotations
@@ -32,13 +32,13 @@ import os
 
 import httpx
 
-from ceramic import FastMCP, access_token, identity
+from fastauthmcp import FastMCP, access_token, identity
 
 # ---------------------------------------------------------------------------
 # Server setup
 # ---------------------------------------------------------------------------
 
-config_file = os.environ.get("CERAMIC_CONFIG", "headless_ceramic.yaml")
+config_file = os.environ.get("FASTAUTHMCP_CONFIG", "headless_fastauthmcp.yaml")
 mcp = FastMCP("headless-api", config=config_file)
 
 
@@ -81,7 +81,7 @@ def call_downstream_api(endpoint: str) -> dict:
             endpoint,
             headers={
                 "Authorization": f"Bearer {token}",
-                "X-Request-Source": "ceramic-mcp",
+                "X-Request-Source": "fastauthmcp-mcp",
             },
             timeout=10,
         )
@@ -110,7 +110,7 @@ def get_user_data() -> dict:
     try:
         # Most OIDC providers have a /userinfo endpoint
         resp = httpx.get(
-            "https://ceramic-oss-agq8i8.eu1.zitadel.cloud/oidc/v1/userinfo",
+            "https://fastauthmcp-oss-agq8i8.eu1.zitadel.cloud/oidc/v1/userinfo",
             headers={"Authorization": f"Bearer {token}"},
             timeout=10,
         )
@@ -128,13 +128,13 @@ def get_user_data() -> dict:
 if __name__ == "__main__":
     import logging
 
-    log_level = os.environ.get("CERAMIC_LOG_LEVEL", "INFO").upper()
+    log_level = os.environ.get("FASTAUTHMCP_LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
         level=getattr(logging, log_level, logging.INFO),
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    transport = os.environ.get("CERAMIC_TRANSPORT", "sse")
-    host = os.environ.get("CERAMIC_HOST", "localhost")
-    port = int(os.environ.get("CERAMIC_PORT", "8001"))
+    transport = os.environ.get("FASTAUTHMCP_TRANSPORT", "sse")
+    host = os.environ.get("FASTAUTHMCP_HOST", "localhost")
+    port = int(os.environ.get("FASTAUTHMCP_PORT", "8001"))
     mcp.run(transport=transport, host=host, port=port)

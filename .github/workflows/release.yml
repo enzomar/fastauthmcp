@@ -61,7 +61,7 @@ jobs:
           DATE=$(date +%Y-%m-%d)
           sed -i "s/## \[Unreleased\]/## [Unreleased]\n\n---\n\n## [${{ steps.new.outputs.version }}] — $DATE/" CHANGELOG.md
           echo "" >> CHANGELOG.md
-          echo "[${{ steps.new.outputs.version }}]: https://github.com/enzomar/ceramic-fwk/compare/v${{ steps.current.outputs.version }}...v${{ steps.new.outputs.version }}" >> CHANGELOG.md
+          echo "[${{ steps.new.outputs.version }}]: https://github.com/enzomar/fastauthmcp/compare/v${{ steps.current.outputs.version }}...v${{ steps.new.outputs.version }}" >> CHANGELOG.md
 
       - name: Commit and tag
         run: |

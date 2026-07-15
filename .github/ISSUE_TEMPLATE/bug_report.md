@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in Ceramic
+about: Report a bug in FastAuthMCP
 title: "[Bug] "
 labels: bug
 assignees: ''
@@ -27,14 +27,14 @@ What actually happened. Include error messages or stack traces if available.
 ## Environment
 
 - **Python version**: 
-- **Ceramic version**: 
+- **FastAuthMCP version**: 
 - **OS**: 
 - **FastMCP version**: 
 - **Identity Provider** (if auth-related): 
 
 ## Configuration
 
-Relevant `ceramic.yaml` sections (redact secrets):
+Relevant `fastauthmcp.yaml` sections (redact secrets):
 
 ```yaml
 

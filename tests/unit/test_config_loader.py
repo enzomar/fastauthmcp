@@ -2,9 +2,9 @@
 
 import pytest
 
-from ceramic.config import CeramicConfig
-from ceramic.config_loader import ConfigLoader
-from ceramic.exceptions import ConfigurationError
+from fastauthmcp.config import FastAuthMCPConfig
+from fastauthmcp.config_loader import ConfigLoader
+from fastauthmcp.exceptions import ConfigurationError
 
 
 @pytest.fixture
@@ -14,7 +14,7 @@ def loader():
 
 @pytest.fixture
 def valid_yaml(tmp_path):
-    """Create a valid ceramic.yaml in a temp directory."""
+    """Create a valid fastauthmcp.yaml in a temp directory."""
     content = """\
 observability:
   enabled: true
@@ -22,14 +22,14 @@ observability:
 sessions:
   ttl: 7200
 """
-    path = tmp_path / "ceramic.yaml"
+    path = tmp_path / "fastauthmcp.yaml"
     path.write_text(content)
     return path
 
 
 @pytest.fixture
 def full_yaml(tmp_path):
-    """Create a full ceramic.yaml with auth section."""
+    """Create a full fastauthmcp.yaml with auth section."""
     content = """\
 auth:
   provider: oidc
@@ -44,7 +44,7 @@ observability:
 sessions:
   ttl: 1800
 """
-    path = tmp_path / "ceramic.yaml"
+    path = tmp_path / "fastauthmcp.yaml"
     path.write_text(content)
     return path
 
@@ -65,44 +65,44 @@ class TestConfigLoaderResolution:
             loader.load(path=missing)
 
     def test_load_from_env_var(self, loader, valid_yaml, monkeypatch):
-        monkeypatch.setenv("CERAMIC_CONFIG", str(valid_yaml))
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(valid_yaml))
         config = loader.load()
         assert config.observability is not None
         assert config.observability.log_level == "info"
 
     def test_load_env_var_missing_file(self, loader, tmp_path, monkeypatch):
-        monkeypatch.setenv("CERAMIC_CONFIG", str(tmp_path / "nope.yaml"))
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(tmp_path / "nope.yaml"))
         with pytest.raises(ConfigurationError, match="not found"):
             loader.load()
 
     def test_load_from_cwd(self, loader, tmp_path, monkeypatch):
         content = "sessions:\n  ttl: 3600\n"
-        (tmp_path / "ceramic.yaml").write_text(content)
+        (tmp_path / "fastauthmcp.yaml").write_text(content)
         monkeypatch.chdir(tmp_path)
         config = loader.load()
         assert config.sessions is not None
         assert config.sessions.ttl == 3600
 
     def test_load_no_config_passthrough(self, loader, tmp_path, monkeypatch):
-        """When no config is found anywhere, return empty CeramicConfig."""
+        """When no config is found anywhere, return empty FastAuthMCPConfig."""
         monkeypatch.chdir(tmp_path)
-        monkeypatch.delenv("CERAMIC_CONFIG", raising=False)
+        monkeypatch.delenv("FASTAUTHMCP_CONFIG", raising=False)
         config = loader.load()
-        assert config == CeramicConfig()
+        assert config == FastAuthMCPConfig()
 
     def test_env_var_takes_precedence_over_cwd(self, loader, tmp_path, monkeypatch):
-        """CERAMIC_CONFIG env var takes precedence over CWD ceramic.yaml."""
-        # Create ceramic.yaml in CWD with sessions.ttl=1000
+        """FASTAUTHMCP_CONFIG env var takes precedence over CWD fastauthmcp.yaml."""
+        # Create fastauthmcp.yaml in CWD with sessions.ttl=1000
         cwd_yaml = tmp_path / "cwd"
         cwd_yaml.mkdir()
-        (cwd_yaml / "ceramic.yaml").write_text("sessions:\n  ttl: 1000\n")
+        (cwd_yaml / "fastauthmcp.yaml").write_text("sessions:\n  ttl: 1000\n")
 
         # Create a different config pointed to by env var
         env_yaml = tmp_path / "env_config.yaml"
         env_yaml.write_text("sessions:\n  ttl: 2000\n")
 
         monkeypatch.chdir(cwd_yaml)
-        monkeypatch.setenv("CERAMIC_CONFIG", str(env_yaml))
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(env_yaml))
 
         config = loader.load()
         assert config.sessions.ttl == 2000
@@ -127,13 +127,13 @@ class TestConfigLoaderYAMLParsing:
         empty_yaml = tmp_path / "empty.yaml"
         empty_yaml.write_text("")
         config = loader.load(path=empty_yaml)
-        assert config == CeramicConfig()
+        assert config == FastAuthMCPConfig()
 
     def test_yaml_with_only_comments(self, loader, tmp_path):
         yaml_file = tmp_path / "comments.yaml"
         yaml_file.write_text("# just a comment\n")
         config = loader.load(path=yaml_file)
-        assert config == CeramicConfig()
+        assert config == FastAuthMCPConfig()
 
     def test_non_mapping_top_level(self, loader, tmp_path):
         bad_yaml = tmp_path / "list.yaml"
@@ -152,7 +152,7 @@ class TestConfigLoaderYAMLParsing:
     def test_stderr_output_on_missing_env_path(
         self, loader, tmp_path, monkeypatch, capsys
     ):
-        monkeypatch.setenv("CERAMIC_CONFIG", str(tmp_path / "gone.yaml"))
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(tmp_path / "gone.yaml"))
         with pytest.raises(ConfigurationError):
             loader.load()
         captured = capsys.readouterr()
@@ -171,32 +171,32 @@ class TestEnvOverrides:
     """Tests for environment variable overrides."""
 
     def test_override_scalar_string(self, loader, full_yaml, monkeypatch):
-        monkeypatch.setenv("CERAMIC_AUTH_CLIENT_ID", "overridden-app")
+        monkeypatch.setenv("FASTAUTHMCP_AUTH_CLIENT_ID", "overridden-app")
         config = loader.load(path=full_yaml)
         assert config.auth.client_id == "overridden-app"
 
     def test_override_scalar_int(self, loader, full_yaml, monkeypatch):
-        monkeypatch.setenv("CERAMIC_OBSERVABILITY_METRICS_PORT", "9999")
+        monkeypatch.setenv("FASTAUTHMCP_OBSERVABILITY_METRICS_PORT", "9999")
         config = loader.load(path=full_yaml)
         assert config.observability.metrics_port == 9999
 
     def test_override_scalar_bool_true(self, loader, full_yaml, monkeypatch):
-        monkeypatch.setenv("CERAMIC_OBSERVABILITY_ENABLED", "true")
+        monkeypatch.setenv("FASTAUTHMCP_OBSERVABILITY_ENABLED", "true")
         config = loader.load(path=full_yaml)
         assert config.observability.enabled is True
 
     def test_override_scalar_bool_false(self, loader, full_yaml, monkeypatch):
-        monkeypatch.setenv("CERAMIC_OBSERVABILITY_ENABLED", "false")
+        monkeypatch.setenv("FASTAUTHMCP_OBSERVABILITY_ENABLED", "false")
         config = loader.load(path=full_yaml)
         assert config.observability.enabled is False
 
     def test_override_bool_with_1(self, loader, full_yaml, monkeypatch):
-        monkeypatch.setenv("CERAMIC_OBSERVABILITY_ENABLED", "1")
+        monkeypatch.setenv("FASTAUTHMCP_OBSERVABILITY_ENABLED", "1")
         config = loader.load(path=full_yaml)
         assert config.observability.enabled is True
 
     def test_override_bool_with_0(self, loader, full_yaml, monkeypatch):
-        monkeypatch.setenv("CERAMIC_OBSERVABILITY_ENABLED", "0")
+        monkeypatch.setenv("FASTAUTHMCP_OBSERVABILITY_ENABLED", "0")
         config = loader.load(path=full_yaml)
         assert config.observability.enabled is False
 
@@ -211,36 +211,36 @@ auth:
     - openid
     - profile
 """
-        yaml_path = tmp_path / "ceramic.yaml"
+        yaml_path = tmp_path / "fastauthmcp.yaml"
         yaml_path.write_text(content)
-        monkeypatch.setenv("CERAMIC_AUTH_SCOPES", "custom")
+        monkeypatch.setenv("FASTAUTHMCP_AUTH_SCOPES", "custom")
         config = loader.load(path=yaml_path)
         # scopes should remain unchanged (list not overridden)
         assert config.auth.scopes == ["openid", "profile"]
 
-    def test_ceramic_config_env_not_treated_as_override(
+    def test_fastauthmcp_config_env_not_treated_as_override(
         self, loader, valid_yaml, monkeypatch
     ):
-        """CERAMIC_CONFIG env var should not be treated as a config override."""
-        monkeypatch.setenv("CERAMIC_CONFIG", str(valid_yaml))
+        """FASTAUTHMCP_CONFIG env var should not be treated as a config override."""
+        monkeypatch.setenv("FASTAUTHMCP_CONFIG", str(valid_yaml))
         config = loader.load()
         # Should load normally without error about unknown path
         assert config.observability is not None
 
     def test_override_nested_underscore_field(self, loader, full_yaml, monkeypatch):
-        """CERAMIC_AUTH_CALLBACK_TIMEOUT → auth.callback_timeout."""
-        monkeypatch.setenv("CERAMIC_AUTH_CALLBACK_TIMEOUT", "90")
+        """FASTAUTHMCP_AUTH_CALLBACK_TIMEOUT → auth.callback_timeout."""
+        monkeypatch.setenv("FASTAUTHMCP_AUTH_CALLBACK_TIMEOUT", "90")
         config = loader.load(path=full_yaml)
         assert config.auth.callback_timeout == 90
 
     def test_override_log_level(self, loader, full_yaml, monkeypatch):
-        monkeypatch.setenv("CERAMIC_OBSERVABILITY_LOG_LEVEL", "warning")
+        monkeypatch.setenv("FASTAUTHMCP_OBSERVABILITY_LOG_LEVEL", "warning")
         config = loader.load(path=full_yaml)
         assert config.observability.log_level == "warning"
 
     def test_no_override_when_path_not_in_config(self, loader, valid_yaml, monkeypatch):
         """Env vars targeting non-existent paths are silently ignored."""
-        monkeypatch.setenv("CERAMIC_NONEXISTENT_KEY", "value")
+        monkeypatch.setenv("FASTAUTHMCP_NONEXISTENT_KEY", "value")
         config = loader.load(path=valid_yaml)
         # Should not raise — just load normally
         assert config.observability is not None

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# Record a demo GIF showing the Ceramic auth flow.
+# Record a demo GIF showing the FastAuthMCP auth flow.
 #
 # Prerequisites:
 #   brew install vhs       (https://github.com/charmbracelet/vhs)
@@ -28,7 +28,7 @@ fi
 
 # Create the VHS tape file
 cat > "$ROOT_DIR/docs/demo.tape" << 'EOF'
-# Ceramic Demo — ceramic login → tool call
+# FastAuthMCP Demo — fastauthmcp login → tool call
 Output docs/demo.gif
 Set FontSize 14
 Set Width 800
@@ -37,11 +37,11 @@ Set Theme "Catppuccin Mocha"
 Set Padding 20
 Set TypingSpeed 40ms
 
-Type "# Secure your FastMCP server with Ceramic"
+Type "# Secure your FastMCP server with FastAuthMCP"
 Enter
 Sleep 1s
 
-Type "pip install ceramic-fwk"
+Type "pip install fastauthmcp"
 Enter
 Sleep 2s
 
@@ -63,7 +63,7 @@ Type "# Authenticate with your identity provider"
 Enter
 Sleep 500ms
 
-Type "ceramic login"
+Type "fastauthmcp login"
 Enter
 Sleep 3s
 
@@ -74,7 +74,7 @@ Type "# Check who you are"
 Enter
 Sleep 500ms
 
-Type "ceramic whoami"
+Type "fastauthmcp whoami"
 Enter
 Sleep 2s
 
@@ -85,7 +85,7 @@ Type "# Run the server — fully authenticated"
 Enter
 Sleep 500ms
 
-Type "ceramic run"
+Type "fastauthmcp run"
 Enter
 Sleep 2s
 

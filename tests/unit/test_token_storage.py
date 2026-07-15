@@ -1,4 +1,4 @@
-"""Unit tests for ceramic.auth.token_storage module."""
+"""Unit tests for fastauthmcp.auth.token_storage module."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ceramic.auth.token_storage import (
+from fastauthmcp.auth.token_storage import (
     CredentialManagerStorage,
     EncryptedFileStorage,
     KeychainTokenStorage,
@@ -18,7 +18,7 @@ from ceramic.auth.token_storage import (
     _serialize_token_set,
     get_token_storage,
 )
-from ceramic.models import TokenSet
+from fastauthmcp.models import TokenSet
 
 
 @pytest.fixture
@@ -322,7 +322,7 @@ class TestEncryptedFileStorage:
 class TestGetTokenStorage:
     """Tests for the get_token_storage() auto-detection function."""
 
-    @patch("ceramic.auth.token_storage.sys")
+    @patch("fastauthmcp.auth.token_storage.sys")
     def test_darwin_returns_keychain(self, mock_sys: MagicMock) -> None:
         mock_sys.platform = "darwin"
         mock_keyring = MagicMock()
@@ -330,7 +330,7 @@ class TestGetTokenStorage:
             storage = get_token_storage()
         assert isinstance(storage, KeychainTokenStorage)
 
-    @patch("ceramic.auth.token_storage.sys")
+    @patch("fastauthmcp.auth.token_storage.sys")
     def test_win32_returns_credential_manager(self, mock_sys: MagicMock) -> None:
         mock_sys.platform = "win32"
         mock_keyring = MagicMock()
@@ -338,7 +338,7 @@ class TestGetTokenStorage:
             storage = get_token_storage()
         assert isinstance(storage, CredentialManagerStorage)
 
-    @patch("ceramic.auth.token_storage.sys")
+    @patch("fastauthmcp.auth.token_storage.sys")
     def test_linux_returns_encrypted_file(
         self, mock_sys: MagicMock, tmp_path: Path
     ) -> None:

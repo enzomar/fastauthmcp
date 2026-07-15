@@ -19,15 +19,15 @@ from unittest.mock import MagicMock
 import pytest
 import yaml
 
-from ceramic.config import (
-    CeramicConfig,
+from fastauthmcp.config import (
+    FastAuthMCPConfig,
 )
-from ceramic.config_loader import ConfigLoader
+from fastauthmcp.config_loader import ConfigLoader
 
 
 @pytest.fixture
 def config_file(tmp_path: Path) -> Path:
-    """Create a minimal ceramic.yaml config file with hot_reload enabled."""
+    """Create a minimal fastauthmcp.yaml config file with hot_reload enabled."""
     config_data = {
         "observability": {
             "enabled": True,
@@ -39,14 +39,14 @@ def config_file(tmp_path: Path) -> Path:
             "reloadable_sections": ["observability"],
         },
     }
-    config_path = tmp_path / "ceramic.yaml"
+    config_path = tmp_path / "fastauthmcp.yaml"
     config_path.write_text(yaml.dump(config_data), encoding="utf-8")
     return config_path
 
 
 @pytest.fixture
 def full_config_file(tmp_path: Path) -> Path:
-    """Create a ceramic.yaml with auth and sessions (non-reloadable)."""
+    """Create a fastauthmcp.yaml with auth and sessions (non-reloadable)."""
     config_data = {
         "auth": {
             "provider": "oidc",
@@ -69,7 +69,7 @@ def full_config_file(tmp_path: Path) -> Path:
             "reloadable_sections": ["observability"],
         },
     }
-    config_path = tmp_path / "ceramic.yaml"
+    config_path = tmp_path / "fastauthmcp.yaml"
     config_path.write_text(yaml.dump(config_data), encoding="utf-8")
     return config_path
 
@@ -104,7 +104,7 @@ class TestWatchDetectsChanges:
 
             assert callback.call_count >= 1
             reloaded_config = callback.call_args[0][0]
-            assert isinstance(reloaded_config, CeramicConfig)
+            assert isinstance(reloaded_config, FastAuthMCPConfig)
             assert reloaded_config.observability is not None
             assert reloaded_config.observability.log_level == "debug"
         finally:
@@ -264,7 +264,7 @@ class TestLogging:
         loader = ConfigLoader()
         callback = MagicMock()
 
-        with caplog.at_level(logging.INFO, logger="ceramic.config_loader"):
+        with caplog.at_level(logging.INFO, logger="fastauthmcp.config_loader"):
             loader.watch(callback, config_path=config_file, interval=1)
             try:
                 time.sleep(0.5)
@@ -294,7 +294,7 @@ class TestLogging:
         loader = ConfigLoader()
         callback = MagicMock()
 
-        with caplog.at_level(logging.WARNING, logger="ceramic.config_loader"):
+        with caplog.at_level(logging.WARNING, logger="fastauthmcp.config_loader"):
             loader.watch(callback, config_path=config_file, interval=1)
             try:
                 time.sleep(0.5)

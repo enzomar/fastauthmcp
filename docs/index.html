@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ceramic — Enterprise Authentication for FastMCP (Python)</title>
-<meta name="description" content="Ceramic is a production-grade Python framework built on top of FastMCP that adds authentication, observability and enterprise security to any MCP application." />
+<title>FastAuthMCP — Enterprise Authentication for FastMCP (Python)</title>
+<meta name="description" content="FastAuthMCP is a production-grade Python framework built on top of FastMCP that adds authentication, observability and enterprise security to any MCP application." />
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -61,21 +61,21 @@ body {
       <span class="relative flex h-8 w-8 items-center justify-center rounded-lg" style="background:linear-gradient(135deg,#22d3ee,#8b5cf6)">
         <span class="h-3 w-3 rounded-sm bg-ink"></span>
       </span>
-      <span class="font-bold tracking-tight text-[16px]">ceramic</span>
+      <span class="font-bold tracking-tight text-[16px]">fastauthmcp</span>
     </a>
     <nav class="hidden md:flex items-center gap-8 text-sm text-white/50 font-mono">
       <a href="#how" class="hover:text-white transition-colors duration-300">how it works</a>
       <a href="#features" class="hover:text-white transition-colors duration-300">features</a>
       <a href="#scenarios" class="hover:text-white transition-colors duration-300">scenarios</a>
       <a href="#architecture" class="hover:text-white transition-colors duration-300">architecture</a>
-      <a href="https://github.com/enzomar/ceramic-fwk/blob/main/docs/GUIDE.md" class="hover:text-white transition-colors duration-300">docs</a>
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/GUIDE.md" class="hover:text-white transition-colors duration-300">docs</a>
     </nav>
     <div class="flex items-center gap-3 relative z-10">
       <a href="https://www.paypal.com/ncp/payment/DA8FJHJT5GSZY" class="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 2.22A.773.773 0 0 1 5.706 1.6h6.574c2.18 0 3.9.575 4.957 1.656.49.502.832 1.09 1.017 1.748.196.703.204 1.54.024 2.487l-.015.076v.215l.168.095c.326.18.588.388.791.625.34.396.56.884.647 1.449.09.584.046 1.264-.127 2.018-.2.87-.525 1.627-.965 2.25a4.678 4.678 0 0 1-1.525 1.442 5.73 5.73 0 0 1-1.934.782c-.7.163-1.49.244-2.354.244H12.38a.95.95 0 0 0-.938.806l-.036.197-.628 3.985-.028.142a.95.95 0 0 1-.937.806H7.076z"/></svg>
         <span class="hidden sm:inline">Support</span>
       </a>
-      <a href="https://github.com/enzomar/ceramic-fwk" class="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors">
+      <a href="https://github.com/enzomar/fastauthmcp" class="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.5 0 12.3c0 5.44 3.44 10.05 8.2 11.68.6.11.82-.27.82-.6 0-.29-.01-1.06-.02-2.08-3.34.75-4.04-1.66-4.04-1.66-.55-1.43-1.33-1.82-1.33-1.82-1.09-.77.08-.75.08-.75 1.2.09 1.84 1.26 1.84 1.26 1.07 1.87 2.8 1.33 3.49 1.02.11-.79.42-1.33.76-1.64-2.67-.31-5.47-1.37-5.47-6.09 0-1.35.47-2.45 1.24-3.31-.12-.31-.54-1.57.12-3.27 0 0 1.01-.33 3.3 1.26a11.3 11.3 0 0 1 6 0c2.29-1.59 3.3-1.26 3.3-1.26.66 1.7.24 2.96.12 3.27.77.86 1.24 1.96 1.24 3.31 0 4.73-2.81 5.77-5.49 6.08.43.38.81 1.14.81 2.3 0 1.66-.02 3-.02 3.41 0 .33.22.72.83.6C20.57 22.34 24 17.74 24 12.3 24 5.5 18.63 0 12 0Z"/></svg>
         <span class="hidden sm:inline">GitHub</span>
       </a>
@@ -112,10 +112,10 @@ body {
     <!-- CTA -->
     <div class="hero-fade flex flex-wrap items-center justify-center gap-4 mb-16" style="animation-delay:0.5s">
       <a href="#get-started" class="group relative px-8 py-4 rounded-xl font-semibold text-ink bg-gradient-to-r from-cyan to-violet overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(34,211,238,0.4)]">
-        <span class="relative z-10">pip install ceramic-fwk</span>
+        <span class="relative z-10">pip install fastauthmcp</span>
         <div class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
       </a>
-      <a href="https://github.com/enzomar/ceramic-fwk" class="px-8 py-4 rounded-xl font-semibold border border-white/15 text-white/80 hover:border-cyan/50 hover:text-white hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] transition-all duration-300 flex items-center gap-2">
+      <a href="https://github.com/enzomar/fastauthmcp" class="px-8 py-4 rounded-xl font-semibold border border-white/15 text-white/80 hover:border-cyan/50 hover:text-white hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] transition-all duration-300 flex items-center gap-2">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.5 0 12.3c0 5.44 3.44 10.05 8.2 11.68.6.11.82-.27.82-.6 0-.29-.01-1.06-.02-2.08-3.34.75-4.04-1.66-4.04-1.66-.55-1.43-1.33-1.82-1.33-1.82-1.09-.77.08-.75.08-.75 1.2.09 1.84 1.26 1.84 1.26 1.07 1.87 2.8 1.33 3.49 1.02.11-.79.42-1.33.76-1.64-2.67-.31-5.47-1.37-5.47-6.09 0-1.35.47-2.45 1.24-3.31-.12-.31-.54-1.57.12-3.27 0 0 1.01-.33 3.3 1.26a11.3 11.3 0 0 1 6 0c2.29-1.59 3.3-1.26 3.3-1.26.66 1.7.24 2.96.12 3.27.77.86 1.24 1.96 1.24 3.31 0 4.73-2.81 5.77-5.49 6.08.43.38.81 1.14.81 2.3 0 1.66-.02 3-.02 3.41 0 .33.22.72.83.6C20.57 22.34 24 17.74 24 12.3 24 5.5 18.63 0 12 0Z"/></svg>
         Star on GitHub
       </a>
@@ -141,7 +141,7 @@ body {
     <div class="text-center mb-20">
       <p class="font-mono text-xs text-cyan/80 tracking-[0.2em] uppercase mb-4">the change</p>
       <h2 class="text-4xl sm:text-6xl font-black tracking-tight">Two lines. <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">That's it.</span></h2>
-      <p class="text-white/40 mt-6 max-w-xl mx-auto text-lg">Point Ceramic at your FastMCP app. Every tool call is now authenticated and observed.</p>
+      <p class="text-white/40 mt-6 max-w-xl mx-auto text-lg">Point FastAuthMCP at your FastMCP app. Every tool call is now authenticated and observed.</p>
     </div>
 
     <!-- Code comparison with morphing animation -->
@@ -173,12 +173,12 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>)
           <span class="w-3 h-3 rounded-full bg-[#ffbd2e]/80"></span>
           <span class="w-3 h-3 rounded-full bg-[#27c93f]/80"></span>
           <span class="font-mono text-xs text-white/30 ml-3">server.py</span>
-          <span class="ml-auto font-mono text-[10px] px-2 py-0.5 rounded-full bg-cyan/10 text-cyan border border-cyan/30">ceramic ✨</span>
+          <span class="ml-auto font-mono text-[10px] px-2 py-0.5 rounded-full bg-cyan/10 text-cyan border border-cyan/30">fastauthmcp ✨</span>
         </div>
         <pre class="relative font-mono text-sm leading-8 p-6 text-white/70"><span class="text-white/30"># Same server, enterprise-grade</span>
-<span class="text-[#f97583]">from</span> <span class="text-cyan font-bold">ceramic</span> <span class="text-[#f97583]">import</span> FastMCP
+<span class="text-[#f97583]">from</span> <span class="text-cyan font-bold">fastauthmcp</span> <span class="text-[#f97583]">import</span> FastMCP
 
-app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class="text-[#79b8ff]">"ceramic.yaml"</span>)
+app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class="text-[#79b8ff]">"fastauthmcp.yaml"</span>)
 
 <span class="text-[#b392f0]">@app.tool()</span>
 <span class="text-[#f97583]">def</span> <span class="text-[#b392f0]">forecast</span>(city: str) -> str:
@@ -189,12 +189,17 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
     <!-- Capability chips that appear -->
     <div class="flex flex-wrap justify-center gap-3 mt-12" id="caps">
       <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Authentication</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Per-Tool Authorization</div>
       <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> OpenTelemetry</div>
       <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Sessions</div>
       <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Prometheus Metrics</div>
       <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Circuit Breaker</div>
       <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Token Exchange</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Rate Limiting</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Multi-IdP</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Audit Logging</div>
       <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> SOAP Support</div>
+      <div class="cap-chip border border-white/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 bg-white/[0.02] backdrop-blur-sm"><span class="text-emerald">✓</span> Schema Export</div>
     </div>
   </div>
 </section>
@@ -215,7 +220,7 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
           <span class="w-3 h-3 rounded-full bg-[#ff5f56]/80"></span>
           <span class="w-3 h-3 rounded-full bg-[#ffbd2e]/80"></span>
           <span class="w-3 h-3 rounded-full bg-[#27c93f]/80"></span>
-          <span class="font-mono text-xs text-white/30 ml-3">ceramic.yaml</span>
+          <span class="font-mono text-xs text-white/30 ml-3">fastauthmcp.yaml</span>
         </div>
         <div class="p-6 font-mono text-sm space-y-4">
           <div class="flex items-center justify-between">
@@ -319,7 +324,7 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
           </div>
           <div>
             <h3 class="font-bold text-xl mb-3">Built on FastMCP</h3>
-            <p class="text-white/45 text-sm leading-relaxed">Ceramic doesn't fork — it wraps via composition. Your existing tools, prompts, and resources remain untouched. Remove Ceramic and your app still works. It's a layer on top, never a lock-in.</p>
+            <p class="text-white/45 text-sm leading-relaxed">FastAuthMCP doesn't fork — it wraps via composition. Your existing tools, prompts, and resources remain untouched. Remove FastAuthMCP and your app still works. It's a layer on top, never a lock-in.</p>
           </div>
         </div>
       </div>
@@ -376,8 +381,8 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
   <div class="max-w-6xl mx-auto px-6">
     <div class="text-center mb-20">
       <p class="font-mono text-xs text-violet/80 tracking-[0.2em] uppercase mb-4">comparison</p>
-      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Why Ceramic over <span class="bg-gradient-to-r from-violet to-cyan bg-clip-text text-transparent">alternatives?</span></h2>
-      <p class="text-white/40 mt-6 max-w-lg mx-auto">How Ceramic compares to rolling your own auth or using an API gateway.</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Why FastAuthMCP over <span class="bg-gradient-to-r from-violet to-cyan bg-clip-text text-transparent">alternatives?</span></h2>
+      <p class="text-white/40 mt-6 max-w-lg mx-auto">How FastAuthMCP compares to rolling your own auth or using an API gateway.</p>
     </div>
 
     <div class="rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl overflow-hidden">
@@ -386,7 +391,7 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
           <thead>
             <tr class="border-b border-white/[0.06]">
               <th class="px-6 py-4 font-mono text-xs text-white/40 font-normal"></th>
-              <th class="px-6 py-4 font-semibold text-cyan">Ceramic</th>
+              <th class="px-6 py-4 font-semibold text-cyan">FastAuthMCP</th>
               <th class="px-6 py-4 font-semibold text-white/60">DIY Middleware</th>
               <th class="px-6 py-4 font-semibold text-white/60">API Gateway</th>
             </tr>
@@ -471,7 +476,7 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
     <div class="text-center mb-20">
       <p class="font-mono text-xs text-cyan/80 tracking-[0.2em] uppercase mb-4">deployment scenarios</p>
       <h2 class="text-4xl sm:text-5xl font-black tracking-tight">One codebase. <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">Two deployment modes.</span></h2>
-      <p class="text-white/40 mt-6 max-w-2xl mx-auto text-lg">Your MCP tools call downstream APIs on behalf of the user. Ceramic handles authentication for both local and cloud — same tool code, different config.</p>
+      <p class="text-white/40 mt-6 max-w-2xl mx-auto text-lg">Your MCP tools call downstream APIs on behalf of the user. FastAuthMCP handles authentication for both local and cloud — same tool code, different config.</p>
     </div>
 
     <div class="grid lg:grid-cols-2 gap-6">
@@ -490,22 +495,22 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
             </div>
           </div>
 
-          <!-- Pain without Ceramic -->
+          <!-- Pain without FastAuthMCP -->
           <div class="mb-6 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
             <p class="text-xs font-mono text-white/30 mb-2">WITHOUT CERAMIC</p>
             <p class="text-white/50 text-sm leading-relaxed">Hand-roll OAuth PKCE, build a local callback server, manage token refresh, store credentials securely, wire the token into every HTTP call. Days of work before your first tool.</p>
           </div>
 
-          <!-- Solution with Ceramic -->
+          <!-- Solution with FastAuthMCP -->
           <div class="mb-6 rounded-lg border border-cyan/20 bg-cyan/[0.03] p-4">
             <p class="text-xs font-mono text-cyan/70 mb-2">WITH CERAMIC</p>
-            <p class="text-white/60 text-sm leading-relaxed"><code class="text-cyan">ceramic login</code> → browser opens → token stored in Keychain → every tool call authenticated. <strong class="text-white/80">30 seconds.</strong></p>
+            <p class="text-white/60 text-sm leading-relaxed"><code class="text-cyan">fastauthmcp login</code> → browser opens → token stored in Keychain → every tool call authenticated. <strong class="text-white/80">30 seconds.</strong></p>
           </div>
 
           <!-- Config snippet -->
           <div class="rounded-lg overflow-hidden border border-white/[0.06]">
             <div class="px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
-              <span class="font-mono text-[10px] text-white/30">ceramic.yaml</span>
+              <span class="font-mono text-[10px] text-white/30">fastauthmcp.yaml</span>
             </div>
             <pre class="font-mono text-xs leading-6 p-4 text-white/60"><span class="text-[#f97583]">auth</span>:
   <span class="text-white/40">provider</span>: oidc
@@ -537,22 +542,22 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
             </div>
           </div>
 
-          <!-- Pain without Ceramic -->
+          <!-- Pain without FastAuthMCP -->
           <div class="mb-6 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
             <p class="text-xs font-mono text-white/30 mb-2">WITHOUT CERAMIC</p>
             <p class="text-white/50 text-sm leading-relaxed">Implement RFC 8693 token exchange, parse upstream tokens, POST to IDP, handle errors, add retry logic, build a circuit breaker. Weeks of security-sensitive code.</p>
           </div>
 
-          <!-- Solution with Ceramic -->
+          <!-- Solution with FastAuthMCP -->
           <div class="mb-6 rounded-lg border border-violet/20 bg-violet/[0.03] p-4">
             <p class="text-xs font-mono text-violet/70 mb-2">WITH CERAMIC</p>
-            <p class="text-white/60 text-sm leading-relaxed">Platform passes user token → Ceramic exchanges it at IDP → your tool gets a downstream-scoped token. <strong class="text-white/80">Same tool code as local.</strong></p>
+            <p class="text-white/60 text-sm leading-relaxed">Platform passes user token → FastAuthMCP exchanges it at IDP → your tool gets a downstream-scoped token. <strong class="text-white/80">Same tool code as local.</strong></p>
           </div>
 
           <!-- Config snippet -->
           <div class="rounded-lg overflow-hidden border border-white/[0.06]">
             <div class="px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
-              <span class="font-mono text-[10px] text-white/30">ceramic.yaml</span>
+              <span class="font-mono text-[10px] text-white/30">fastauthmcp.yaml</span>
             </div>
             <pre class="font-mono text-xs leading-6 p-4 text-white/60"><span class="text-[#f97583]">auth</span>:
   <span class="text-white/40">provider</span>: oidc
@@ -609,7 +614,7 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
         <div class="arch-step flex items-center gap-4 rounded-xl border border-cyan/25 bg-cyan/[0.04] px-5 py-4 transition-all hover:border-cyan/50 hover:shadow-[0_0_30px_-10px_rgba(34,211,238,0.3)]">
           <div class="h-8 w-8 rounded-lg bg-cyan/10 flex items-center justify-center text-cyan font-mono text-xs shrink-0">2</div>
           <div>
-            <p class="font-semibold text-sm text-cyan">Ceramic Middleware</p>
+            <p class="font-semibold text-sm text-cyan">FastAuthMCP Middleware</p>
             <p class="text-white/35 text-xs">Auth → Observability → Sessions</p>
           </div>
         </div>
@@ -683,21 +688,21 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
       <div class="relative">
         <h2 class="text-3xl sm:text-5xl font-black tracking-tight mb-6">🚀 We just launched</h2>
         <p class="text-white/50 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
-          Ceramic is brand new and looking for early adopters and contributors. Try it with your MCP server, integrate your identity provider, write a plugin — we'd love your help building the future of secure MCP.
+          FastAuthMCP is brand new and looking for early adopters and contributors. Try it with your MCP server, integrate your identity provider, write a plugin — we'd love your help building the future of secure MCP.
         </p>
         <div class="flex flex-wrap items-center justify-center gap-4 mb-8">
-          <a href="https://github.com/enzomar/ceramic-fwk" class="group relative px-8 py-4 rounded-xl font-semibold text-ink bg-gradient-to-r from-cyan to-violet overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(34,211,238,0.4)]">
+          <a href="https://github.com/enzomar/fastauthmcp" class="group relative px-8 py-4 rounded-xl font-semibold text-ink bg-gradient-to-r from-cyan to-violet overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(34,211,238,0.4)]">
             <span class="relative z-10">Get Started →</span>
             <div class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
           </a>
-          <a href="https://github.com/enzomar/ceramic-fwk/blob/main/docs/GUIDE.md" class="px-8 py-4 rounded-xl font-semibold border border-white/15 text-white/80 hover:border-cyan/40 hover:text-white transition-all duration-300">Read the Docs</a>
+          <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/GUIDE.md" class="px-8 py-4 rounded-xl font-semibold border border-white/15 text-white/80 hover:border-cyan/40 hover:text-white transition-all duration-300">Read the Docs</a>
         </div>
         <div class="flex flex-wrap justify-center gap-3 text-sm">
-          <a href="https://github.com/enzomar/ceramic-fwk/issues" class="text-white/40 hover:text-white/70 transition-colors">Report an issue</a>
+          <a href="https://github.com/enzomar/fastauthmcp/issues" class="text-white/40 hover:text-white/70 transition-colors">Report an issue</a>
           <span class="text-white/15">•</span>
-          <a href="https://github.com/enzomar/ceramic-fwk/discussions" class="text-white/40 hover:text-white/70 transition-colors">Start a discussion</a>
+          <a href="https://github.com/enzomar/fastauthmcp/discussions" class="text-white/40 hover:text-white/70 transition-colors">Start a discussion</a>
           <span class="text-white/15">•</span>
-          <a href="https://github.com/enzomar/ceramic-fwk/blob/main/CONTRIBUTING.md" class="text-white/40 hover:text-white/70 transition-colors">Contribute</a>
+          <a href="https://github.com/enzomar/fastauthmcp/blob/main/CONTRIBUTING.md" class="text-white/40 hover:text-white/70 transition-colors">Contribute</a>
           <span class="text-white/15">•</span>
           <a href="https://www.paypal.com/ncp/payment/DA8FJHJT5GSZY" class="text-white/40 hover:text-white/70 transition-colors flex items-center gap-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 2.22A.773.773 0 0 1 5.706 1.6h6.574c2.18 0 3.9.575 4.957 1.656.49.502.832 1.09 1.017 1.748.196.703.204 1.54.024 2.487l-.015.076v.215l.168.095c.326.18.588.388.791.625.34.396.56.884.647 1.449.09.584.046 1.264-.127 2.018-.2.87-.525 1.627-.965 2.25a4.678 4.678 0 0 1-1.525 1.442 5.73 5.73 0 0 1-1.934.782c-.7.163-1.49.244-2.354.244H12.38a.95.95 0 0 0-.938.806l-.036.197-.628 3.985-.028.142a.95.95 0 0 1-.937.806H7.076z"/></svg>
@@ -714,13 +719,13 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
   <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
     <div class="flex items-center gap-2.5">
       <span class="relative flex h-6 w-6 items-center justify-center rounded-md" style="background:linear-gradient(135deg,#22d3ee,#8b5cf6)"><span class="h-2 w-2 rounded-sm bg-ink"></span></span>
-      <span class="font-semibold text-sm">ceramic</span>
+      <span class="font-semibold text-sm">fastauthmcp</span>
       <span class="text-white/25 text-xs font-mono ml-2">Enterprise auth for FastMCP</span>
     </div>
     <div class="flex items-center gap-6 text-sm text-white/35 font-mono">
-      <a href="https://github.com/enzomar/ceramic-fwk" class="hover:text-white/70 transition-colors">GitHub</a>
-      <a href="https://github.com/enzomar/ceramic-fwk/blob/main/docs/GUIDE.md" class="hover:text-white/70 transition-colors">Docs</a>
-      <a href="https://github.com/enzomar/ceramic-fwk/blob/main/LICENSE" class="hover:text-white/70 transition-colors">Apache 2.0</a>
+      <a href="https://github.com/enzomar/fastauthmcp" class="hover:text-white/70 transition-colors">GitHub</a>
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/GUIDE.md" class="hover:text-white/70 transition-colors">Docs</a>
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/LICENSE" class="hover:text-white/70 transition-colors">Apache 2.0</a>
     </div>
   </div>
 </footer>
@@ -867,16 +872,16 @@ document.querySelectorAll('.toggle-btn').forEach(btn => {
 (function() {
   const el = document.getElementById('terminal');
   const lines = [
-    { text: '$ pip install ceramic-fwk', cls: 'text-white/80' },
-    { text: 'Successfully installed ceramic-fwk-0.1.0', cls: 'text-white/35' },
+    { text: '$ pip install fastauthmcp', cls: 'text-white/80' },
+    { text: 'Successfully installed fastauthmcp-0.1.0', cls: 'text-white/35' },
     { text: '', cls: '' },
-    { text: '$ ceramic login', cls: 'text-white/80' },
+    { text: '$ fastauthmcp login', cls: 'text-white/80' },
     { text: 'Opening browser for authentication…', cls: 'text-white/35' },
     { text: '✓ Authenticated as dev@company.com', cls: 'text-emerald-400' },
     { text: '', cls: '' },
-    { text: '$ ceramic run --transport sse', cls: 'text-white/80' },
+    { text: '$ fastauthmcp run --transport sse', cls: 'text-white/80' },
     { text: '✓ Auth · Observability · Sessions · Circuit Breaker active', cls: 'text-cyan' },
-    { text: 'Ceramic listening on http://localhost:8000', cls: 'text-white/35' },
+    { text: 'FastAuthMCP listening on http://localhost:8000', cls: 'text-white/35' },
   ];
   let started = false;
 

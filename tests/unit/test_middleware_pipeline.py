@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ceramic.middleware.pipeline import (
+from fastauthmcp.middleware.pipeline import (
     MiddlewarePipeline,
     RequestContext,
 )

@@ -1,0 +1,36 @@
+# FastAuthMCP configuration for headless/cloud MCP deployment
+#
+# This demonstrates token_exchange mode:
+# - The MCP server runs headless (no browser available)
+# - An upstream user token arrives via the transport layer (e.g., HTTP header)
+# - FastAuthMCP exchanges it at the IDP for a downstream-scoped token
+# - Tool code calls access_token() to get the token for downstream API calls
+#
+# For local/stdio demo: uses authorization_code (interactive login via browser)
+# For remote/SSE demo: uses token_exchange (headless, expects upstream token)
+
+auth:
+  provider: oidc
+  issuer: https://fastauthmcp-oss-agq8i8.eu1.zitadel.cloud
+  client_id: "380842820363183891"
+  # grant_type: token_exchange       # Uncomment for headless mode
+  # upstream_token_header: "x-user-token"
+  # token_exchange_audience: "https://api.example.com"
+  scopes:
+    - openid
+    - profile
+    - email
+    - "urn:zitadel:iam:org:project:roles"
+  callback_timeout: 120
+  callback_port: 9876
+  token_exchange_timeout: 30
+
+observability:
+  enabled: true
+  exporter: console
+  log_format: json
+  log_level: info
+
+sessions:
+  enabled: true
+  ttl: 3600

@@ -1,6 +1,6 @@
 """Middleware-attachment migration style.
 
-Shows how to add Ceramic to an existing FastMCP app without changing the import.
+Shows how to add FastAuthMCP to an existing FastMCP app without changing the import.
 Useful for gradual adoption.
 
 Run with:
@@ -26,11 +26,11 @@ def another_tool(msg: str) -> str:
     return msg.upper()
 
 
-# --- Add Ceramic enterprise features ---
+# --- Add FastAuthMCP enterprise features ---
 
-from ceramic import FastMCP as CeramicFastMCP  # noqa: E402
+from fastauthmcp import FastMCP as FastAuthMCP  # noqa: E402
 
-ceramic_app = CeramicFastMCP.enable_ceramic(app, config="ceramic.yaml")
+fastauthmcp_app = FastAuthMCP.enable_fastauthmcp(app, config="fastauthmcp.yaml")
 
 if __name__ == "__main__":
-    ceramic_app.run()
+    fastauthmcp_app.run()

@@ -1,6 +1,6 @@
-"""Ceramic E2E Demo — simple terminal client that emulates LLM tool calls.
+"""FastAuthMCP E2E Demo — simple terminal client that emulates LLM tool calls.
 
-Shows what happens when an LLM calls MCP tools through a Ceramic-protected
+Shows what happens when an LLM calls MCP tools through a FastAuthMCP-protected
 server: authentication, session reuse, and identity propagation.
 
 Usage:
@@ -11,7 +11,7 @@ Usage:
     python mcp_client.py --transport sse --url http://localhost:8000/sse
 
 Environment:
-    CERAMIC_SERVER_URL — Server URL for SSE/HTTP (default: http://localhost:8000/sse)
+    FASTAUTHMCP_SERVER_URL — Server URL for SSE/HTTP (default: http://localhost:8000/sse)
 
 Requirements:
     pip install fastmcp
@@ -70,7 +70,7 @@ DEMO_STEPS = [
             "",
             "The LLM calls the 'whoami' tool on the MCP server.",
             f"Since this is the {BOLD}{YELLOW}first request{RESET}, there is no session.",
-            "Ceramic's middleware will:",
+            "FastAuthMCP's middleware will:",
             "",
             "  1. Observability → assign request ID, start span",
             "  2. Session → no session found",
@@ -83,8 +83,8 @@ DEMO_STEPS = [
             f"{YELLOW}Your browser will open for login.{RESET}",
             "",
             f"{BOLD}{YELLOW}━━━ Zitadel Demo Credentials ━━━{RESET}",
-            f"  Username: {BOLD}ceramic-demo@ceramic-oss.zitadel.cloud{RESET}",
-            f"  Password: {BOLD}Ceramic-Demo-2026!{RESET}",
+            f"  Username: {BOLD}fastauthmcp-demo@fastauthmcp-oss.zitadel.cloud{RESET}",
+            f"  Password: {BOLD}FastAuthMCP-Demo-2026!{RESET}",
         ],
         "tool": "whoami",
         "args": {},
@@ -112,7 +112,7 @@ DEMO_STEPS = [
             f"{BOLD}{CYAN}STEP 3: Identity Inside Tools{RESET}",
             "",
             "The LLM calls 'get_pet'. Session is reused again.",
-            "The identity is available inside the tool via ceramic.identity().",
+            "The identity is available inside the tool via fastauthmcp.identity().",
         ],
         "tool": "get_pet",
         "args": {"pet_id": "pet-001"},
@@ -146,7 +146,7 @@ async def run_demo(transport: str, url: str | None) -> None:
 
     target = _get_target(transport, url)
 
-    print(f"\n{BOLD}Ceramic E2E Demo{RESET}")
+    print(f"\n{BOLD}FastAuthMCP E2E Demo{RESET}")
     print(f"  Transport: {transport}")
     print(f"  Server:    {_display_target(transport, url)}")
     print()
@@ -218,7 +218,7 @@ async def run_demo(transport: str, url: str | None) -> None:
   1. First tool call triggered OAuth2 login in the browser
   2. Token stored securely — session established
   3. All subsequent calls reused the session (instant, no re-auth)
-  4. Identity available inside every tool via ceramic.identity()
+  4. Identity available inside every tool via fastauthmcp.identity()
 
   {DIM}All of this happened transparently.
   The server code has zero auth logic — just a YAML file.{RESET}
@@ -232,19 +232,23 @@ def _get_target(transport: str, url: str | None):
         server_path = str(Path(__file__).parent / "petstore_server.py")
         return PythonStdioTransport(script_path=server_path)
     elif transport == "streamable-http":
-        return url or os.environ.get("CERAMIC_SERVER_URL", "http://localhost:8000/mcp")
+        return url or os.environ.get(
+            "FASTAUTHMCP_SERVER_URL", "http://localhost:8000/mcp"
+        )
     else:
-        return url or os.environ.get("CERAMIC_SERVER_URL", "http://localhost:8000/sse")
+        return url or os.environ.get(
+            "FASTAUTHMCP_SERVER_URL", "http://localhost:8000/sse"
+        )
 
 
 def _display_target(transport: str, url: str | None) -> str:
     if transport == "stdio":
         return "petstore_server.py (subprocess)"
-    return url or os.environ.get("CERAMIC_SERVER_URL", "http://localhost:8000/sse")
+    return url or os.environ.get("FASTAUTHMCP_SERVER_URL", "http://localhost:8000/sse")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Ceramic E2E Demo")
+    parser = argparse.ArgumentParser(description="FastAuthMCP E2E Demo")
     parser.add_argument(
         "--transport",
         choices=["stdio", "sse", "streamable-http"],

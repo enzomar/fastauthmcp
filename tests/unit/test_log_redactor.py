@@ -1,6 +1,6 @@
 """Tests for the LogRedactor security utility."""
 
-from ceramic.security import LogRedactor
+from fastauthmcp.security import LogRedactor
 
 
 class TestLogRedactor:

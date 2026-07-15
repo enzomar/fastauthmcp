@@ -9,7 +9,7 @@ import asyncio
 
 from hypothesis import given, strategies as st
 
-from ceramic.resilience import CircuitBreaker, CircuitState
+from fastauthmcp.resilience import CircuitBreaker, CircuitState
 
 
 @given(threshold=st.integers(min_value=1, max_value=20))

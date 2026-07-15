@@ -1,6 +1,6 @@
-"""Pet Store MCP Server — A sample HTTP-style API served via Ceramic.
+"""Pet Store MCP Server — A sample HTTP-style API served via FastAuthMCP.
 
-A simple pet store with CRUD operations, protected by Ceramic's full
+A simple pet store with CRUD operations, protected by FastAuthMCP's full
 middleware pipeline (authentication, observability, sessions).
 
 Usage:
@@ -8,10 +8,10 @@ Usage:
     python petstore_server.py
 
     # SSE transport
-    CERAMIC_TRANSPORT=sse python petstore_server.py
+    FASTAUTHMCP_TRANSPORT=sse python petstore_server.py
 
     # Streamable HTTP transport
-    CERAMIC_TRANSPORT=streamable-http python petstore_server.py
+    FASTAUTHMCP_TRANSPORT=streamable-http python petstore_server.py
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
-from ceramic import FastMCP, identity
+from fastauthmcp import FastMCP, identity
 
 # ---------------------------------------------------------------------------
 # In-memory pet store database
@@ -62,10 +62,10 @@ _pets_db: dict[str, dict[str, Any]] = {
 _next_id = 4
 
 # ---------------------------------------------------------------------------
-# Ceramic MCP Server
+# FastAuthMCP MCP Server
 # ---------------------------------------------------------------------------
 
-mcp = FastMCP("petstore", config="ceramic.yaml")
+mcp = FastMCP("petstore", config="fastauthmcp.yaml")
 
 
 @mcp.tool()
@@ -195,13 +195,13 @@ def delete_pet(pet_id: str) -> dict[str, Any]:
 if __name__ == "__main__":
     import logging
 
-    log_level = os.environ.get("CERAMIC_LOG_LEVEL", "WARNING").upper()
+    log_level = os.environ.get("FASTAUTHMCP_LOG_LEVEL", "WARNING").upper()
     logging.basicConfig(
         level=getattr(logging, log_level, logging.WARNING),
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    transport = os.environ.get("CERAMIC_TRANSPORT", "stdio")
-    host = os.environ.get("CERAMIC_HOST", "localhost")
-    port = int(os.environ.get("CERAMIC_PORT", "8000"))
+    transport = os.environ.get("FASTAUTHMCP_TRANSPORT", "stdio")
+    host = os.environ.get("FASTAUTHMCP_HOST", "localhost")
+    port = int(os.environ.get("FASTAUTHMCP_PORT", "8000"))
     mcp.run(transport=transport, host=host, port=port)

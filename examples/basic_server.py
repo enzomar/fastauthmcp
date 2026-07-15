@@ -1,12 +1,12 @@
-"""Basic Ceramic server — drop-in replacement for FastMCP.
+"""Basic FastAuthMCP server — drop-in replacement for FastMCP.
 
 Run with:
-    ceramic run
+    fastauthmcp run
     # or
     python examples/basic_server.py
 """
 
-from ceramic import FastMCP
+from fastauthmcp import FastMCP
 
 mcp = FastMCP("basic-server")
 

@@ -13,11 +13,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ceramic.config import ObservabilityConfig
-from ceramic.middleware.observability import ObservabilityMiddleware
-from ceramic.middleware.pipeline import RequestContext
-from ceramic.models import LogEntry
-from ceramic.observability import (
+from fastauthmcp.config import ObservabilityConfig
+from fastauthmcp.middleware.observability import ObservabilityMiddleware
+from fastauthmcp.middleware.pipeline import RequestContext
+from fastauthmcp.models import LogEntry
+from fastauthmcp.observability import (
     NullSpan,
     NullTelemetryService,
     TelemetryService,
@@ -58,7 +58,7 @@ class TestTelemetryService:
             level="info",
             message="Tool invocation: some_tool",
         )
-        with caplog.at_level(logging.DEBUG, logger="ceramic.observability"):
+        with caplog.at_level(logging.DEBUG, logger="fastauthmcp.observability"):
             self.service.emit_log(entry)
 
         log_data = json.loads(caplog.records[0].message)
@@ -114,7 +114,7 @@ class TestObservabilityMiddleware:
         async def handler():
             return "done"
 
-        with caplog.at_level(logging.DEBUG, logger="ceramic.observability"):
+        with caplog.at_level(logging.DEBUG, logger="fastauthmcp.observability"):
             await self.middleware(ctx, handler)
 
         log_data = json.loads(caplog.records[0].message)
@@ -171,7 +171,7 @@ class TestObservabilityMiddleware:
         async def handler():
             return "success"
 
-        with caplog.at_level(logging.WARNING, logger="ceramic.observability"):
+        with caplog.at_level(logging.WARNING, logger="fastauthmcp.observability"):
             result = await middleware(ctx, handler)
 
         assert result == "success"

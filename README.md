@@ -1,11 +1,11 @@
-# Ceramic Framework
+# FastAuthMCP Framework
 
 <p align="center">
-  <img src="docs/logo.svg" alt="Ceramic logo" width="64" height="64">
+  <img src="docs/logo.svg" alt="FastAuthMCP logo" width="64" height="64">
 </p>
 
-[![CI](https://github.com/enzomar/ceramic-fwk/actions/workflows/ci.yml/badge.svg)](https://github.com/enzomar/ceramic-fwk/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/ceramic-fwk.svg)](https://pypi.org/project/ceramic-fwk/)
+[![CI](https://github.com/enzomar/fastauthmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/enzomar/fastauthmcp/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/fastauthmcp.svg)](https://pypi.org/project/fastauthmcp/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
@@ -13,29 +13,29 @@
 
 ---
 
-## What is Ceramic?
+## What is FastAuthMCP?
 
-Ceramic is a **production-grade Python framework built on top of [FastMCP](https://github.com/jlowin/fastmcp)** that adds enterprise features through a middleware pipeline. It wraps FastMCP via composition — your existing tools, prompts, and resources work unchanged.
+FastAuthMCP is a **production-grade Python framework built on top of [FastMCP](https://github.com/jlowin/fastmcp)** that adds enterprise features through a middleware pipeline. It wraps FastMCP via composition — your existing tools, prompts, and resources work unchanged.
 
-> **Note:** Ceramic currently supports Python only. Node.js and Go SDKs are planned for future releases.
+> **Note:** FastAuthMCP currently supports Python only. Node.js and Go SDKs are planned for future releases.
 
 Key design principles:
 - **Zero tool changes** — change one import line, everything else stays the same
-- **Configuration-driven** — all features controlled by a single `ceramic.yaml` file
-- **Passthrough by default** — without a config file, Ceramic behaves identically to vanilla FastMCP
+- **Configuration-driven** — all features controlled by a single `fastauthmcp.yaml` file
+- **Passthrough by default** — without a config file, FastAuthMCP behaves identically to vanilla FastMCP
 - **Composable middleware** — authentication, observability, and sessions are independent layers that activate based on config sections present
 
 ## See It In Action
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Ceramic demo: login → authenticate → tool call succeeds" width="700">
+  <img src="docs/demo.gif" alt="FastAuthMCP demo: login → authenticate → tool call succeeds" width="700">
 </p>
 
-> `ceramic login` → browser opens → token stored → tool call authenticated. 30 seconds, zero code changes.
+> `fastauthmcp login` → browser opens → token stored → tool call authenticated. 30 seconds, zero code changes.
 
-## Why Ceramic? (Comparison)
+## Why FastAuthMCP? (Comparison)
 
-| | **Ceramic** | **DIY Middleware** | **API Gateway (Kong, etc.)** |
+| | **FastAuthMCP** | **DIY Middleware** | **API Gateway (Kong, etc.)** |
 |---|---|---|---|
 | **Setup time** | 5 minutes | Days to weeks | Hours + infrastructure |
 | **Code changes to tools** | 0 (one import change) | Extensive | 0 (external proxy) |
@@ -44,11 +44,15 @@ Key design principles:
 | **Token forwarding to downstream APIs** | ✅ `access_token()` | Must build | Depends on gateway |
 | **Identity inside tool functions** | ✅ `identity()` | Must propagate manually | ❌ Not possible |
 | **Per-tool authorization** | ✅ Decorators + config | Must build | ❌ Route-level only |
+| **Rate limiting** | ✅ Per-tool & per-user | Must build | ✅ Usually available |
+| **Audit logging** | ✅ Structured events | Must build | Varies |
+| **Multi-IdP support** | ✅ Issuer routing | Must build | ❌ Single upstream |
+| **Schema export** | ✅ JSON + Markdown | Must build | ✅ OpenAPI |
 | **OpenTelemetry tracing** | ✅ Automatic | Must integrate | Varies |
 | **Prometheus metrics** | ✅ Zero config | Must build | ✅ Usually available |
 | **Session management** | ✅ Built-in | Must build | ❌ Stateless |
 | **Circuit breaker / resilience** | ✅ Built-in for all IDP calls | Must build | ✅ Usually available |
-| **Testing support** | ✅ `CeramicTestClient` | Must mock everything | Must mock gateway |
+| **Testing support** | ✅ `FastAuthMCPTestClient` | Must mock everything | Must mock gateway |
 | **Lock-in** | None (remove import, back to FastMCP) | N/A | Vendor lock-in |
 | **Infrastructure required** | None (runs in-process) | None | Separate service |
 | **Language** | Python | Any | Any |
@@ -56,24 +60,24 @@ Key design principles:
 
 ### When to use what
 
-- **Use Ceramic** when you're building MCP servers with FastMCP in Python and need authentication, observability, or authorization without touching your tools.
+- **Use FastAuthMCP** when you're building MCP servers with FastMCP in Python and need authentication, observability, or authorization without touching your tools.
 - **Roll your own** when you have very custom requirements that don't fit a middleware pipeline, or you're not using FastMCP/Python.
 - **Use an API gateway** when your MCP server is one of many services behind a shared ingress layer and you already have gateway infrastructure.
 
 ### Real-World Deployment Scenarios
 
-Most MCP servers need to call downstream APIs (Stripe, internal services, SOAP endpoints) **on behalf of the authenticated user** — not with a shared service account. Here's how Ceramic handles the two most common deployment patterns:
+Most MCP servers need to call downstream APIs (Stripe, internal services, SOAP endpoints) **on behalf of the authenticated user** — not with a shared service account. Here's how FastAuthMCP handles the two most common deployment patterns:
 
 #### Scenario 1: Local MCP via stdio (Claude Desktop, Cursor, etc.)
 
 You're a developer running an MCP server locally. Claude Desktop or Cursor spawns it as a subprocess. Your tools call downstream APIs that require user-scoped tokens.
 
-**Without Ceramic:** You hand-roll OAuth PKCE, build a local callback server, manage token refresh, store credentials securely, and wire the token into every HTTP call. That's days of work before you write a single tool.
+**Without FastAuthMCP:** You hand-roll OAuth PKCE, build a local callback server, manage token refresh, store credentials securely, and wire the token into every HTTP call. That's days of work before you write a single tool.
 
-**With Ceramic:**
+**With FastAuthMCP:**
 
 ```yaml
-# ceramic.yaml
+# fastauthmcp.yaml
 auth:
   provider: oidc
   issuer: https://your-idp.example.com
@@ -82,10 +86,10 @@ auth:
 ```
 
 ```python
-from ceramic import FastMCP, access_token
+from fastauthmcp import FastMCP, access_token
 import httpx
 
-mcp = FastMCP("my-tools", config="ceramic.yaml")
+mcp = FastMCP("my-tools", config="fastauthmcp.yaml")
 
 @mcp.tool()
 def get_orders() -> list:
@@ -96,23 +100,23 @@ def get_orders() -> list:
     ).json()
 ```
 
-Run `ceramic login` once → browser opens → token stored in macOS Keychain → every tool call is authenticated. 30 seconds to set up.
+Run `fastauthmcp login` once → browser opens → token stored in macOS Keychain → every tool call is authenticated. 30 seconds to set up.
 
 #### Scenario 2: Cloud MCP on Claude/Gemini (remote, headless)
 
 Your MCP server runs in the cloud as a remote endpoint. Claude or Gemini calls it over HTTP. The platform already authenticated the user — but your downstream API needs a token scoped to *your* resource server, not the platform's.
 
-**Without Ceramic:** You implement RFC 8693 token exchange yourself — parse the upstream token from request headers, POST to your IDP's token endpoint with the correct grant type and parameters, handle errors, add retry logic, cache tokens, build a circuit breaker for IDP outages. Weeks of security-sensitive code.
+**Without FastAuthMCP:** You implement RFC 8693 token exchange yourself — parse the upstream token from request headers, POST to your IDP's token endpoint with the correct grant type and parameters, handle errors, add retry logic, cache tokens, build a circuit breaker for IDP outages. Weeks of security-sensitive code.
 
-**With Ceramic:**
+**With FastAuthMCP:**
 
 ```yaml
-# ceramic.yaml
+# fastauthmcp.yaml
 auth:
   provider: oidc
   issuer: https://your-idp.example.com
   client_id: my-cloud-mcp
-  client_secret: ${CERAMIC_AUTH_CLIENT_SECRET}
+  client_secret: ${FASTAUTHMCP_AUTH_CLIENT_SECRET}
   grant_type: token_exchange
   upstream_token_header: x-user-token
   token_exchange_audience: https://api.internal.com
@@ -121,9 +125,9 @@ auth:
 ```
 
 ```python
-from ceramic import FastMCP, access_token
+from fastauthmcp import FastMCP, access_token
 
-mcp = FastMCP("cloud-tools", config="ceramic.yaml")
+mcp = FastMCP("cloud-tools", config="fastauthmcp.yaml")
 
 @mcp.tool()
 def get_orders() -> list:
@@ -134,7 +138,7 @@ def get_orders() -> list:
     ).json()
 ```
 
-The platform passes the user's token → Ceramic exchanges it at the IDP → your tool gets a downstream-scoped token. Circuit breaker, retry with backoff, and JWKS validation are all built in. Same tool code works in both scenarios — only the config changes.
+The platform passes the user's token → FastAuthMCP exchanges it at the IDP → your tool gets a downstream-scoped token. Circuit breaker, retry with backoff, and JWKS validation are all built in. Same tool code works in both scenarios — only the config changes.
 
 #### Summary: One codebase, two deployment modes
 
@@ -149,7 +153,7 @@ The platform passes the user's token → Ceramic exchanges it at the IDP → you
 ## Installation
 
 ```bash
-pip install ceramic-fwk
+pip install fastauthmcp
 ```
 
 Core dependencies installed automatically: FastMCP, httpx, PyJWT, OpenTelemetry, Prometheus client, zeep (SOAP support), and more.
@@ -157,9 +161,9 @@ Core dependencies installed automatically: FastMCP, httpx, PyJWT, OpenTelemetry,
 Optional extras:
 
 ```bash
-pip install ceramic-fwk[keyring]   # Platform-native token storage (macOS Keychain, etc.)
-pip install ceramic-fwk[crypto]    # Encrypted file-based token storage (Linux)
-pip install ceramic-fwk[dev]       # Development dependencies (pytest, hypothesis, etc.)
+pip install fastauthmcp[keyring]   # Platform-native token storage (macOS Keychain, etc.)
+pip install fastauthmcp[crypto]    # Encrypted file-based token storage (Linux)
+pip install fastauthmcp[dev]       # Development dependencies (pytest, hypothesis, etc.)
 ```
 
 ## Quick Start
@@ -171,14 +175,14 @@ pip install ceramic-fwk[dev]       # Development dependencies (pytest, hypothesi
 from fastmcp import FastMCP
 
 # After — that's it!
-from ceramic import FastMCP
+from fastauthmcp import FastMCP
 ```
 
-Without a `ceramic.yaml` config file, this behaves identically to vanilla FastMCP. No authentication, no middleware, no overhead.
+Without a `fastauthmcp.yaml` config file, this behaves identically to vanilla FastMCP. No authentication, no middleware, no overhead.
 
 ### 2. Add a config file (optional)
 
-Create `ceramic.yaml` in your project root to enable features:
+Create `fastauthmcp.yaml` in your project root to enable features:
 
 ```yaml
 auth:
@@ -194,20 +198,20 @@ sessions:
   ttl: 3600
 ```
 
-Each section in `ceramic.yaml` activates the corresponding middleware layer. Omit a section to disable that feature entirely.
+Each section in `fastauthmcp.yaml` activates the corresponding middleware layer. Omit a section to disable that feature entirely.
 
 ### 3. Run
 
 ```bash
-ceramic run
+fastauthmcp run
 ```
 
 Or directly in Python:
 
 ```python
-from ceramic import FastMCP
+from fastauthmcp import FastMCP
 
-mcp = FastMCP("my-server", config="ceramic.yaml")
+mcp = FastMCP("my-server", config="fastauthmcp.yaml")
 
 @mcp.tool()
 def hello(name: str) -> str:
@@ -219,13 +223,13 @@ if __name__ == "__main__":
 
 ## How Authentication Works
 
-Ceramic supports two authentication modes depending on your deployment:
+FastAuthMCP supports two authentication modes depending on your deployment:
 
 ### Interactive (authorization_code — default)
 
 Uses **OAuth2 + OIDC with PKCE** for user authentication. Best for CLI and local/stdio deployments:
 
-1. **Explicit login via CLI** — run `ceramic login` before starting the server. This opens a browser, completes the OAuth flow, and stores tokens securely using the platform-native credential store.
+1. **Explicit login via CLI** — run `fastauthmcp login` before starting the server. This opens a browser, completes the OAuth flow, and stores tokens securely using the platform-native credential store.
 
 2. **Automatic on first MCP call** — if no valid token exists when a tool call arrives, the authentication middleware automatically initiates the browser-based OAuth flow. The MCP call blocks until login completes (up to `callback_timeout` seconds), then proceeds normally.
 
@@ -240,36 +244,36 @@ Uses the **OAuth2 client_credentials grant** for service-to-service authenticati
 - Identity is derived from the service account's JWT claims
 
 ```yaml
-# ceramic.yaml for M2M / remote deployment
+# fastauthmcp.yaml for M2M / remote deployment
 auth:
   provider: oidc
   issuer: https://your-idp.example.com
   client_id: my-service-account
-  client_secret: ${CERAMIC_AUTH_CLIENT_SECRET}
+  client_secret: ${FASTAUTHMCP_AUTH_CLIENT_SECRET}
   grant_type: client_credentials
   scopes:
     - openid
     - profile
 ```
 
-This is the recommended mode when running Ceramic as a remote MCP server (e.g., `ceramic run --transport sse` or `--transport streamable-http`) since the server cannot open a browser for interactive login.
+This is the recommended mode when running FastAuthMCP as a remote MCP server (e.g., `fastauthmcp run --transport sse` or `--transport streamable-http`) since the server cannot open a browser for interactive login.
 
 ### Token Exchange (headless/cloud with user-scoped tokens)
 
-Uses the **OAuth 2.0 Token Exchange grant** (RFC 8693) for cloud MCP deployments where the calling platform (Claude, Gemini, etc.) passes a user token in the request. Ceramic exchanges it at the IDP for a downstream-scoped token:
+Uses the **OAuth 2.0 Token Exchange grant** (RFC 8693) for cloud MCP deployments where the calling platform (Claude, Gemini, etc.) passes a user token in the request. FastAuthMCP exchanges it at the IDP for a downstream-scoped token:
 
 - No browser needed — the upstream platform already authenticated the user
-- Ceramic exchanges the incoming token for a token scoped to your downstream API
+- FastAuthMCP exchanges the incoming token for a token scoped to your downstream API
 - Tool code calls `access_token()` to get the downstream token
 - Each request is user-scoped (not a shared service account)
 
 ```yaml
-# ceramic.yaml for cloud/headless deployment with token exchange
+# fastauthmcp.yaml for cloud/headless deployment with token exchange
 auth:
   provider: oidc
   issuer: https://your-idp.example.com
   client_id: my-mcp-server
-  client_secret: ${CERAMIC_AUTH_CLIENT_SECRET}
+  client_secret: ${FASTAUTHMCP_AUTH_CLIENT_SECRET}
   grant_type: token_exchange
   upstream_token_header: x-user-token        # Where to find the incoming token
   token_exchange_audience: https://api.internal.com  # Target downstream API
@@ -278,9 +282,9 @@ auth:
 ```
 
 ```python
-from ceramic import FastMCP, access_token
+from fastauthmcp import FastMCP, access_token
 
-mcp = FastMCP("cloud-server", config="ceramic.yaml")
+mcp = FastMCP("cloud-server", config="fastauthmcp.yaml")
 
 @mcp.tool()
 def get_orders() -> list:
@@ -307,25 +311,33 @@ This is the recommended mode for cloud-hosted MCP servers where you need **user-
 
 ## Public API
 
-All public symbols are accessible from the top-level `ceramic` package:
+All public symbols are accessible from the top-level `fastauthmcp` package:
 
 ```python
-from ceramic import (
+from fastauthmcp import (
     FastMCP,           # Drop-in replacement for fastmcp.FastMCP
-    CeramicFastMCP,   # Same class (FastMCP is an alias)
+    FastAuthMCP,   # Same class (FastMCP is an alias)
     identity,          # Function: get the current user's IdentityContext
     access_token,      # Function: get the raw access token for downstream API calls
     IdentityContext,   # Dataclass: email, subject, claims, roles, groups
-    CeramicTestClient, # Test client for auth flows without a live IDP
+    FastAuthMCPTestClient, # Test client for auth flows without a live IDP
+    # Authorization decorators
+    require_roles,     # Decorator: require any of the listed roles
+    require_groups,    # Decorator: require membership in any listed group
+    require_scopes,    # Decorator: require all listed scopes
+    # Request context propagation
+    get_context,       # Get a value from request-scoped context
+    set_context,       # Set a value in request-scoped context
+    request_context,   # Get the full request context dict
 )
 ```
 
-### `FastMCP` / `CeramicFastMCP`
+### `FastMCP` / `FastAuthMCP`
 
 Drop-in replacement for `fastmcp.FastMCP`. All constructor kwargs are forwarded to the underlying FastMCP instance.
 
 ```python
-mcp = FastMCP("my-server", config="ceramic.yaml")
+mcp = FastMCP("my-server", config="fastauthmcp.yaml")
 
 # Register tools, prompts, and resources exactly as you would with FastMCP
 @mcp.tool()
@@ -334,7 +346,7 @@ def my_tool(x: int) -> int:
 
 @mcp.prompt()
 def my_prompt() -> str:
-    return "Hello from Ceramic"
+    return "Hello from FastAuthMCP"
 
 @mcp.resource("data://items")
 def my_resource() -> list:
@@ -345,7 +357,7 @@ mcp.run()
 
 **Constructor parameters:**
 - `name` (str) — Server name (passed to FastMCP)
-- `config` (str | Path | None) — Path to `ceramic.yaml`. If None, uses `CERAMIC_CONFIG` env var or `./ceramic.yaml`. If no config found, runs in passthrough mode.
+- `config` (str | Path | None) — Path to `fastauthmcp.yaml`. If None, uses `FASTAUTHMCP_CONFIG` env var or `./fastauthmcp.yaml`. If no config found, runs in passthrough mode.
 - `**kwargs` — All additional kwargs forwarded to FastMCP
 
 ### `identity()`
@@ -371,7 +383,7 @@ def whoami() -> dict:
 Returns the current request's raw access token for propagating to downstream APIs. The token is always valid — the middleware auto-refreshes before your tool code runs.
 
 ```python
-from ceramic import access_token
+from fastauthmcp import access_token
 import httpx
 
 @mcp.tool()
@@ -387,6 +399,52 @@ def get_orders() -> list:
 
 **Raises** `RuntimeError` if called outside an active request context or if no token is available.
 
+### Per-Tool Authorization Decorators
+
+Restrict tool access based on user roles, groups, or token scopes:
+
+```python
+from fastauthmcp import FastMCP, require_roles, require_groups, require_scopes
+
+mcp = FastMCP("my-server", config="fastauthmcp.yaml")
+
+@mcp.tool()
+@require_roles("admin", "editor")  # User needs ANY of these roles
+async def admin_tool() -> str:
+    return "admin access granted"
+
+@mcp.tool()
+@require_groups("ops-team")
+async def deploy() -> str:
+    return "deploying..."
+
+@mcp.tool()
+@require_scopes("read:data", "write:data")  # User needs ALL listed scopes
+async def manage_data() -> str:
+    return "data managed"
+```
+
+- `@require_roles(...)` — OR semantics: user needs any one of the listed roles
+- `@require_groups(...)` — OR semantics: user needs membership in any listed group
+- `@require_scopes(...)` — AND semantics: token must contain all listed scopes
+- Stack multiple decorators for AND semantics across different checks
+- Unauthorized requests are rejected before the tool body executes
+
+### Request Context Propagation
+
+Propagate custom metadata (correlation IDs, tenant context) through the middleware pipeline into tool functions:
+
+```python
+from fastauthmcp import get_context, set_context
+
+@mcp.tool()
+async def my_tool() -> dict:
+    # Access context set by middleware or plugins
+    tenant = get_context("tenant_id")
+    request_id = get_context("request_id")
+    return {"tenant": tenant, "request_id": request_id}
+```
+
 ### `IdentityContext`
 
 Frozen (immutable) dataclass with the authenticated user's identity:
@@ -399,15 +457,15 @@ Frozen (immutable) dataclass with the authenticated user's identity:
 | `roles` | `frozenset[str]` | User's roles |
 | `groups` | `frozenset[str]` | User's groups |
 
-### `CeramicTestClient`
+### `FastAuthMCPTestClient`
 
 Test client that bypasses OAuth flows and injects identity directly:
 
 ```python
-from ceramic.testing import CeramicTestClient
+from fastauthmcp.testing import FastAuthMCPTestClient
 
 async def test_identity_available():
-    client = CeramicTestClient(
+    client = FastAuthMCPTestClient(
         app=mcp,
         email="admin@example.com",
         subject="user-123",
@@ -423,7 +481,7 @@ async def test_identity_available():
 Generates structurally valid JWTs without network calls (for testing):
 
 ```python
-from ceramic.testing import MockIdentityProvider
+from fastauthmcp.testing import MockIdentityProvider
 
 provider = MockIdentityProvider()
 token = provider.issue_token({"sub": "user-123", "email": "test@example.com"})
@@ -441,10 +499,10 @@ header, payload = MockIdentityProvider.decode_token(token)
 from fastmcp import FastMCP
 
 # To this:
-from ceramic import FastMCP
+from fastauthmcp import FastMCP
 ```
 
-Everything else stays the same. Add `ceramic.yaml` when you're ready to enable features.
+Everything else stays the same. Add `fastauthmcp.yaml` when you're ready to enable features.
 
 ### Option 2: Middleware-attachment (gradual adoption)
 
@@ -452,7 +510,7 @@ Wrap an existing FastMCP instance without changing its code:
 
 ```python
 from fastmcp import FastMCP
-from ceramic import CeramicFastMCP
+from fastauthmcp import FastAuthMCP
 
 # Existing app stays unchanged
 app = FastMCP("legacy-server")
@@ -461,12 +519,12 @@ app = FastMCP("legacy-server")
 def existing_tool(x: int) -> int:
     return x * 2
 
-# Wrap with Ceramic features
-ceramic_app = CeramicFastMCP.enable_ceramic(app, config="ceramic.yaml")
-ceramic_app.run()
+# Wrap with FastAuthMCP features
+fastauthmcp_app = FastAuthMCP.enable_fastauthmcp(app, config="fastauthmcp.yaml")
+fastauthmcp_app.run()
 ```
 
-If the config is invalid, `enable_ceramic()` raises `ConfigurationError` and leaves the original FastMCP instance completely unmodified.
+If the config is invalid, `enable_fastauthmcp()` raises `ConfigurationError` and leaves the original FastMCP instance completely unmodified.
 
 ## Resilience
 
@@ -501,7 +559,7 @@ Production-grade JWKS handling for token signature verification:
 
 ## Middleware Pipeline
 
-When config sections are present, Ceramic executes middleware in this fixed order:
+When config sections are present, FastAuthMCP executes middleware in this fixed order:
 
 ```
 Request → Observability → Session → Authentication → [Plugins] → Tool
@@ -514,6 +572,8 @@ After-hooks execute in reverse order. Each layer is independent:
 | **Observability** | `observability:` section present | Assigns request ID, starts OTel span, records metrics, emits structured logs |
 | **Session** | `sessions:` section present | Restores identity from session, creates sessions on auth, enforces TTL |
 | **Authentication** | `auth:` section present | Validates token, auto-refreshes, initiates OAuth if needed |
+| **Authorization** | `auth:` section present | Evaluates per-tool decorator policies and YAML-defined policies |
+| **Rate Limiting** | `rate_limiting:` section present | Per-tool and per-user token bucket rate limiting |
 | **Plugins** | `plugins:` section present | Custom middleware registered via `app.use()` or config |
 
 ### Custom plugins
@@ -521,7 +581,7 @@ After-hooks execute in reverse order. Each layer is independent:
 ```python
 # my_plugin.py
 def create_plugin(config: dict):
-    """Factory function called by Ceramic when loading plugins from config."""
+    """Factory function called by FastAuthMCP when loading plugins from config."""
     return MyPlugin(config)
 
 class MyPlugin:
@@ -610,54 +670,54 @@ hot_reload:
 
 ### Environment variable overrides
 
-Any scalar config value can be overridden via environment variables prefixed with `CERAMIC_`:
+Any scalar config value can be overridden via environment variables prefixed with `FASTAUTHMCP_`:
 
 ```bash
-export CERAMIC_AUTH_CLIENT_SECRET="my-secret"
-export CERAMIC_OBSERVABILITY_LOG_LEVEL="debug"
+export FASTAUTHMCP_AUTH_CLIENT_SECRET="my-secret"
+export FASTAUTHMCP_OBSERVABILITY_LOG_LEVEL="debug"
 ```
 
 The config file path itself can be set via:
 
 ```bash
-export CERAMIC_CONFIG="/path/to/ceramic.yaml"
+export FASTAUTHMCP_CONFIG="/path/to/fastauthmcp.yaml"
 ```
 
 ## CLI Commands
 
-The `ceramic` CLI is installed automatically with the package.
+The `fastauthmcp` CLI is installed automatically with the package.
 
 | Command | Description |
 |---------|-------------|
-| `ceramic run` | Start the server (loads `ceramic.yaml` from CWD or `CERAMIC_CONFIG`). Options: `--transport` (stdio\|sse\|http\|streamable-http, default: stdio), `--host`, `--port` |
-| `ceramic login` | Run OAuth2 PKCE login flow, store tokens |
-| `ceramic logout` | Clear stored tokens and invalidate session |
-| `ceramic whoami` | Display current user's email, subject, and roles |
-| `ceramic doctor` | Diagnostics: check config validity, IDP connectivity, token freshness |
-| `ceramic config validate` | Validate `ceramic.yaml` and report errors/warnings |
+| `fastauthmcp run` | Start the server (loads `fastauthmcp.yaml` from CWD or `FASTAUTHMCP_CONFIG`). Options: `--transport` (stdio\|sse\|http\|streamable-http, default: stdio), `--host`, `--port` |
+| `fastauthmcp login` | Run OAuth2 PKCE login flow, store tokens |
+| `fastauthmcp logout` | Clear stored tokens and invalidate session |
+| `fastauthmcp whoami` | Display current user's email, subject, and roles |
+| `fastauthmcp doctor` | Diagnostics: check config validity, IDP connectivity, token freshness |
+| `fastauthmcp config validate` | Validate `fastauthmcp.yaml` and report errors/warnings |
 
 All commands exit 0 on success, non-zero with stderr message on failure.
 
 ```bash
 # Start with explicit config path
-ceramic run --config /path/to/ceramic.yaml
+fastauthmcp run --config /path/to/fastauthmcp.yaml
 
 # Start with a specific transport (default: stdio)
-ceramic run --transport sse --host 0.0.0.0 --port 9000
+fastauthmcp run --transport sse --host 0.0.0.0 --port 9000
 
 # Available transports: stdio, sse, http, streamable-http
-ceramic run --transport streamable-http
+fastauthmcp run --transport streamable-http
 
 # Check everything is configured correctly
-ceramic doctor
+fastauthmcp doctor
 
 # Full login → verify → run workflow
-ceramic login && ceramic whoami && ceramic run
+fastauthmcp login && fastauthmcp whoami && fastauthmcp run
 ```
 
 ## Exception Hierarchy
 
-All Ceramic exceptions inherit from `CeramicError`:
+All FastAuthMCP exceptions inherit from `FastAuthMCPError`:
 
 | Exception | When raised |
 |-----------|-------------|
@@ -669,11 +729,11 @@ All Ceramic exceptions inherit from `CeramicError`:
 
 ## Testing
 
-Ceramic provides first-class testing support without requiring a live identity provider:
+FastAuthMCP provides first-class testing support without requiring a live identity provider:
 
 ```python
-from ceramic import FastMCP, identity
-from ceramic.testing import CeramicTestClient
+from fastauthmcp import FastMCP, identity
+from fastauthmcp.testing import FastAuthMCPTestClient
 
 # Your server
 mcp = FastMCP("test-server")
@@ -685,7 +745,7 @@ def whoami() -> str:
 
 # Test
 async def test_identity_injected():
-    client = CeramicTestClient(app=mcp, email="admin@co.com", roles=["admin"])
+    client = FastAuthMCPTestClient(app=mcp, email="admin@co.com", roles=["admin"])
     result = await client.call_tool("whoami")
     assert result == "Hello admin@co.com"
 ```
@@ -701,7 +761,7 @@ async def test_identity_injected():
 | [`examples/testing_example.py`](examples/testing_example.py) | Test auth flows without a live IDP |
 | [`examples/zitadel/`](examples/zitadel/) | Full working example with Zitadel as IDP |
 | [`examples/zitadel/petstore_server.py`](examples/zitadel/petstore_server.py) | Pet Store MCP server with authentication |
-| [`examples/zitadel/mcp_client.py`](examples/zitadel/mcp_client.py) | E2E demo — emulates LLM tool calls through Ceramic |
+| [`examples/zitadel/mcp_client.py`](examples/zitadel/mcp_client.py) | E2E demo — emulates LLM tool calls through FastAuthMCP |
 
 The **Zitadel example** includes a Pet Store MCP server with real OAuth2 login, session reuse, and identity propagation — narrated step by step.
 
@@ -715,8 +775,8 @@ The **Zitadel example** includes a Pet Store MCP server with real OAuth2 login, 
 ### Setup
 
 ```bash
-git clone https://github.com/enzomar/ceramic-fwk.git
-cd ceramic-fwk
+git clone https://github.com/enzomar/fastauthmcp.git
+cd fastauthmcp
 
 # Install in development mode
 pip install -e ".[dev]"
@@ -774,13 +834,22 @@ Demonstrates `access_token()` and token exchange for downstream API calls:
 ### Project structure
 
 ```
-ceramic-fwk/
-├── ceramic/                  # Main package
-│   ├── __init__.py           # Public API (FastMCP, identity, etc.)
-│   ├── server.py             # CeramicFastMCP facade (composition over FastMCP)
+fastauthmcp/
+├── fastauthmcp/                  # Main package
+│   ├── __init__.py           # Public API (FastMCP, identity, decorators, etc.)
+│   ├── server.py             # FastAuthMCP facade (composition over FastMCP)
 │   ├── config.py             # Pydantic config models
 │   ├── config_loader.py      # YAML loading + env overrides + hot reload
 │   ├── identity.py           # IdentityContext + contextvars propagation
+│   ├── authorization.py      # Per-tool authorization decorators (@require_roles, etc.)
+│   ├── context.py            # Request-scoped context propagation (get_context/set_context)
+│   ├── audit.py              # Structured audit logging for security events
+│   ├── credential_mapping.py # Downstream credential mapping + scope-aware token cache
+│   ├── rate_limiting.py      # Token bucket rate limiter (per-tool, per-user)
+│   ├── secrets.py            # Secret management integration (env, AWS, Vault)
+│   ├── multi_idp.py          # Multi-IdP routing (issuer claim, tool mapping, header)
+│   ├── graceful_degradation.py # Continue serving during IdP outages
+│   ├── schema_export.py      # Export server schema as JSON/Markdown
 │   ├── security.py           # LogRedactor, TLSEnforcer
 │   ├── exceptions.py         # Exception hierarchy
 │   ├── models.py             # TokenSet, Session, OIDCEndpoints, LogEntry
@@ -788,19 +857,21 @@ ceramic-fwk/
 │   ├── metrics.py            # Prometheus MetricsExporter
 │   ├── resilience.py         # CircuitBreaker + ResilientHttpClient
 │   ├── sessions.py           # SessionStore protocol + InMemorySessionStore
+│   ├── downstream.py         # Authenticated HTTP/SOAP clients for downstream APIs
 │   ├── middleware/            # Middleware pipeline + built-in middleware
 │   │   ├── pipeline.py       # RequestContext, MiddlewarePipeline, protocols
 │   │   ├── authentication.py # OAuth token validation + auto-refresh + JWKS verification
+│   │   ├── authorization.py  # Per-tool policy evaluation middleware
 │   │   ├── observability.py  # Span creation, metrics recording, structured logs
 │   │   ├── session.py        # Session restore/create/invalidate
 │   │   └── builtin.py        # Re-exports all built-in middleware
 │   ├── auth/                  # OAuth2/OIDC implementation
 │   │   ├── oauth.py          # OAuthService (PKCE, discovery, token exchange)
-│   │   ├── adapters.py       # Token exchange adapters (RFC8693, Google STS, Entra OBO)
+│   │   ├── adapters/         # Token exchange adapters (RFC8693, Google STS, Entra OBO)
 │   │   ├── jwks_manager.py   # Resilient JWKS key management (coalescing, stale-while-revalidate)
 │   │   └── token_storage.py  # Platform-native secure token storage
 │   ├── cli/                   # Click CLI commands
-│   └── testing/               # CeramicTestClient, MockIdentityProvider
+│   └── testing/               # FastAuthMCPTestClient, MockIdentityProvider
 ├── tests/
 │   ├── unit/                  # Unit tests
 │   ├── properties/            # Hypothesis property-based tests
@@ -812,13 +883,13 @@ ceramic-fwk/
 │   └── release.sh             # Version bump + tag + push
 ├── docs/                      # Landing page (GitHub Pages)
 ├── pyproject.toml             # Package metadata + dependencies
-├── ceramic.yaml.example       # Annotated example config
+├── fastauthmcp.yaml.example       # Annotated example config
 └── README.md
 ```
 
 ## Supported Identity Providers
 
-Ceramic works with any standard OIDC-compliant provider:
+FastAuthMCP works with any standard OIDC-compliant provider:
 
 - **Zitadel** (tested, see `examples/zitadel/`) — native RFC 8693 token exchange
 - **Google** (OAuth2 + OIDC) — built-in Google STS adapter for token exchange
@@ -834,7 +905,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Support the Project
 
-If Ceramic is useful to you, consider supporting its development:
+If FastAuthMCP is useful to you, consider supporting its development:
 
 [![PayPal](https://img.shields.io/badge/Support-PayPal-blue.svg?logo=paypal)](https://www.paypal.com/ncp/payment/DA8FJHJT5GSZY)
 

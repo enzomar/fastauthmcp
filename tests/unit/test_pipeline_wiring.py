@@ -1,4 +1,4 @@
-"""Tests for middleware pipeline wiring in CeramicFastMCP.
+"""Tests for middleware pipeline wiring in FastAuthMCP.
 
 Verifies that:
 - Empty config → empty pipeline (passthrough)
@@ -15,19 +15,19 @@ from unittest.mock import patch
 
 import pytest
 
-from ceramic.config import (
+from fastauthmcp.config import (
     AuthConfig,
-    CeramicConfig,
+    FastAuthMCPConfig,
     ObservabilityConfig,
     SessionsConfig,
 )
-from ceramic.middleware.builtin import (
+from fastauthmcp.middleware.builtin import (
     AuthenticationMiddleware,
     ObservabilityMiddleware,
     SessionMiddleware,
 )
-from ceramic.middleware.pipeline import MiddlewarePipeline, RequestContext
-from ceramic.server import CeramicFastMCP
+from fastauthmcp.middleware.pipeline import MiddlewarePipeline, RequestContext
+from fastauthmcp.server import FastAuthMCP
 
 
 # ---------------------------------------------------------------------------
@@ -35,43 +35,43 @@ from ceramic.server import CeramicFastMCP
 # ---------------------------------------------------------------------------
 
 
-def _empty_config() -> CeramicConfig:
-    """Return a CeramicConfig with no sections configured."""
-    return CeramicConfig()
+def _empty_config() -> FastAuthMCPConfig:
+    """Return a FastAuthMCPConfig with no sections configured."""
+    return FastAuthMCPConfig()
 
 
-def _config_with_observability() -> CeramicConfig:
-    """Return a CeramicConfig with only observability enabled."""
-    return CeramicConfig(observability=ObservabilityConfig())
+def _config_with_observability() -> FastAuthMCPConfig:
+    """Return a FastAuthMCPConfig with only observability enabled."""
+    return FastAuthMCPConfig(observability=ObservabilityConfig())
 
 
-def _config_with_auth() -> CeramicConfig:
-    """Return a CeramicConfig with only auth configured."""
-    return CeramicConfig(
+def _config_with_auth() -> FastAuthMCPConfig:
+    """Return a FastAuthMCPConfig with only auth configured."""
+    return FastAuthMCPConfig(
         auth=AuthConfig(issuer="https://idp.example.com", client_id="test-app")
     )
 
 
-def _config_with_sessions() -> CeramicConfig:
-    """Return a CeramicConfig with only sessions enabled."""
-    return CeramicConfig(sessions=SessionsConfig())
+def _config_with_sessions() -> FastAuthMCPConfig:
+    """Return a FastAuthMCPConfig with only sessions enabled."""
+    return FastAuthMCPConfig(sessions=SessionsConfig())
 
 
-def _full_config() -> CeramicConfig:
-    """Return a CeramicConfig with all sections enabled."""
-    return CeramicConfig(
+def _full_config() -> FastAuthMCPConfig:
+    """Return a FastAuthMCPConfig with all sections enabled."""
+    return FastAuthMCPConfig(
         observability=ObservabilityConfig(),
         sessions=SessionsConfig(),
         auth=AuthConfig(issuer="https://idp.example.com", client_id="test-app"),
     )
 
 
-def _make_ceramic(config: CeramicConfig) -> CeramicFastMCP:
-    """Create a CeramicFastMCP with a given config, bypassing file loading."""
-    with patch("ceramic.server.ConfigLoader") as mock_loader_cls:
+def _make_fastauthmcp(config: FastAuthMCPConfig) -> FastAuthMCP:
+    """Create a FastAuthMCP with a given config, bypassing file loading."""
+    with patch("fastauthmcp.server.ConfigLoader") as mock_loader_cls:
         mock_loader = mock_loader_cls.return_value
         mock_loader.load.return_value = config
-        return CeramicFastMCP(name="test")
+        return FastAuthMCP(name="test")
 
 
 class _TrackingPlugin:
@@ -99,7 +99,7 @@ class TestEmptyConfigPassthrough:
     """When no config sections are active, the pipeline should be empty."""
 
     def test_empty_config_produces_empty_pipeline(self) -> None:
-        server = _make_ceramic(_empty_config())
+        server = _make_fastauthmcp(_empty_config())
         pipeline = server._pipeline
         assert isinstance(pipeline, MiddlewarePipeline)
         assert len(pipeline._before) == 0
@@ -107,7 +107,7 @@ class TestEmptyConfigPassthrough:
         assert len(pipeline._on_exception) == 0
 
     def test_passthrough_flag_is_true(self) -> None:
-        server = _make_ceramic(_empty_config())
+        server = _make_fastauthmcp(_empty_config())
         assert server._passthrough is True
 
 
@@ -120,13 +120,13 @@ class TestObservabilitySection:
     """Config with observability section should include ObservabilityMiddleware."""
 
     def test_observability_middleware_added(self) -> None:
-        server = _make_ceramic(_config_with_observability())
+        server = _make_fastauthmcp(_config_with_observability())
         assert len(server._pipeline._before) == 1
         assert isinstance(server._pipeline._before[0], ObservabilityMiddleware)
 
     def test_observability_middleware_receives_config(self) -> None:
         config = _config_with_observability()
-        server = _make_ceramic(config)
+        server = _make_fastauthmcp(config)
         mw = server._pipeline._before[0]
         assert isinstance(mw, ObservabilityMiddleware)
         assert mw.config is config.observability
@@ -136,13 +136,19 @@ class TestAuthSection:
     """Config with auth section should include AuthenticationMiddleware."""
 
     def test_auth_middleware_added(self) -> None:
-        server = _make_ceramic(_config_with_auth())
-        assert len(server._pipeline._before) == 1
+        server = _make_fastauthmcp(_config_with_auth())
+        assert len(server._pipeline._before) == 2
         assert isinstance(server._pipeline._before[0], AuthenticationMiddleware)
+
+    def test_authorization_middleware_added_after_auth(self) -> None:
+        from fastauthmcp.middleware.authorization import AuthorizationMiddleware
+
+        server = _make_fastauthmcp(_config_with_auth())
+        assert isinstance(server._pipeline._before[1], AuthorizationMiddleware)
 
     def test_auth_middleware_receives_config(self) -> None:
         config = _config_with_auth()
-        server = _make_ceramic(config)
+        server = _make_fastauthmcp(config)
         mw = server._pipeline._before[0]
         assert isinstance(mw, AuthenticationMiddleware)
         assert mw.config is config.auth
@@ -152,13 +158,13 @@ class TestSessionsSection:
     """Config with sessions section should include SessionMiddleware."""
 
     def test_session_middleware_added(self) -> None:
-        server = _make_ceramic(_config_with_sessions())
+        server = _make_fastauthmcp(_config_with_sessions())
         assert len(server._pipeline._before) == 1
         assert isinstance(server._pipeline._before[0], SessionMiddleware)
 
     def test_session_middleware_receives_config(self) -> None:
         config = _config_with_sessions()
-        server = _make_ceramic(config)
+        server = _make_fastauthmcp(config)
         mw = server._pipeline._before[0]
         assert isinstance(mw, SessionMiddleware)
         assert mw.config is config.sessions
@@ -173,15 +179,18 @@ class TestFullConfigOrder:
     """Config with all sections produces middleware in design-specified order."""
 
     def test_all_middleware_present_in_order(self) -> None:
-        server = _make_ceramic(_full_config())
+        from fastauthmcp.middleware.authorization import AuthorizationMiddleware
+
+        server = _make_fastauthmcp(_full_config())
         before = server._pipeline._before
-        assert len(before) == 3
+        assert len(before) == 4
         assert isinstance(before[0], ObservabilityMiddleware)
         assert isinstance(before[1], SessionMiddleware)
         assert isinstance(before[2], AuthenticationMiddleware)
+        assert isinstance(before[3], AuthorizationMiddleware)
 
     def test_passthrough_flag_is_false(self) -> None:
-        server = _make_ceramic(_full_config())
+        server = _make_fastauthmcp(_full_config())
         assert server._passthrough is False
 
 
@@ -195,7 +204,7 @@ class TestCustomPluginsAfterBuiltins:
 
     def test_plugin_hooks_appended_after_builtins(self) -> None:
         config = _full_config()
-        server = _make_ceramic(config)
+        server = _make_fastauthmcp(config)
 
         plugin = _TrackingPlugin("test-plugin")
         server.use(plugin)
@@ -204,17 +213,17 @@ class TestCustomPluginsAfterBuiltins:
         server._pipeline = server._build_pipeline()
 
         before = server._pipeline._before
-        # 3 built-ins + 1 plugin before_request hook
-        assert len(before) == 4
-        # First 3 are built-ins
+        # 4 built-ins (obs + session + auth + authz) + 1 plugin before_request hook
+        assert len(before) == 5
+        # First 4 are built-ins
         assert isinstance(before[0], ObservabilityMiddleware)
         assert isinstance(before[1], SessionMiddleware)
         assert isinstance(before[2], AuthenticationMiddleware)
-        # Last is the plugin hook
-        assert before[3] is plugin.hooks["before_request"]
+        # authz at [3], plugin at [4]
+        assert before[4] is plugin.hooks["before_request"]
 
     def test_multiple_plugins_maintain_registration_order(self) -> None:
-        server = _make_ceramic(_empty_config())
+        server = _make_fastauthmcp(_empty_config())
 
         plugin_a = _TrackingPlugin("plugin-a")
         plugin_b = _TrackingPlugin("plugin-b")
@@ -240,7 +249,7 @@ class TestPipelineExecution:
 
     @pytest.mark.asyncio
     async def test_empty_pipeline_calls_handler_directly(self) -> None:
-        server = _make_ceramic(_empty_config())
+        server = _make_fastauthmcp(_empty_config())
         ctx = RequestContext(tool_name="test_tool")
         result = await server._pipeline.execute(ctx, self._handler("direct"))
         assert result == "direct"
@@ -252,7 +261,7 @@ class TestPipelineExecution:
         from datetime import datetime, timedelta, timezone
         from unittest.mock import AsyncMock
 
-        from ceramic.models import TokenSet
+        from fastauthmcp.models import TokenSet
 
         # Create a valid (non-expired) token so AuthenticationMiddleware passes through
         claims = {"sub": "user-123", "email": "test@example.com"}
@@ -271,7 +280,7 @@ class TestPipelineExecution:
             expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
         )
 
-        server = _make_ceramic(_full_config())
+        server = _make_fastauthmcp(_full_config())
         # Patch the token storage on the auth middleware to return a valid token
         mock_storage = AsyncMock()
         mock_storage.retrieve = AsyncMock(return_value=valid_token)

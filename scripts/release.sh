@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Release script for ceramic-fwk
+# Release script for fastauthmcp
 # Usage:
 #   ./scripts/release.sh patch    # 0.1.0 → 0.1.1
 #   ./scripts/release.sh minor    # 0.1.0 → 0.2.0
@@ -90,4 +90,4 @@ echo ""
 echo "Done! Release v$NEW_VERSION pushed."
 echo "  → CI will run tests on the commit"
 echo "  → publish.yml will build and upload to PyPI"
-echo "  → Check: https://github.com/enzomar/ceramic-fwk/actions"
+echo "  → Check: https://github.com/enzomar/fastauthmcp/actions"

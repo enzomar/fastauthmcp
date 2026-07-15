@@ -55,13 +55,13 @@ jobs:
       - name: Check for security-sensitive file changes
         run: |
           SECURITY_FILES=(
-            "ceramic/auth/oauth.py"
-            "ceramic/middleware/authentication.py"
-            "ceramic/auth/jwks_manager.py"
-            "ceramic/auth/token_storage.py"
-            "ceramic/security.py"
-            "ceramic/resilience.py"
-            "ceramic/identity.py"
+            "fastauthmcp/auth/oauth.py"
+            "fastauthmcp/middleware/authentication.py"
+            "fastauthmcp/auth/jwks_manager.py"
+            "fastauthmcp/auth/token_storage.py"
+            "fastauthmcp/security.py"
+            "fastauthmcp/resilience.py"
+            "fastauthmcp/identity.py"
           )
 
           CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || echo "")

@@ -1,4 +1,4 @@
-"""Unit tests for the Ceramic testing utilities (CeramicTestClient and MockIdentityProvider)."""
+"""Unit tests for the FastAuthMCP testing utilities (FastAuthMCPTestClient and MockIdentityProvider)."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from ceramic.identity import identity
-from ceramic.testing import CeramicTestClient, MockIdentityProvider
+from fastauthmcp.identity import identity
+from fastauthmcp.testing import FastAuthMCPTestClient, MockIdentityProvider
 
 
 # ---------------------------------------------------------------------------
@@ -19,8 +19,8 @@ from ceramic.testing import CeramicTestClient, MockIdentityProvider
 
 @pytest.fixture
 def mock_app():
-    """Create a minimal mock CeramicFastMCP app."""
-    from ceramic.middleware.pipeline import MiddlewarePipeline
+    """Create a minimal mock FastAuthMCP app."""
+    from fastauthmcp.middleware.pipeline import MiddlewarePipeline
 
     class FakeApp:
         """Minimal app-like object for testing."""
@@ -34,35 +34,35 @@ def mock_app():
 
 
 # ---------------------------------------------------------------------------
-# CeramicTestClient Tests
+# FastAuthMCPTestClient Tests
 # ---------------------------------------------------------------------------
 
 
-class TestCeramicTestClientInit:
-    """Tests for CeramicTestClient initialization."""
+class TestFastAuthMCPTestClientInit:
+    """Tests for FastAuthMCPTestClient initialization."""
 
     def test_creates_identity_with_email(self, mock_app):
-        client = CeramicTestClient(mock_app, email="user@example.com")
+        client = FastAuthMCPTestClient(mock_app, email="user@example.com")
         assert client.identity.email == "user@example.com"
 
     def test_creates_identity_with_subject(self, mock_app):
-        client = CeramicTestClient(mock_app, subject="sub-123")
+        client = FastAuthMCPTestClient(mock_app, subject="sub-123")
         assert client.identity.subject == "sub-123"
 
     def test_creates_identity_with_claims(self, mock_app):
-        client = CeramicTestClient(mock_app, claims={"custom": "value"})
+        client = FastAuthMCPTestClient(mock_app, claims={"custom": "value"})
         assert client.identity.claims["custom"] == "value"
 
     def test_creates_identity_with_roles(self, mock_app):
-        client = CeramicTestClient(mock_app, roles=["admin", "editor"])
+        client = FastAuthMCPTestClient(mock_app, roles=["admin", "editor"])
         assert client.identity.roles == frozenset(["admin", "editor"])
 
     def test_creates_identity_with_groups(self, mock_app):
-        client = CeramicTestClient(mock_app, groups=["ops-team"])
+        client = FastAuthMCPTestClient(mock_app, groups=["ops-team"])
         assert client.identity.groups == frozenset(["ops-team"])
 
     def test_defaults_to_none_and_empty(self, mock_app):
-        client = CeramicTestClient(mock_app)
+        client = FastAuthMCPTestClient(mock_app)
         assert client.identity.email is None
         assert client.identity.subject is None
         assert client.identity.claims == MappingProxyType({})
@@ -70,13 +70,13 @@ class TestCeramicTestClientInit:
         assert client.identity.groups == frozenset()
 
     def test_identity_is_immutable(self, mock_app):
-        client = CeramicTestClient(mock_app, email="user@example.com")
+        client = FastAuthMCPTestClient(mock_app, email="user@example.com")
         with pytest.raises(AttributeError):
             client.identity.email = "other@example.com"
 
 
-class TestCeramicTestClientCallTool:
-    """Tests for CeramicTestClient.call_tool()."""
+class TestFastAuthMCPTestClientCallTool:
+    """Tests for FastAuthMCPTestClient.call_tool()."""
 
     @pytest.mark.asyncio
     async def test_calls_tool_function_when_no_middleware(self, mock_app):
@@ -86,7 +86,7 @@ class TestCeramicTestClientCallTool:
             return {"result": x * 2}
 
         mock_app._tool_functions["my_tool"] = my_tool
-        client = CeramicTestClient(mock_app, email="user@example.com")
+        client = FastAuthMCPTestClient(mock_app, email="user@example.com")
 
         result = await client.call_tool("my_tool", x=5)
         assert result == {"result": 10}
@@ -94,7 +94,7 @@ class TestCeramicTestClientCallTool:
     @pytest.mark.asyncio
     async def test_returns_tool_not_found_for_missing_tool(self, mock_app):
         """Returns error dict when tool is not registered."""
-        client = CeramicTestClient(mock_app, email="user@example.com")
+        client = FastAuthMCPTestClient(mock_app, email="user@example.com")
 
         result = await client.call_tool("nonexistent_tool")
         assert result["error"] == "tool_not_found"
@@ -111,7 +111,9 @@ class TestCeramicTestClientCallTool:
             return {"captured": True}
 
         mock_app._tool_functions["capture_tool"] = capture_tool
-        client = CeramicTestClient(mock_app, email="test@example.com", roles=["tester"])
+        client = FastAuthMCPTestClient(
+            mock_app, email="test@example.com", roles=["tester"]
+        )
 
         result = await client.call_tool("capture_tool")
         assert result == {"captured": True}
@@ -126,7 +128,7 @@ class TestCeramicTestClientCallTool:
             return {"ok": True}
 
         mock_app._tool_functions["simple_tool"] = simple_tool
-        client = CeramicTestClient(mock_app, email="test@example.com")
+        client = FastAuthMCPTestClient(mock_app, email="test@example.com")
 
         await client.call_tool("simple_tool")
 
@@ -135,29 +137,29 @@ class TestCeramicTestClientCallTool:
             identity()
 
 
-class TestCeramicTestClientAssertions:
-    """Tests for CeramicTestClient static assertion helpers."""
+class TestFastAuthMCPTestClientAssertions:
+    """Tests for FastAuthMCPTestClient static assertion helpers."""
 
     def test_assert_success_passes_for_normal_response(self):
         """assert_success passes for a non-error response."""
-        CeramicTestClient.assert_success({"result": "success"})
+        FastAuthMCPTestClient.assert_success({"result": "success"})
 
     def test_assert_success_passes_for_non_dict(self):
         """assert_success passes for non-dict responses."""
-        CeramicTestClient.assert_success("hello")
-        CeramicTestClient.assert_success(42)
-        CeramicTestClient.assert_success(None)
+        FastAuthMCPTestClient.assert_success("hello")
+        FastAuthMCPTestClient.assert_success(42)
+        FastAuthMCPTestClient.assert_success(None)
 
     def test_assert_success_fails_for_error_response(self):
         """assert_success raises AssertionError for error responses."""
         with pytest.raises(AssertionError):
-            CeramicTestClient.assert_success(
+            FastAuthMCPTestClient.assert_success(
                 {"error": "internal_error", "message": "Something went wrong"}
             )
 
     def test_assert_success_passes_for_empty_dict(self):
         """assert_success passes for a dict without 'error' key."""
-        CeramicTestClient.assert_success({"data": "value"})
+        FastAuthMCPTestClient.assert_success({"data": "value"})
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +232,7 @@ class TestMockIdentityProvider:
         """Same claims and time produce the same signature with the same secret."""
         provider = MockIdentityProvider(secret="fixed-secret")
 
-        with patch("ceramic.testing.time.time", return_value=1700000000.0):
+        with patch("fastauthmcp.testing.time.time", return_value=1700000000.0):
             token1 = provider.issue_token({"sub": "user-123"})
             token2 = provider.issue_token({"sub": "user-123"})
 
@@ -240,7 +242,7 @@ class TestMockIdentityProvider:
         """Different claims produce different tokens."""
         provider = MockIdentityProvider()
 
-        with patch("ceramic.testing.time.time", return_value=1700000000.0):
+        with patch("fastauthmcp.testing.time.time", return_value=1700000000.0):
             token1 = provider.issue_token({"sub": "user-1"})
             token2 = provider.issue_token({"sub": "user-2"})
 
@@ -265,6 +267,6 @@ class TestMockIdentityProvider:
         assert payload["exp"] > 0
 
     def test_default_secret(self):
-        """Default secret is 'ceramic-test-secret'."""
+        """Default secret is 'fastauthmcp-test-secret'."""
         provider = MockIdentityProvider()
-        assert provider._secret == "ceramic-test-secret"
+        assert provider._secret == "fastauthmcp-test-secret"

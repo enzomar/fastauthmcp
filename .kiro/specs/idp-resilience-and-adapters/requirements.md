@@ -2,18 +2,18 @@
 
 ## Introduction
 
-This feature adds three hardening capabilities to the Ceramic framework's IDP integration layer: provider-specific token exchange adapters (Google Cloud STS, Microsoft Entra ID), a circuit breaker pattern for all outbound IDP HTTP calls, and JWKS resilience improvements to handle thundering herd scenarios. Together these changes make Ceramic production-ready for multi-cloud deployments where IDP availability cannot be assumed and provider-specific quirks must be normalized.
+This feature adds three hardening capabilities to the FastAuthMCP framework's IDP integration layer: provider-specific token exchange adapters (Google Cloud STS, Microsoft Entra ID), a circuit breaker pattern for all outbound IDP HTTP calls, and JWKS resilience improvements to handle thundering herd scenarios. Together these changes make FastAuthMCP production-ready for multi-cloud deployments where IDP availability cannot be assumed and provider-specific quirks must be normalized.
 
 ## Glossary
 
-- **Token_Exchange_Adapter**: A provider-specific implementation that translates Ceramic's internal token exchange request into the wire format required by a particular IDP, and normalizes the response back into a standard TokenSet.
+- **Token_Exchange_Adapter**: A provider-specific implementation that translates FastAuthMCP's internal token exchange request into the wire format required by a particular IDP, and normalizes the response back into a standard TokenSet.
 - **Circuit_Breaker**: A stateful component that monitors outbound IDP HTTP calls and transitions between Closed (allowing calls), Open (failing fast), and Half-Open (probing recovery) states based on configurable failure thresholds and cooldown timers.
 - **JWKS_Manager**: The component responsible for fetching, caching, and refreshing JSON Web Key Sets used for JWT signature verification.
 - **Request_Coalescer**: A mechanism that deduplicates concurrent in-flight requests for the same resource, ensuring only one network call is made while all waiters share the result.
 - **Stale_While_Revalidate**: A caching strategy where the cached JWKS keys continue to be served to callers while a background refresh is attempted, avoiding blocking on network calls.
 - **IDP**: Identity Provider — the external OIDC-compliant service (e.g., Zitadel, Google, Entra ID) that issues and validates tokens.
-- **OAuthService**: The existing Ceramic component in `ceramic/auth/oauth.py` that handles OIDC discovery, token endpoint calls, and token exchange.
-- **JWKSVerifier**: The existing Ceramic component in `ceramic/middleware/authentication.py` that fetches JWKS and verifies JWT signatures.
+- **OAuthService**: The existing FastAuthMCP component in `fastauthmcp/auth/oauth.py` that handles OIDC discovery, token endpoint calls, and token exchange.
+- **JWKSVerifier**: The existing FastAuthMCP component in `fastauthmcp/middleware/authentication.py` that fetches JWKS and verifies JWT signatures.
 - **Adapter_Registry**: A mapping from provider identifiers to their corresponding Token_Exchange_Adapter implementations, used to select the correct adapter at runtime.
 
 ## Requirements
@@ -33,7 +33,7 @@ This feature adds three hardening capabilities to the Ceramic framework's IDP in
 
 ### Requirement 2: Google Cloud STS Adapter
 
-**User Story:** As a developer deploying on Google Cloud, I want Ceramic to exchange tokens via Google Cloud STS, so that I can use Google-issued credentials with the MCP server.
+**User Story:** As a developer deploying on Google Cloud, I want FastAuthMCP to exchange tokens via Google Cloud STS, so that I can use Google-issued credentials with the MCP server.
 
 #### Acceptance Criteria
 
@@ -49,7 +49,7 @@ This feature adds three hardening capabilities to the Ceramic framework's IDP in
 
 ### Requirement 3: Microsoft Entra ID Adapter
 
-**User Story:** As a developer deploying on Azure, I want Ceramic to exchange tokens via Entra ID's on-behalf-of flow, so that I can use Azure AD-issued credentials with the MCP server.
+**User Story:** As a developer deploying on Azure, I want FastAuthMCP to exchange tokens via Entra ID's on-behalf-of flow, so that I can use Azure AD-issued credentials with the MCP server.
 
 #### Acceptance Criteria
 
@@ -64,7 +64,7 @@ This feature adds three hardening capabilities to the Ceramic framework's IDP in
 
 ### Requirement 4: Circuit Breaker for IDP Calls
 
-**User Story:** As an operator running Ceramic in production, I want IDP calls to fail fast when the provider is down, so that cascading failures do not degrade the MCP server.
+**User Story:** As an operator running FastAuthMCP in production, I want IDP calls to fail fast when the provider is down, so that cascading failures do not degrade the MCP server.
 
 #### Acceptance Criteria
 
@@ -83,7 +83,7 @@ This feature adds three hardening capabilities to the Ceramic framework's IDP in
 
 ### Requirement 5: Circuit Breaker Configuration
 
-**User Story:** As an operator, I want to configure the circuit breaker thresholds via ceramic.yaml, so that I can tune resilience behavior for my deployment environment.
+**User Story:** As an operator, I want to configure the circuit breaker thresholds via fastauthmcp.yaml, so that I can tune resilience behavior for my deployment environment.
 
 #### Acceptance Criteria
 

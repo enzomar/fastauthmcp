@@ -1,6 +1,6 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "ceramic/**/*.py,examples/**/*.py,pyproject.toml,ceramic.yaml.example"
+fileMatchPattern: "fastauthmcp/**/*.py,examples/**/*.py,pyproject.toml,fastauthmcp.yaml.example"
 ---
 
 # Keep README.md Up to Date
@@ -9,9 +9,9 @@ Whenever you modify the public API, add/remove features, change CLI commands, up
 
 ## What triggers a README update
 
-- Adding or removing a public export from `ceramic/__init__.py`
-- Adding or removing a CLI command in `ceramic/cli/`
-- Changing the configuration schema in `ceramic/config.py`
+- Adding or removing a public export from `fastauthmcp/__init__.py`
+- Adding or removing a CLI command in `fastauthmcp/cli/`
+- Changing the configuration schema in `fastauthmcp/config.py`
 - Adding new example files in `examples/`
 - Modifying `pyproject.toml` (dependencies, entry points, project metadata)
 - Adding new directories to the project structure
@@ -24,12 +24,12 @@ Whenever you modify the public API, add/remove features, change CLI commands, up
 - **CLI section** — if commands are added, removed, or renamed
 - **Project structure** — if directories or key files change
 - **Installation** — if dependencies or Python version requirements change
-- **Configuration Reference** — if `ceramic.yaml.example` changes
+- **Configuration Reference** — if `fastauthmcp.yaml.example` changes
 
 ## Rules
 
 - Keep the README concise and user-focused
 - Update code examples to match the actual current API
 - Do not add features to the README that are not yet implemented
-- Ensure `pip install ceramic-fwk` and `from ceramic import FastMCP` remain accurate
+- Ensure `pip install fastauthmcp` and `from fastauthmcp import FastMCP` remain accurate
 - If you add a new example in `examples/`, add a brief mention in the README

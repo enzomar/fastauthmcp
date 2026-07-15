@@ -1,4 +1,4 @@
-"""Zitadel + Ceramic example: Project Management API.
+"""Zitadel + FastAuthMCP example: Project Management API.
 
 A simulated HTTP API with identity-aware tools using Zitadel as the
 identity provider. Demonstrates authentication, identity context access,
@@ -6,8 +6,8 @@ and session management.
 
 Setup:
     1. Configure Zitadel (see README.md)
-    2. Copy ceramic.yaml.example to ceramic.yaml and fill in your details
-    3. Run: ceramic login && ceramic run
+    2. Copy fastauthmcp.yaml.example to fastauthmcp.yaml and fill in your details
+    3. Run: fastauthmcp login && fastauthmcp run
 
 Or directly:
     python server.py
@@ -18,7 +18,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from ceramic import FastMCP, identity
+from fastauthmcp import FastMCP, identity
 
 # ---------------------------------------------------------------------------
 # Simulated database (in-memory)
@@ -67,10 +67,10 @@ def _audit(action: str, user: str, details: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Ceramic MCP Server
+# FastAuthMCP MCP Server
 # ---------------------------------------------------------------------------
 
-mcp = FastMCP("project-api", config="ceramic.yaml")
+mcp = FastMCP("project-api", config="fastauthmcp.yaml")
 
 
 # --- Public (any authenticated user) ---
@@ -231,7 +231,7 @@ def get_audit_log(limit: int = 20) -> list[dict[str, Any]]:
 if __name__ == "__main__":
     import os
 
-    transport = os.environ.get("CERAMIC_TRANSPORT", "stdio")
-    host = os.environ.get("CERAMIC_HOST", "localhost")
-    port = int(os.environ.get("CERAMIC_PORT", "8000"))
+    transport = os.environ.get("FASTAUTHMCP_TRANSPORT", "stdio")
+    host = os.environ.get("FASTAUTHMCP_HOST", "localhost")
+    port = int(os.environ.get("FASTAUTHMCP_PORT", "8000"))
     mcp.run(transport=transport, host=host, port=port)

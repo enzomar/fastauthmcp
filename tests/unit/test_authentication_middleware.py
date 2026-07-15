@@ -10,21 +10,21 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ceramic.auth.oauth import AuthResult, OAuthService
-from ceramic.auth.claims import (
+from fastauthmcp.auth.oauth import AuthResult, OAuthService
+from fastauthmcp.auth.claims import (
     build_identity_context,
     extract_nested_claim,
     parse_jwt_claims,
 )
-from ceramic.config import AuthConfig
-from ceramic.exceptions import AuthenticationError, ProviderError
-from ceramic.identity import _identity_context_var
-from ceramic.middleware.authentication import (
+from fastauthmcp.config import AuthConfig
+from fastauthmcp.exceptions import AuthenticationError, ProviderError
+from fastauthmcp.identity import _identity_context_var
+from fastauthmcp.middleware.authentication import (
     AuthenticationMiddleware,
     _derive_storage_key,
 )
-from ceramic.middleware.pipeline import RequestContext
-from ceramic.models import TokenSet
+from fastauthmcp.middleware.pipeline import RequestContext
+from fastauthmcp.models import TokenSet
 
 
 # --- Helpers ---
@@ -517,7 +517,9 @@ class TestBuiltinWrapper:
     @pytest.mark.asyncio
     async def test_builtin_wrapper_delegates(self, auth_config):
         """The wrapper in builtin.py should delegate to the real implementation."""
-        from ceramic.middleware.builtin import AuthenticationMiddleware as BuiltinAuth
+        from fastauthmcp.middleware.builtin import (
+            AuthenticationMiddleware as BuiltinAuth,
+        )
 
         mw = BuiltinAuth(config=auth_config)
         assert mw._impl is not None

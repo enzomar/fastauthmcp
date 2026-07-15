@@ -6,8 +6,8 @@ Run with:
 
 import pytest
 
-from ceramic import FastMCP, identity
-from ceramic.testing import CeramicTestClient
+from fastauthmcp import FastMCP, identity
+from fastauthmcp.testing import FastAuthMCPTestClient
 
 # --- App setup ---
 
@@ -31,7 +31,7 @@ def delete_user(user_id: str) -> str:
 @pytest.mark.asyncio
 async def test_authenticated_access():
     """An authenticated user can access the dashboard."""
-    client = CeramicTestClient(
+    client = FastAuthMCPTestClient(
         app=mcp,
         email="viewer@example.com",
         subject="user-123",
@@ -44,7 +44,7 @@ async def test_authenticated_access():
 @pytest.mark.asyncio
 async def test_identity_propagation():
     """Identity context is available in tool functions."""
-    client = CeramicTestClient(
+    client = FastAuthMCPTestClient(
         app=mcp,
         email="admin@example.com",
         roles=["admin"],

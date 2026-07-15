@@ -17,16 +17,16 @@ jobs:
           python-version: "3.12"
 
       - name: Install dev dependencies
-        run: pip install -e ".[dev]" ruff mypy
+        run: pip install -e ".[dev]" ruff mypy types-PyYAML
 
       - name: Ruff check
-        run: ruff check ceramic/ tests/ examples/
+        run: ruff check fastauthmcp/ tests/ examples/
 
       - name: Ruff format check
-        run: ruff format --check ceramic/ tests/ examples/
+        run: ruff format --check fastauthmcp/ tests/ examples/
 
       - name: Type check
-        run: mypy ceramic/ --ignore-missing-imports
+        run: mypy fastauthmcp/ --ignore-missing-imports
 
   test:
     runs-on: ubuntu-latest

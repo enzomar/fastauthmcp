@@ -10,7 +10,7 @@
 
 **Do NOT open a public issue for security vulnerabilities.**
 
-Please report security issues through [GitHub Security Advisories](https://github.com/enzomar/ceramic-fwk/security/advisories/new) (private).
+Please report security issues through [GitHub Security Advisories](https://github.com/enzomar/fastauthmcp/security/advisories/new) (private).
 
 Include:
 - Description of the vulnerability
@@ -22,7 +22,7 @@ We aim to respond within 48 hours and coordinate disclosure within 90 days.
 
 ## Security Design
 
-Ceramic's security model is documented in `.ai/security.md`. Key principles:
+FastAuthMCP's security model is documented in `.ai/security.md`. Key principles:
 
 - TLS 1.2+ enforced on all IDP communication
 - PKCE mandatory on all authorization_code flows

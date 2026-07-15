@@ -30,7 +30,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Ceramic
-ceramic.yaml
-!ceramic.yaml.example
-!examples/zitadel/ceramic.yaml
+# FastAuthMCP
+fastauthmcp.yaml
+!fastauthmcp.yaml.example
+!examples/zitadel/fastauthmcp.yaml

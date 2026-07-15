@@ -51,7 +51,7 @@ Steps to verify this change:
 - [ ] Relevant ADR read and respected
 
 ### Architecture
-- [ ] Public API (`ceramic/__init__.py`) unchanged (or ADR written)
+- [ ] Public API (`fastauthmcp/__init__.py`) unchanged (or ADR written)
 - [ ] Middleware execution order preserved
 - [ ] No new dependencies without justification in PR description
 - [ ] Configuration changes have defaults (backward compatible)
