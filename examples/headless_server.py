@@ -110,7 +110,7 @@ def get_user_data() -> dict:
     try:
         # Most OIDC providers have a /userinfo endpoint
         resp = httpx.get(
-            "https://fastauthmcp-oss-agq8i8.eu1.zitadel.cloud/oidc/v1/userinfo",
+            "https://ceramic-oss-agq8i8.eu1.zitadel.cloud/oidc/v1/userinfo",
             headers={"Authorization": f"Bearer {token}"},
             timeout=10,
         )

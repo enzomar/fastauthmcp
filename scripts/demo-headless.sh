@@ -169,7 +169,7 @@ case "$MODE" in
 # Headless demo config — token_exchange mode
 auth:
   provider: oidc
-  issuer: https://fastauthmcp-oss-agq8i8.eu1.zitadel.cloud
+  issuer: https://ceramic-oss-agq8i8.eu1.zitadel.cloud
   client_id: "380842820363183891"
   grant_type: token_exchange
   upstream_token_header: x-user-token
@@ -231,7 +231,7 @@ async def main():
     from fastauthmcp.auth.token_storage import get_token_storage
 
     storage = get_token_storage()
-    token_set = await storage.retrieve('fastauthmcp-oss-agq8i8.eu1.zitadel.cloud')
+    token_set = await storage.retrieve('ceramic-oss-agq8i8.eu1.zitadel.cloud')
     if not token_set:
         token_set = await storage.retrieve('default')
     if not token_set:
@@ -262,7 +262,7 @@ async def main():
     print('→ Proving the token is valid (calling IDP userinfo)...')
     try:
         resp = httpx.get(
-            'https://fastauthmcp-oss-agq8i8.eu1.zitadel.cloud/oidc/v1/userinfo',
+            'https://ceramic-oss-agq8i8.eu1.zitadel.cloud/oidc/v1/userinfo',
             headers={'Authorization': f'Bearer {token}'},
             timeout=10,
         )

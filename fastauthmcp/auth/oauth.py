@@ -12,7 +12,9 @@ import secrets
 import ssl
 import subprocess
 import sys
+import urllib.error
 import urllib.parse
+import urllib.request
 import webbrowser
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -69,6 +71,8 @@ class OAuthService:
 
     async def discover_endpoints(self, issuer_url: str) -> OIDCEndpoints:
         """Fetch OIDC provider endpoints from .well-known/openid-configuration."""
+        import asyncio
+
         self._tls_enforcer.validate_url(issuer_url)
 
         issuer = issuer_url.rstrip("/")
@@ -81,12 +85,16 @@ class OAuthService:
                 )
                 data = response.json()
             else:
-                async with httpx.AsyncClient(verify=self._verify, timeout=30) as client:
-                    response = await client.get(
-                        discovery_url, headers={"Accept": "application/json"}
-                    )
-                    response.raise_for_status()
-                    data = response.json()
+
+                def _sync_discover() -> dict:
+                    with httpx.Client(verify=self._verify, timeout=30) as client:
+                        response = client.get(
+                            discovery_url, headers={"Accept": "application/json"}
+                        )
+                        response.raise_for_status()
+                        return response.json()
+
+                data = await asyncio.to_thread(_sync_discover)
         except httpx.HTTPStatusError as exc:
             raise ProviderError(
                 f"OIDC discovery failed ({exc.response.status_code}): {discovery_url}"
@@ -137,6 +145,19 @@ class OAuthService:
         callback_server = CallbackServer()
         port = callback_server.start(provider_config.callback_port)
         redirect_uri = f"http://localhost:{port}/callback"
+
+        # Verify the callback server is actually reachable
+        try:
+            # Quick self-test: hit a non-callback path to confirm the server responds
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/healthcheck", timeout=2)
+        except urllib.error.HTTPError:
+            # 404 is fine — it means the server IS responding
+            pass
+        except Exception as verify_exc:
+            callback_server.shutdown()
+            raise AuthenticationError(
+                f"Callback server started but is not reachable on port {port}: {verify_exc}"
+            ) from verify_exc
 
         # Build authorization URL
         params = {
@@ -344,8 +365,11 @@ class OAuthService:
         """POST to the token endpoint.
 
         When a ResilientHttpClient is available, delegates to post_token()
-        which routes through the circuit breaker. Otherwise uses raw httpx.
+        which routes through the circuit breaker. Otherwise uses synchronous
+        httpx in a thread to avoid event-loop conflicts with anyio.
         """
+        import asyncio
+
         assert self._endpoints is not None
         token_url = self._endpoints.token_endpoint
 
@@ -366,11 +390,12 @@ class OAuthService:
             except httpx.RequestError as exc:
                 raise ProviderError(f"Failed to reach token endpoint: {exc}") from exc
 
-        try:
-            async with httpx.AsyncClient(
-                verify=self._verify, timeout=timeout
-            ) as client:
-                response = await client.post(
+        # Use synchronous httpx in a thread to avoid deadlocks with anyio's
+        # event loop (FastMCP runs on anyio which can conflict with nested
+        # async HTTP clients).
+        def _sync_post() -> dict:
+            with httpx.Client(verify=self._verify, timeout=timeout) as client:
+                response = client.post(
                     token_url,
                     data=body,
                     headers={
@@ -379,7 +404,10 @@ class OAuthService:
                     },
                 )
                 response.raise_for_status()
-                data = response.json()
+                return response.json()
+
+        try:
+            data = await asyncio.to_thread(_sync_post)
         except httpx.HTTPStatusError as exc:
             try:
                 error_body = exc.response.json()
@@ -431,18 +459,23 @@ def _parse_token_response(data: dict[str, Any]) -> TokenSet:
 
 def _open_browser(url: str) -> None:
     """Open a URL in the system browser with fallbacks."""
+    logger.info("Attempting to open browser for URL: %s", url[:80])
     try:
         opened = webbrowser.open(url)
+        logger.info("webbrowser.open() returned: %s", opened)
         if not opened:
+            logger.info("webbrowser.open failed, trying 'open' command")
             subprocess.Popen(
                 ["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
-    except Exception:
+    except Exception as exc:
+        logger.warning("webbrowser.open() raised: %s, trying 'open' command", exc)
         try:
             subprocess.Popen(
                 ["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
-        except Exception:
+        except Exception as exc2:
+            logger.error("All browser open methods failed: %s", exc2)
             print(
                 f"\n⚠ Could not open browser. Open this URL manually:\n\n  {url}\n",
                 file=sys.stderr,

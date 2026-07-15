@@ -11,7 +11,7 @@
 
 auth:
   provider: oidc
-  issuer: https://fastauthmcp-oss-agq8i8.eu1.zitadel.cloud
+  issuer: https://ceramic-oss-agq8i8.eu1.zitadel.cloud
   client_id: "380842820363183891"
   # grant_type: token_exchange       # Uncomment for headless mode
   # upstream_token_header: "x-user-token"

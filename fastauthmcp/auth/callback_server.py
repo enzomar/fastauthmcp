@@ -22,16 +22,19 @@ class _CallbackHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
+        logger.info("Callback server received request: %s", self.path)
         if parsed.path == "/callback":
             params = urllib.parse.parse_qs(parsed.query)
             result = {k: v[0] if len(v) == 1 else v for k, v in params.items()}
             self.server._callback_result = result  # type: ignore[attr-defined]
+            logger.info("Callback received with keys: %s", list(result.keys()))
 
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(_SUCCESS_HTML)
         else:
+            logger.warning("Callback server got unexpected path: %s", parsed.path)
             self.send_response(404)
             self.end_headers()
 
@@ -54,13 +57,21 @@ class CallbackServer:
     def start(self, port: int = 0) -> int:
         """Start the callback server. Returns the actual port number."""
         try:
+            logger.debug("Attempting to start callback server on 127.0.0.1:%d", port)
             self._server = HTTPServer(("127.0.0.1", port), _CallbackHandler)
+            self._server.allow_reuse_address = True
             self._server._callback_result = None  # type: ignore[attr-defined]
             actual_port = self._server.server_address[1]
             self._thread = Thread(target=self._server.serve_forever, daemon=True)
             self._thread.start()
+            logger.info(
+                "Callback server started on 127.0.0.1:%d (thread=%s)",
+                actual_port,
+                self._thread.name,
+            )
             return actual_port
         except OSError as exc:
+            logger.error("Failed to start callback server on port %d: %s", port, exc)
             raise AuthenticationError(
                 f"Failed to start callback server on port {port}: {exc}"
             ) from exc
@@ -83,7 +94,8 @@ class CallbackServer:
         while time.monotonic() < deadline:
             if self._server and self._server._callback_result is not None:  # type: ignore[attr-defined]
                 result = self._server._callback_result  # type: ignore[attr-defined]
-                self.shutdown()
+                # Don't shutdown here — the server thread may still be writing
+                # the response to the browser. Caller is responsible for shutdown.
                 return result
             time.sleep(0.1)
         raise TimeoutError(f"Callback not received within {timeout} seconds")
@@ -91,10 +103,24 @@ class CallbackServer:
     def shutdown(self) -> None:
         """Shut down the callback server and free the port."""
         if self._server:
-            self._server.shutdown()
+            # Run shutdown in a separate thread to avoid blocking if
+            # serve_forever is stuck handling a request (e.g. /favicon.ico).
+            import threading
+
+            server = self._server
             self._server = None
+
+            def _do_shutdown():
+                try:
+                    server.shutdown()
+                except Exception:
+                    pass
+
+            t = threading.Thread(target=_do_shutdown, daemon=True)
+            t.start()
+            t.join(timeout=2)
         if self._thread:
-            self._thread.join(timeout=5)
+            self._thread.join(timeout=2)
             self._thread = None
 
 
