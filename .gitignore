@@ -34,3 +34,6 @@ Thumbs.db
 fastauthmcp.yaml
 !fastauthmcp.yaml.example
 !examples/zitadel/fastauthmcp.yaml
+
+# Lab reports
+reports/

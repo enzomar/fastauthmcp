@@ -870,6 +870,11 @@ fastauthmcp/
 │   │   ├── adapters/         # Token exchange adapters (RFC8693, Google STS, Entra OBO)
 │   │   ├── jwks_manager.py   # Resilient JWKS key management (coalescing, stale-while-revalidate)
 │   │   └── token_storage.py  # Platform-native secure token storage
+│   ├── lab/                   # Security & Interoperability Lab
+│   │   ├── providers/        # IDP abstractions (Mock, Zitadel, Keycloak, Auth0, Azure, Okta)
+│   │   ├── scenarios/        # Test scenarios (matrix of providers × flows × checks)
+│   │   ├── runner/           # Engine, discovery, reporting
+│   │   └── docker-compose.yml # Keycloak for integration tests
 │   ├── cli/                   # Click CLI commands
 │   └── testing/               # FastAuthMCPTestClient, MockIdentityProvider
 ├── tests/
@@ -878,14 +883,97 @@ fastauthmcp/
 │   └── integration/           # Integration tests
 ├── examples/                  # Example projects
 │   └── zitadel/               # Full Zitadel IDP example (ready to run)
+├── docs/
+│   ├── GUIDE.md               # Full integration & development guide
+│   └── guides/                # Per-platform and per-IDP integration guides
+│       ├── claude-desktop.md  # Claude Desktop + each IDP
+│       ├── google-gemini.md   # Gemini + token exchange + Workload Identity
+│       ├── cursor-ide.md      # Cursor + SSE + social login
+│       ├── custom-agent.md    # Build your own MCP client with auth
+│       ├── idp-zitadel.md    # Zitadel setup guide
+│       ├── idp-keycloak.md   # Keycloak setup guide
+│       ├── idp-auth0.md      # Auth0 setup guide
+│       ├── idp-azure.md      # Azure Entra ID setup guide
+│       ├── idp-google.md     # Google Cloud IAM setup guide
+│       ├── idp-okta.md       # Okta setup guide
+│       ├── scenario-local.md # Local development deployment
+│       ├── scenario-cloud.md # Cloud/K8s deployment
+│       └── scenario-enterprise.md # Enterprise multi-IDP + RBAC
 ├── scripts/
 │   ├── demo.sh                # E2E demo + utility commands
-│   └── release.sh             # Version bump + tag + push
-├── docs/                      # Landing page (GitHub Pages)
+│   └── demo-headless.sh       # Token exchange demo
+├── lab.sh                     # Run the compatibility lab
+├── Makefile                   # Build, test, release, lab helpers
 ├── pyproject.toml             # Package metadata + dependencies
-├── fastauthmcp.yaml.example       # Annotated example config
 └── README.md
 ```
+
+## Security & Interoperability Lab
+
+FastAuthMCP includes a built-in compatibility lab that validates the framework against every supported provider and flow combination.
+
+```bash
+./lab.sh          # Run all 34 scenarios (no Docker needed)
+./lab.sh --docker # Include Keycloak integration tests
+./lab.sh list     # Show the compatibility matrix
+```
+
+```
+  ╔══════════════════════════════════════════════════════════════╗
+  ║      FastAuthMCP Security & Interoperability Lab            ║
+  ╚══════════════════════════════════════════════════════════════╝
+
+  OIDC Providers ───────────────
+    ✓ Generic OIDC (Mock)
+    ✓ ZITADEL
+    ✓ Keycloak
+    ✓ Auth0
+    ✓ Azure Entra ID
+    ✓ Okta
+
+  Authentication ──────────────
+    ✓ Auth Code + PKCE → identity propagation (per provider)
+    ✓ Client Credentials → service identity (per provider)
+    ✓ Token Exchange (RFC 8693) → structural validation
+
+  Authorization ─────────────
+    ✓ Admin role → tool allowed
+    ✓ Viewer role → tool rejected
+
+  Security ────────────────
+    ✓ Expired token → rejected
+    ✓ Invalid JWT format → rejected
+    ✓ Wrong issuer → rejected
+    ✓ Wrong audience → rejected
+    ✓ Missing claims → handled
+
+  Result: 34 passed, 0 failed
+  Report: reports/index.html
+```
+
+Adding a new provider or scenario is just a Python class — no DSL, no YAML test definitions.
+
+## Integration Guides
+
+Step-by-step guides for specific platforms and identity providers:
+
+| Guide | Description |
+|-------|-------------|
+| **[Claude Desktop](docs/guides/claude-desktop.md)** | Local MCP server with browser login (stdio) |
+| **[Google Gemini](docs/guides/google-gemini.md)** | Cloud MCP with token exchange + Workload Identity |
+| **[Cursor IDE](docs/guides/cursor-ide.md)** | Development server with SSE transport |
+| **[Custom Agent](docs/guides/custom-agent.md)** | Build your own MCP client with auth |
+| **[Zitadel](docs/guides/idp-zitadel.md)** | PKCE, Client Credentials, Token Exchange |
+| **[Keycloak](docs/guides/idp-keycloak.md)** | PKCE, Client Credentials, RBAC with realm roles |
+| **[Auth0](docs/guides/idp-auth0.md)** | PKCE, M2M, custom claims via Actions |
+| **[Azure Entra ID](docs/guides/idp-azure.md)** | PKCE, Client Credentials, On-Behalf-Of |
+| **[Google Cloud](docs/guides/idp-google.md)** | OAuth2, Service Account, Workload Identity STS |
+| **[Okta](docs/guides/idp-okta.md)** | PKCE, Client Credentials, Authorization Servers |
+| **[Local Dev](docs/guides/scenario-local.md)** | Developer laptop deployment pattern |
+| **[Cloud Deploy](docs/guides/scenario-cloud.md)** | Docker/K8s/Cloud Run headless pattern |
+| **[Enterprise](docs/guides/scenario-enterprise.md)** | Multi-IDP, RBAC, SOAP, audit, rate limiting |
+
+Each guide includes complete `fastauthmcp.yaml` configs and platform-specific client configurations.
 
 ## Supported Identity Providers
 

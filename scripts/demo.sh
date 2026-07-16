@@ -90,17 +90,22 @@ case "$TRANSPORT" in
     FASTAUTHMCP_TRANSPORT=sse \
     FASTAUTHMCP_PORT="$MCP_PORT" \
     FASTAUTHMCP_LOG_LEVEL="${FASTAUTHMCP_LOG_LEVEL:-WARNING}" \
-      python petstore_server.py > /dev/null 2>&1 &
+      python petstore_server.py 2>/dev/null &
     SERVER_PID=$!
 
-    # Wait for server to be ready
+    # Wait for server to be ready (check if process is alive and port responds)
     printf "  Waiting for server"
     for i in $(seq 1 40); do
-      if curl -s -o /dev/null -w "%{http_code}" --max-time 1 "http://localhost:${MCP_PORT}/sse" 2>/dev/null | grep -q "200\|404\|405"; then
+      if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+        echo ""
+        echo "  ✗ Server process died. Run with FASTAUTHMCP_LOG_LEVEL=DEBUG for details."
+        exit 1
+      fi
+      if curl -s -o /dev/null --max-time 1 "http://127.0.0.1:${MCP_PORT}/sse" 2>/dev/null; then
         break
       fi
       printf "."
-      sleep 0.3
+      sleep 0.5
     done
     echo " ready"
     echo ""

@@ -66,6 +66,20 @@ demo-record: ## Record demo GIF (requires: brew install vhs)
 demo-clean: ## Remove demo virtualenv
 	./scripts/demo.sh clean
 
+# ─── Compatibility Lab ────────────────────────────────────────────────────────
+
+lab: ## Run compatibility lab (mock only, no Docker)
+	python -m fastauthmcp.lab run
+
+lab-docker: ## Run lab with Docker services (Keycloak)
+	./lab.sh --docker
+
+lab-list: ## List all lab scenarios
+	python -m fastauthmcp.lab list
+
+lab-clean: ## Stop lab Docker services
+	./lab.sh clean
+
 # ─── Versioning & Release ────────────────────────────────────────────────────
 
 VERSION := $(shell grep '^version' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')

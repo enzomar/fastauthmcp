@@ -1,0 +1,41 @@
+{
+  "realm": "fastauthmcp-lab",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "lab-test-client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "lab-test-secret",
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["http://localhost:9876/callback", "http://127.0.0.1:9876/callback"],
+      "protocol": "openid-connect",
+      "defaultClientScopes": ["openid", "profile", "email", "roles"]
+    }
+  ],
+  "users": [
+    {
+      "username": "labuser",
+      "email": "labuser@example.com",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "labpass", "temporary": false}],
+      "realmRoles": ["user"]
+    },
+    {
+      "username": "labadmin",
+      "email": "labadmin@example.com",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "labpass", "temporary": false}],
+      "realmRoles": ["admin", "user"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {"name": "user"},
+      {"name": "admin"},
+      {"name": "service"}
+    ]
+  }
+}
