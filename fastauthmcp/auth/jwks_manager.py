@@ -1,8 +1,8 @@
 """Resilient JWKS key management with coalescing and stale-while-revalidate.
 
-Replaces the existing JWKSVerifier with production-grade resilience:
+Uses tenacity for retry logic and PyJWT's PyJWKClient as the base:
 - Request coalescing: concurrent requests share one fetch
-- Exponential backoff: 1s base, 2x multiplier, 60s cap, 25% jitter, 3 retries
+- Exponential backoff via tenacity: 1s base, 2x multiplier, 60s cap, jitter
 - Stale-while-revalidate: cached keys served while background refresh runs
 - Max staleness guard: rejects verification after max_staleness without successful refresh
 """
@@ -11,18 +11,29 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random
 import time
 from typing import Any
 
 import httpx
 import jwt
 from jwt import PyJWK, PyJWKSet
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential_jitter,
+)
 
 from fastauthmcp.exceptions import ProviderError
 from fastauthmcp.resilience import ResilientHttpClient
 
 logger = logging.getLogger(__name__)
+
+
+class _RetryableHTTPError(Exception):
+    """Wrapper to signal tenacity that a 5xx HTTP error is retryable."""
+
+    pass
 
 
 class JWKSManager:
@@ -91,20 +102,15 @@ class JWKSManager:
             data = resp.json()
             jwks_uri = data.get("jwks_uri")
             if not jwks_uri:
-                raise ProviderError(
-                    f"OpenID configuration at {url} does not contain 'jwks_uri'"
-                )
+                raise ProviderError(f"OpenID configuration at {url} does not contain 'jwks_uri'")
             return jwks_uri
         except (httpx.HTTPStatusError, httpx.RequestError) as exc:
-            raise ProviderError(
-                f"Failed to discover JWKS URI from {url}: {exc}"
-            ) from exc
+            raise ProviderError(f"Failed to discover JWKS URI from {url}: {exc}") from exc
 
     async def _fetch_jwks_with_backoff(self) -> PyJWKSet:
-        """Fetch JWKS with exponential backoff and jitter.
+        """Fetch JWKS with exponential backoff and jitter via tenacity.
 
         Retries on 5xx/network errors. Fails fast on 4xx (no retry).
-        Base=1s, multiplier=2x, max=60s, jitter=0-25% of delay, max_retries=3.
 
         Returns:
             A PyJWKSet containing the fetched keys.
@@ -115,45 +121,39 @@ class JWKSManager:
         if self._jwks_uri is None:
             self._jwks_uri = await self._discover_jwks_uri()
 
-        last_exc: Exception | None = None
-        for attempt in range(self._max_retries + 1):
+        @retry(
+            retry=retry_if_exception_type((httpx.RequestError, _RetryableHTTPError)),
+            stop=stop_after_attempt(self._max_retries + 1),
+            wait=wait_exponential_jitter(
+                initial=self._base_backoff,
+                max=self._max_backoff,
+                jitter=self._max_backoff * self._jitter_factor,
+            ),
+            reraise=True,
+        )
+        async def _do_fetch() -> PyJWKSet:
             try:
-                resp = await self._http.get(self._jwks_uri)
+                resp = await self._http.get(self._jwks_uri)  # type: ignore[arg-type]
                 data = resp.json()
                 return PyJWKSet.from_dict(data)
             except httpx.HTTPStatusError as exc:
-                # 4xx → fail fast, don't retry
                 if 400 <= exc.response.status_code < 500:
                     raise ProviderError(
-                        f"JWKS fetch failed with {exc.response.status_code} "
-                        f"(not retryable): {exc}"
+                        f"JWKS fetch failed with {exc.response.status_code} (not retryable): {exc}"
                     ) from exc
-                # 5xx → retryable
-                last_exc = exc
-            except httpx.RequestError as exc:
-                # Network/timeout → retryable
-                last_exc = exc
-            except ProviderError:
-                # Circuit breaker open or similar — retryable
-                raise
-            except Exception as exc:
-                # Unexpected (e.g. JSON parse error) — retryable
-                last_exc = exc
+                # 5xx → wrap for tenacity retry
+                raise _RetryableHTTPError(exc) from exc
 
-            # If this was the last attempt, raise
-            if attempt == self._max_retries:
-                raise ProviderError(
-                    f"JWKS fetch failed after {self._max_retries + 1} attempts: "
-                    f"{last_exc}"
-                ) from last_exc
-
-            # Exponential backoff with jitter
-            delay = min(self._base_backoff * (2**attempt), self._max_backoff)
-            jitter = random.uniform(0, self._jitter_factor * delay)
-            await asyncio.sleep(delay + jitter)
-
-        # Should never reach here, but satisfy type checker
-        raise ProviderError("JWKS fetch failed unexpectedly")  # pragma: no cover
+        try:
+            return await _do_fetch()
+        except _RetryableHTTPError as exc:
+            raise ProviderError(
+                f"JWKS fetch failed after {self._max_retries + 1} attempts: {exc}"
+            ) from exc
+        except httpx.RequestError as exc:
+            raise ProviderError(
+                f"JWKS fetch failed after {self._max_retries + 1} attempts: {exc}"
+            ) from exc
 
     async def _coalesced_fetch(self) -> PyJWKSet:
         """Coalesce concurrent fetch requests into a single network call.

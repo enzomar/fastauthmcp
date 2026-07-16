@@ -72,7 +72,11 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # Bump version in pyproject.toml
-sed -i '' "s/^version = \"$CURRENT\"/version = \"$NEW_VERSION\"/" pyproject.toml
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i '' "s/^version = \"$CURRENT\"/version = \"$NEW_VERSION\"/" pyproject.toml
+else
+  sed -i "s/^version = \"$CURRENT\"/version = \"$NEW_VERSION\"/" pyproject.toml
+fi
 echo "Updated pyproject.toml: $CURRENT → $NEW_VERSION"
 
 # Commit the version bump

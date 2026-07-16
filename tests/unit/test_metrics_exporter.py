@@ -8,7 +8,6 @@ from fastauthmcp.config import ObservabilityConfig
 from fastauthmcp.metrics import MetricsExporter
 from fastauthmcp.observability import TelemetryService, get_registry
 
-
 # Ensure the TelemetryService has been instantiated at least once so the
 # shared registry and metrics exist.
 _ensure_service = TelemetryService(config=ObservabilityConfig())

@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import asyncio
 
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from fastauthmcp.resilience import CircuitBreaker, CircuitState
 
@@ -85,9 +86,7 @@ def test_reset_returns_to_closed() -> None:
     failures_before=st.integers(min_value=0, max_value=5),
     successes_between=st.integers(min_value=1, max_value=3),
 )
-def test_intermittent_failures_dont_open(
-    failures_before: int, successes_between: int
-) -> None:
+def test_intermittent_failures_dont_open(failures_before: int, successes_between: int) -> None:
     """Non-consecutive failures (interrupted by successes) don't open the circuit."""
 
     async def run():

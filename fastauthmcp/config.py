@@ -7,11 +7,13 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 
 class CircuitBreakerConfig(BaseModel):
     """Circuit breaker configuration for IDP HTTP calls."""
+
+    model_config = ConfigDict(extra="forbid")
 
     failure_threshold: int = Field(default=5, ge=1, le=100)
     cooldown_seconds: int = Field(default=30, ge=1, le=300)
@@ -24,6 +26,8 @@ class MtlsConfig(BaseModel):
     (discovery, token endpoint, JWKS) will present the client certificate
     for mutual authentication.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     client_cert: str = Field(
         description="Path to the PEM-encoded client certificate file.",
@@ -43,14 +47,16 @@ class MtlsConfig(BaseModel):
 class AuthConfig(BaseModel):
     """Authentication configuration for OIDC providers."""
 
+    model_config = ConfigDict(extra="forbid")
+
     provider: Literal["oidc"] = "oidc"
     issuer: HttpUrl
     client_id: str
     client_secret: str | None = None
     scopes: list[str] = ["openid", "profile", "email"]
-    grant_type: Literal[
-        "authorization_code", "client_credentials", "token_exchange"
-    ] = "authorization_code"
+    grant_type: Literal["authorization_code", "client_credentials", "token_exchange"] = (
+        "authorization_code"
+    )
     callback_port: int = Field(default=9876, ge=1, le=65535)
     callback_timeout: int = Field(default=120, ge=1, le=600)
     token_exchange_timeout: int = Field(default=30, ge=1, le=120)
@@ -93,9 +99,22 @@ class AuthConfig(BaseModel):
         description="JWKS cache TTL in seconds before stale-while-revalidate kicks in.",
     )
 
+    @model_validator(mode="after")
+    def _validate_grant_type_requirements(self) -> "AuthConfig":
+        """Validate that grant-type-specific fields are present."""
+        if self.grant_type == "client_credentials" and not self.client_secret:
+            raise ValueError("grant_type 'client_credentials' requires 'client_secret' to be set")
+        if self.grant_type == "token_exchange" and not self.upstream_token_header:
+            raise ValueError(
+                "grant_type 'token_exchange' requires 'upstream_token_header' to be set"
+            )
+        return self
+
 
 class ObservabilityConfig(BaseModel):
     """Observability configuration for metrics, tracing, and logging."""
+
+    model_config = ConfigDict(extra="forbid")
 
     enabled: bool = True
     metrics_path: str = "/metrics"
@@ -108,6 +127,8 @@ class ObservabilityConfig(BaseModel):
 
 class SessionsConfig(BaseModel):
     """Session management configuration."""
+
+    model_config = ConfigDict(extra="forbid")
 
     enabled: bool = True
     ttl: int = Field(default=3600, ge=60, le=86400)
@@ -123,6 +144,8 @@ class PluginRef(BaseModel):
 
 class HotReloadConfig(BaseModel):
     """Hot-reload configuration for dynamic config updates."""
+
+    model_config = ConfigDict(extra="forbid")
 
     enabled: bool = False
     watch_interval: int = Field(default=5, ge=1, le=60)

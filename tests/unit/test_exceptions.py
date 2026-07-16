@@ -2,8 +2,8 @@
 
 from fastauthmcp.exceptions import (
     AuthenticationError,
-    FastAuthMCPError,
     ConfigurationError,
+    FastAuthMCPError,
     PluginError,
     ProviderError,
     SessionError,

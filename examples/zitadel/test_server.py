@@ -8,10 +8,9 @@ Run with:
 """
 
 import pytest
-
-from fastauthmcp.testing import FastAuthMCPTestClient
 from server import mcp
 
+from fastauthmcp.testing import FastAuthMCPTestClient
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -95,9 +94,7 @@ class TestViewerAccess:
 
     @pytest.mark.asyncio
     async def test_viewer_can_get_project_details(self, viewer_client):
-        result = await viewer_client.call_tool(
-            "get_project_details", project_id="proj-001"
-        )
+        result = await viewer_client.call_tool("get_project_details", project_id="proj-001")
         FastAuthMCPTestClient.assert_authorized(result)
         assert result["name"] == "MCP Gateway"
 
@@ -180,14 +177,10 @@ class TestUnauthenticatedAccess:
 
     @pytest.mark.asyncio
     async def test_no_roles_rejected_from_editor_tools(self, unauthenticated_client):
-        result = await unauthenticated_client.call_tool(
-            "create_project", name="X", description="Y"
-        )
+        result = await unauthenticated_client.call_tool("create_project", name="X", description="Y")
         FastAuthMCPTestClient.assert_unauthorized(result)
 
     @pytest.mark.asyncio
     async def test_no_roles_rejected_from_admin_tools(self, unauthenticated_client):
-        result = await unauthenticated_client.call_tool(
-            "delete_project", project_id="proj-001"
-        )
+        result = await unauthenticated_client.call_tool("delete_project", project_id="proj-001")
         FastAuthMCPTestClient.assert_unauthorized(result)

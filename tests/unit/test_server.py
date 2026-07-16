@@ -12,7 +12,6 @@ from fastauthmcp.config import FastAuthMCPConfig
 from fastauthmcp.exceptions import ConfigurationError, PluginError
 from fastauthmcp.server import FastAuthMCP
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -167,9 +166,7 @@ class TestPipelineWiring:
             "sessions:\n  enabled: true\n  ttl: 3600\n"
             "auth:\n  provider: oidc\n  issuer: https://idp.example.com\n  client_id: my-app\n"
         )
-        server = FastAuthMCP(
-            name="test-server", config=str(tmp_path / "fastauthmcp.yaml")
-        )
+        server = FastAuthMCP(name="test-server", config=str(tmp_path / "fastauthmcp.yaml"))
 
         assert server._middleware_layers == [
             "observability",
@@ -185,9 +182,7 @@ class TestPipelineWiring:
         monkeypatch.delenv("FASTAUTHMCP_CONFIG", raising=False)
 
         (tmp_path / "fastauthmcp.yaml").write_text("observability:\n  enabled: true\n")
-        server = FastAuthMCP(
-            name="test-server", config=str(tmp_path / "fastauthmcp.yaml")
-        )
+        server = FastAuthMCP(name="test-server", config=str(tmp_path / "fastauthmcp.yaml"))
 
         assert "observability" in server._middleware_layers
         assert "session" not in server._middleware_layers
@@ -199,9 +194,7 @@ class TestPipelineWiring:
         monkeypatch.delenv("FASTAUTHMCP_CONFIG", raising=False)
 
         (tmp_path / "fastauthmcp.yaml").write_text("observability:\n  enabled: true\n")
-        server = FastAuthMCP(
-            name="test-server", config=str(tmp_path / "fastauthmcp.yaml")
-        )
+        server = FastAuthMCP(name="test-server", config=str(tmp_path / "fastauthmcp.yaml"))
 
         async def dummy_before(ctx, nxt):
             return await nxt()
@@ -228,9 +221,7 @@ class TestPipelineWiring:
             "sessions:\n  enabled: true\n  ttl: 3600\n"
             "auth:\n  provider: oidc\n  issuer: https://idp.example.com\n  client_id: my-app\n"
         )
-        server = FastAuthMCP(
-            name="test-server", config=str(tmp_path / "fastauthmcp.yaml")
-        )
+        server = FastAuthMCP(name="test-server", config=str(tmp_path / "fastauthmcp.yaml"))
 
         before_chain = server._pipeline._before
         assert isinstance(before_chain[0], ObservabilityMiddleware)

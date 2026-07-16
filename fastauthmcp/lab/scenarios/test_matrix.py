@@ -16,11 +16,10 @@ provider is reachable.
 
 import time
 
-from fastauthmcp.lab.scenario import Scenario
-from fastauthmcp.lab.providers import MockProvider
 from fastauthmcp.lab.gateway import LabGateway
+from fastauthmcp.lab.providers import MockProvider
+from fastauthmcp.lab.scenario import Scenario
 from fastauthmcp.testing import MockIdentityProvider as _MockIDP
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ZITADEL — scenarios using MockProvider with Zitadel-like claims
@@ -84,7 +83,7 @@ class TestZitadelTokenExchange(Scenario):
         from fastauthmcp.middleware.authentication import AuthenticationMiddleware
 
         config = AuthConfig(
-            issuer="https://my-org.zitadel.cloud",
+            issuer="https://my-org.zitadel.cloud",  # type: ignore[arg-type]
             client_id="zitadel-mcp-app",
             grant_type="token_exchange",
             upstream_token_header="x-user-token",
@@ -341,9 +340,7 @@ class TestAzurePKCEIdentity(Scenario):
     provider_name = "azure"
 
     async def run(self) -> None:
-        provider = MockProvider(
-            issuer_url="https://login.microsoftonline.com/tenant-id/v2.0"
-        )
+        provider = MockProvider(issuer_url="https://login.microsoftonline.com/tenant-id/v2.0")
         gateway = LabGateway()
         token = provider.issue_token(
             {
@@ -369,9 +366,7 @@ class TestAzureClientCredentials(Scenario):
     provider_name = "azure"
 
     async def run(self) -> None:
-        provider = MockProvider(
-            issuer_url="https://login.microsoftonline.com/tenant-id/v2.0"
-        )
+        provider = MockProvider(issuer_url="https://login.microsoftonline.com/tenant-id/v2.0")
         gateway = LabGateway()
         token = provider.issue_token(
             {
@@ -398,7 +393,7 @@ class TestAzureOBOValidation(Scenario):
         from fastauthmcp.middleware.authentication import AuthenticationMiddleware
 
         config = AuthConfig(
-            issuer="https://login.microsoftonline.com/tenant-id/v2.0",
+            issuer="https://login.microsoftonline.com/tenant-id/v2.0",  # type: ignore[arg-type]
             client_id="azure-mcp-app",
             grant_type="token_exchange",
             token_exchange_provider="entra",
@@ -422,9 +417,7 @@ class TestAzureRBACAppRoles(Scenario):
     provider_name = "azure"
 
     async def run(self) -> None:
-        provider = MockProvider(
-            issuer_url="https://login.microsoftonline.com/tenant-id/v2.0"
-        )
+        provider = MockProvider(issuer_url="https://login.microsoftonline.com/tenant-id/v2.0")
         gateway = LabGateway()
         token = provider.issue_token(
             {
@@ -446,12 +439,8 @@ class TestAzureExpiredToken(Scenario):
     provider_name = "azure"
 
     async def run(self) -> None:
-        provider = MockProvider(
-            issuer_url="https://login.microsoftonline.com/tenant-id/v2.0"
-        )
-        expired = provider.issue_expired_token(
-            {"sub": "azure-expired", "tid": "tenant-id"}
-        )
+        provider = MockProvider(issuer_url="https://login.microsoftonline.com/tenant-id/v2.0")
+        expired = provider.issue_expired_token({"sub": "azure-expired", "tid": "tenant-id"})
         _, payload = _MockIDP.decode_token(expired.access_token)
         assert payload["exp"] < time.time()
         self.trace.claims = {"exp": payload["exp"], "tid": "tenant-id"}

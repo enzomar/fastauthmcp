@@ -1,5 +1,7 @@
 """Multi-IdP support: route authentication to different providers per tool or tenant.
 
+Status: Planned — not yet wired into the middleware pipeline.
+
 Allows a single FastAuthMCP server to trust tokens from multiple identity providers,
 routing validation to the correct provider based on the token's issuer claim
 or tool-level configuration.

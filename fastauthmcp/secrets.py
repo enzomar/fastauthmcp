@@ -1,5 +1,7 @@
 """Secret management integration for FastAuthMCP.
 
+Status: Planned — not yet wired into the middleware pipeline.
+
 Provides a unified interface for resolving secrets from various backends
 (environment variables, AWS Secrets Manager, HashiCorp Vault, etc.)
 used in fastauthmcp.yaml configuration values.
@@ -82,9 +84,7 @@ class SecretResolver:
             key = match.group(2)
             resolved = self._resolve_single(backend_name, key)
             if resolved is None:
-                raise ValueError(
-                    f"Secret not found: backend='{backend_name}', key='{key}'"
-                )
+                raise ValueError(f"Secret not found: backend='{backend_name}', key='{key}'")
             return resolved
 
         return _SECRET_PATTERN.sub(_replace, value)
@@ -98,9 +98,7 @@ class SecretResolver:
             elif isinstance(value, dict):
                 resolved[key] = self.resolve_config(value)
             elif isinstance(value, list):
-                resolved[key] = [
-                    self.resolve_value(v) if isinstance(v, str) else v for v in value
-                ]
+                resolved[key] = [self.resolve_value(v) if isinstance(v, str) else v for v in value]
             else:
                 resolved[key] = value
         return resolved

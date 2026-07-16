@@ -1,5 +1,7 @@
 """Downstream credential mapping: route tools to different credential sources.
 
+Status: Planned — not yet wired into the middleware pipeline.
+
 Allows configuration-driven mapping of tools to specific downstream
 API credentials, enabling a single MCP server to call multiple
 backend services with different tokens/auth methods.
@@ -37,9 +39,7 @@ from fastauthmcp.identity import _access_token_var
 logger = logging.getLogger(__name__)
 
 # Context var to track current tool name for credential resolution
-_current_tool_var: ContextVar[str | None] = ContextVar(
-    "fastauthmcp_current_tool", default=None
-)
+_current_tool_var: ContextVar[str | None] = ContextVar("fastauthmcp_current_tool", default=None)
 
 
 @dataclass
@@ -75,9 +75,7 @@ class TokenCache:
         self._max_size = max_size
         self._default_ttl = default_ttl
 
-    def get(
-        self, upstream_token: str, audience: str, scopes: frozenset[str]
-    ) -> str | None:
+    def get(self, upstream_token: str, audience: str, scopes: frozenset[str]) -> str | None:
         """Retrieve a cached downstream token if valid."""
         key = self._make_key(upstream_token, audience, scopes)
         cached = self._cache.get(key)
@@ -153,9 +151,7 @@ class CredentialResolver:
             self._tool_index[tool] = mapping
 
 
-async def downstream_token(
-    audience: str | None = None, scopes: list[str] | None = None
-) -> str:
+async def downstream_token(audience: str | None = None, scopes: list[str] | None = None) -> str:
     """Get a downstream-scoped token for the current tool.
 
     If audience/scopes are provided, uses those directly.
@@ -170,9 +166,7 @@ async def downstream_token(
     """
     token = _access_token_var.get(None)
     if token is None:
-        raise RuntimeError(
-            "downstream_token() called outside an authenticated request context."
-        )
+        raise RuntimeError("downstream_token() called outside an authenticated request context.")
     # If no audience specified, return the current access token
     # (the middleware should have already exchanged it if mapping exists)
     return token

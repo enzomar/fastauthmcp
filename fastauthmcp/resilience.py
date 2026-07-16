@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 import ssl
 import time
-from datetime import datetime, timedelta, timezone
 from enum import Enum
 
 import httpx
@@ -149,36 +148,6 @@ class CircuitBreaker:
         self._probe_in_progress = False
 
 
-def _parse_token_response(data: dict) -> TokenSet:
-    """Parse a token endpoint JSON response into a TokenSet.
-
-    Maps standard OAuth2 token response fields:
-        - access_token → access_token (required)
-        - refresh_token → refresh_token (optional)
-        - token_type → token_type (defaults to "Bearer")
-        - id_token → id_token (optional)
-        - expires_in → expires_at (computed as now + expires_in seconds, defaults to 3600)
-
-    Args:
-        data: Parsed JSON dict from the token endpoint response.
-
-    Returns:
-        A TokenSet with the mapped fields.
-    """
-    expires_in = int(data.get("expires_in", 3600))
-    expires_at = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(
-        seconds=expires_in
-    )
-
-    return TokenSet(
-        access_token=data["access_token"],
-        refresh_token=data.get("refresh_token"),
-        expires_at=expires_at,
-        token_type=data.get("token_type", "Bearer"),
-        id_token=data.get("id_token"),
-    )
-
-
 class ResilientHttpClient:
     """Wraps httpx.AsyncClient with circuit breaker integration.
 
@@ -228,18 +197,14 @@ class ResilientHttpClient:
         """
 
         async def _do_request() -> httpx.Response:
-            async with httpx.AsyncClient(
-                verify=self._verify, timeout=timeout
-            ) as client:
+            async with httpx.AsyncClient(verify=self._verify, timeout=timeout) as client:
                 resp = await client.get(url, headers=headers or {})
                 resp.raise_for_status()
                 return resp
 
         return await self._cb.execute(_do_request)
 
-    async def post_form(
-        self, url: str, data: dict, *, timeout: float = 30
-    ) -> httpx.Response:
+    async def post_form(self, url: str, data: dict, *, timeout: float = 30) -> httpx.Response:
         """POST form-encoded data with circuit breaker protection.
 
         Sends data as application/x-www-form-urlencoded with Accept: application/json.
@@ -259,9 +224,7 @@ class ResilientHttpClient:
         """
 
         async def _do_request() -> httpx.Response:
-            async with httpx.AsyncClient(
-                verify=self._verify, timeout=timeout
-            ) as client:
+            async with httpx.AsyncClient(verify=self._verify, timeout=timeout) as client:
                 resp = await client.post(
                     url,
                     data=data,
@@ -278,8 +241,7 @@ class ResilientHttpClient:
     async def post_token(self, url: str, body: dict, timeout: float = 30) -> TokenSet:
         """POST to a token endpoint and parse the response into a TokenSet.
 
-        Delegates to post_form for the HTTP call, then parses the JSON response
-        via _parse_token_response.
+        Delegates to post_form for the HTTP call, then parses the JSON response.
 
         Args:
             url: The token endpoint URL.
@@ -294,6 +256,8 @@ class ResilientHttpClient:
             httpx.RequestError: On connection/timeout errors.
             ProviderError: If the circuit breaker is open.
         """
+        from fastauthmcp.auth.oauth import _parse_token_response
+
         resp = await self.post_form(url, body, timeout=timeout)
         data = resp.json()
         return _parse_token_response(data)

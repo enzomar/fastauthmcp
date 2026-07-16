@@ -17,11 +17,13 @@ from typing import Any
 
 from fastauthmcp.identity import (
     IdentityContext,
-    _identity_context_var,
     _access_token_var,
+    _identity_context_var,
 )
 from fastauthmcp.middleware.pipeline import (
     MiddlewarePipeline as MiddlewarePipeline,
+)
+from fastauthmcp.middleware.pipeline import (
     RequestContext,
 )
 from fastauthmcp.server import FastAuthMCP
@@ -105,17 +107,19 @@ class FastAuthMCPTestClient:
         try:
             # Build a test-only pipeline that skips auth/session middleware
             # but preserves observability behavior.
-            from fastauthmcp.middleware.builtin import (
-                AuthenticationMiddleware as BuiltinAuthMW,
-                SessionMiddleware as BuiltinSessionMW,
-            )
             from fastauthmcp.middleware.authentication import (
                 AuthenticationMiddleware as RealAuthMW,
             )
+            from fastauthmcp.middleware.builtin import (
+                AuthenticationMiddleware as BuiltinAuthMW,
+            )
+            from fastauthmcp.middleware.builtin import (
+                SessionMiddleware as BuiltinSessionMW,
+            )
+            from fastauthmcp.middleware.pipeline import MiddlewarePipeline
             from fastauthmcp.middleware.session import (
                 SessionMiddleware as RealSessionMW,
             )
-            from fastauthmcp.middleware.pipeline import MiddlewarePipeline
 
             _skip_types = (BuiltinAuthMW, BuiltinSessionMW, RealAuthMW, RealSessionMW)
 
@@ -239,9 +243,7 @@ class MockIdentityProvider:
     @staticmethod
     def _base64url_encode(data: str) -> str:
         """Base64url-encode a string (no padding)."""
-        return (
-            base64.urlsafe_b64encode(data.encode("utf-8")).rstrip(b"=").decode("ascii")
-        )
+        return base64.urlsafe_b64encode(data.encode("utf-8")).rstrip(b"=").decode("ascii")
 
     @staticmethod
     def _base64url_encode_bytes(data: bytes) -> str:

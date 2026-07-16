@@ -1,5 +1,7 @@
 """Schema export: generate machine-readable API schemas from FastAuthMCP servers.
 
+Status: Planned — not yet wired into the middleware pipeline.
+
 Exports the MCP server's tool definitions, authorization requirements,
 rate limits, and configuration schema in standard formats for documentation,
 client generation, and integration testing.
@@ -65,9 +67,7 @@ class SchemaExporter:
             tools.append(tool_schema)
 
         schema = ServerSchema(
-            name=self._server._app.name
-            if hasattr(self._server._app, "name")
-            else "fastauthmcp",
+            name=self._server._app.name if hasattr(self._server._app, "name") else "fastauthmcp",
             tools=tools,
             auth_required=self._server._config.auth is not None,
         )
@@ -95,9 +95,7 @@ class SchemaExporter:
             lines.append("")
 
         if schema.auth_required:
-            lines.append(
-                f"**Authentication:** Required (OIDC, issuer: `{schema.idp_issuer}`)"
-            )
+            lines.append(f"**Authentication:** Required (OIDC, issuer: `{schema.idp_issuer}`)")
             lines.append("")
 
         lines.append("## Tools")

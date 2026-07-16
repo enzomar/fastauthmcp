@@ -1,5 +1,7 @@
 """Rate limiting middleware for MCP tool calls.
 
+Status: Planned — not yet wired into the middleware pipeline.
+
 Supports per-tool and per-user rate limiting with configurable windows
 and burst allowances using the token bucket algorithm.
 
@@ -124,9 +126,7 @@ class RateLimitingMiddleware:
     def __init__(self, config: RateLimitConfig | None = None) -> None:
         self._limiter = RateLimiter(config or RateLimitConfig())
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
         tool_name = ctx.tool_name
         if not tool_name:
             return await next()

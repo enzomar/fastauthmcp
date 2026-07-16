@@ -6,6 +6,8 @@ session expired rejected, TTL enforced, disabled passthrough.
 
 from __future__ import annotations
 
+import base64
+import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
@@ -17,9 +19,6 @@ from fastauthmcp.middleware.pipeline import RequestContext
 from fastauthmcp.middleware.session import SessionMiddleware
 from fastauthmcp.models import TokenSet
 
-import base64
-import json
-
 
 def _make_jwt(claims: dict) -> str:
     """Create a structurally valid JWT (unsigned) with given claims."""
@@ -28,9 +27,7 @@ def _make_jwt(claims: dict) -> str:
         .rstrip(b"=")
         .decode()
     )
-    payload = (
-        base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
-    )
+    payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
     return f"{header}.{payload}."
 
 
@@ -106,9 +103,9 @@ class TestSessionMiddleware:
         token_set = _make_token_set()
         session_id = await middleware.store.create("user-123", token_set, ttl=60)
         # Backdate session to expire it
-        middleware.store._sessions[session_id].created_at = datetime.now(
-            timezone.utc
-        ) - timedelta(seconds=61)
+        middleware.store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(
+            seconds=61
+        )
 
         ctx = RequestContext()
         ctx.metadata["session_id"] = session_id

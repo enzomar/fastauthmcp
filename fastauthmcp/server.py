@@ -8,20 +8,20 @@ import ssl
 from pathlib import Path
 from typing import Any
 
+import mcp.types as _mcp_types
 from fastmcp import FastMCP as _FastMCP
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.base import ToolResult
-import mcp.types as _mcp_types
 
 from fastauthmcp.config import AuthConfig, FastAuthMCPConfig, PluginRef
 from fastauthmcp.config_loader import ConfigLoader
 from fastauthmcp.exceptions import ConfigurationError, PluginError
+from fastauthmcp.middleware.authorization import AuthorizationMiddleware
 from fastauthmcp.middleware.builtin import (
     AuthenticationMiddleware,
     ObservabilityMiddleware,
     SessionMiddleware,
 )
-from fastauthmcp.middleware.authorization import AuthorizationMiddleware
 from fastauthmcp.middleware.pipeline import (
     HOOK_POINTS,
     MiddlewarePipeline,
@@ -49,7 +49,7 @@ class _FastAuthMCPBridgeMiddleware(Middleware):
         call_next: CallNext[_mcp_types.CallToolRequestParams, ToolResult],
     ) -> ToolResult:
         """Run FastAuthMCP pipeline before tool execution."""
-        from fastauthmcp.context import init_request_context, clear_request_context
+        from fastauthmcp.context import clear_request_context, init_request_context
 
         pipeline = self._fastauthmcp._pipeline
         tool_name = context.message.name
@@ -73,6 +73,7 @@ class _FastAuthMCPBridgeMiddleware(Middleware):
             # convert it to a ToolResult so FastMCP can handle it properly.
             if isinstance(result, dict):
                 import json
+
                 from mcp.types import TextContent
 
                 return ToolResult(
@@ -221,9 +222,7 @@ class FastAuthMCP:
 
         # Validate hooks attribute
         if not hasattr(plugin, "hooks") or not isinstance(plugin.hooks, dict):
-            raise PluginError(
-                f"Plugin '{plugin.name}' must have a 'hooks' attribute of type dict."
-            )
+            raise PluginError(f"Plugin '{plugin.name}' must have a 'hooks' attribute of type dict.")
 
         # Validate all hook names are valid
         invalid_hooks = set(plugin.hooks.keys()) - HOOK_POINTS
@@ -241,9 +240,7 @@ class FastAuthMCP:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def enable_fastauthmcp(
-        app: _FastMCP, config: str | Path | None = None
-    ) -> "FastAuthMCP":
+    def enable_fastauthmcp(app: _FastMCP, config: str | Path | None = None) -> "FastAuthMCP":
         """Wrap an existing FastMCP instance with FastAuthMCP enterprise features.
 
         This allows incremental migration without changing the import statement.
@@ -358,13 +355,11 @@ class FastAuthMCP:
             # Validate the resulting plugin
             if not hasattr(plugin, "name") or not isinstance(plugin.name, str):
                 raise ConfigurationError(
-                    f"Plugin from module '{ref.module}' does not have a valid "
-                    f"'name' attribute."
+                    f"Plugin from module '{ref.module}' does not have a valid 'name' attribute."
                 )
             if not hasattr(plugin, "hooks") or not isinstance(plugin.hooks, dict):
                 raise ConfigurationError(
-                    f"Plugin from module '{ref.module}' does not have a valid "
-                    f"'hooks' attribute."
+                    f"Plugin from module '{ref.module}' does not have a valid 'hooks' attribute."
                 )
 
             # Validate hook names
@@ -409,16 +404,13 @@ class FastAuthMCP:
         # Sessions are auto-disabled in token_exchange mode — each request
         # carries its own upstream token so there's no session to restore.
         _is_token_exchange = (
-            self._config.auth is not None
-            and self._config.auth.grant_type == "token_exchange"
+            self._config.auth is not None and self._config.auth.grant_type == "token_exchange"
         )
         if self._config.sessions is not None and not _is_token_exchange:
             pipeline.add_before(SessionMiddleware(self._config.sessions))
             layers.append("session")
         elif _is_token_exchange and self._config.sessions is not None:
-            logger.info(
-                "Sessions auto-disabled: token_exchange mode uses per-request tokens"
-            )
+            logger.info("Sessions auto-disabled: token_exchange mode uses per-request tokens")
 
         if self._config.auth is not None:
             ssl_context = self._build_mtls_context(self._config.auth)
@@ -429,9 +421,7 @@ class FastAuthMCP:
 
             # Authorization middleware: evaluates per-tool decorator policies
             # Only needed when auth is configured (otherwise no identity to check)
-            pipeline.add_before(
-                AuthorizationMiddleware(tool_functions=self._tool_functions)
-            )
+            pipeline.add_before(AuthorizationMiddleware(tool_functions=self._tool_functions))
             layers.append("authorization")
 
         # Add custom plugin hooks (in registration order, after built-ins)

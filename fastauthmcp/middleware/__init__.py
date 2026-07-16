@@ -1,16 +1,16 @@
 """FastAuthMCP middleware pipeline and built-in middleware layers."""
 
+from fastauthmcp.middleware.builtin import (
+    AuthenticationMiddleware,
+    ObservabilityMiddleware,
+    SessionMiddleware,
+)
 from fastauthmcp.middleware.pipeline import (
     HOOK_POINTS,
     MiddlewareCallable,
     MiddlewarePipeline,
     MiddlewarePlugin,
     RequestContext,
-)
-from fastauthmcp.middleware.builtin import (
-    AuthenticationMiddleware,
-    ObservabilityMiddleware,
-    SessionMiddleware,
 )
 
 __all__ = [

@@ -9,9 +9,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Awaitable, Callable
 
+from fastauthmcp.auth.claims import build_identity_context, parse_jwt_claims
 from fastauthmcp.config import SessionsConfig
 from fastauthmcp.identity import IdentityContext, _identity_context_var
-from fastauthmcp.auth.claims import build_identity_context, parse_jwt_claims
 from fastauthmcp.middleware.pipeline import RequestContext
 from fastauthmcp.sessions import InMemorySessionStore
 
@@ -38,9 +38,7 @@ class SessionMiddleware:
         self.store = InMemorySessionStore()
         self.ttl = session_config.ttl
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
         session_id = ctx.metadata.get("session_id")
         had_session = False
 

@@ -26,7 +26,6 @@ import os
 import time
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # ANSI colors
 # ---------------------------------------------------------------------------
@@ -232,13 +231,9 @@ def _get_target(transport: str, url: str | None):
         server_path = str(Path(__file__).parent / "petstore_server.py")
         return PythonStdioTransport(script_path=server_path)
     elif transport == "streamable-http":
-        return url or os.environ.get(
-            "FASTAUTHMCP_SERVER_URL", "http://localhost:8000/mcp"
-        )
+        return url or os.environ.get("FASTAUTHMCP_SERVER_URL", "http://localhost:8000/mcp")
     else:
-        return url or os.environ.get(
-            "FASTAUTHMCP_SERVER_URL", "http://localhost:8000/sse"
-        )
+        return url or os.environ.get("FASTAUTHMCP_SERVER_URL", "http://localhost:8000/sse")
 
 
 def _display_target(transport: str, url: str | None) -> str:

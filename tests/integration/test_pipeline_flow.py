@@ -11,7 +11,6 @@ import pytest
 from fastauthmcp import FastMCP, identity
 from fastauthmcp.testing import FastAuthMCPTestClient
 
-
 # --- Test server ---
 
 mcp = FastMCP("integration-test-server")

@@ -66,7 +66,8 @@ body {
     <nav class="hidden md:flex items-center gap-8 text-sm text-white/50 font-mono">
       <a href="#how" class="hover:text-white transition-colors duration-300">how it works</a>
       <a href="#features" class="hover:text-white transition-colors duration-300">features</a>
-      <a href="#scenarios" class="hover:text-white transition-colors duration-300">scenarios</a>
+      <a href="#lab" class="hover:text-white transition-colors duration-300">lab</a>
+      <a href="#guides" class="hover:text-white transition-colors duration-300">guides</a>
       <a href="#architecture" class="hover:text-white transition-colors duration-300">architecture</a>
       <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/GUIDE.md" class="hover:text-white transition-colors duration-300">docs</a>
     </nav>
@@ -470,6 +471,158 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
   </div>
 </section>
 
+<!-- ====== LAB — Security & Interoperability ====== -->
+<section id="lab" class="relative py-32">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-20">
+      <p class="font-mono text-xs text-emerald/80 tracking-[0.2em] uppercase mb-4">compatibility</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Security & <span class="bg-gradient-to-r from-emerald to-cyan bg-clip-text text-transparent">Interoperability Lab</span></h2>
+      <p class="text-white/40 mt-6 max-w-2xl mx-auto text-lg">34 automated scenarios validating FastAuthMCP against every major identity provider. Run it locally in 300ms.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8 items-start">
+      <!-- Terminal output -->
+      <div class="rounded-2xl overflow-hidden border border-white/[0.06] bg-panel/80 backdrop-blur-xl">
+        <div class="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06]">
+          <span class="w-3 h-3 rounded-full bg-[#ff5f56]/80"></span>
+          <span class="w-3 h-3 rounded-full bg-[#ffbd2e]/80"></span>
+          <span class="w-3 h-3 rounded-full bg-[#27c93f]/80"></span>
+          <span class="font-mono text-xs text-white/30 ml-3">./lab.sh</span>
+        </div>
+        <pre class="font-mono text-xs leading-6 p-6 text-white/60 overflow-x-auto"><span class="text-white/30">  Authentication</span>
+  <span class="text-emerald-400">✓</span> ZITADEL Auth Code + PKCE → identity
+  <span class="text-emerald-400">✓</span> Keycloak Client Credentials → service identity
+  <span class="text-emerald-400">✓</span> Auth0 Auth Code + PKCE → identity
+  <span class="text-emerald-400">✓</span> Azure Entra ID + PKCE → identity
+  <span class="text-emerald-400">✓</span> Okta Client Credentials → service identity
+
+<span class="text-white/30">  Authorization</span>
+  <span class="text-emerald-400">✓</span> Admin role → tool allowed
+  <span class="text-emerald-400">✓</span> Viewer role → tool rejected
+
+<span class="text-white/30">  Security</span>
+  <span class="text-emerald-400">✓</span> Expired token → rejected
+  <span class="text-emerald-400">✓</span> Wrong issuer → rejected
+  <span class="text-emerald-400">✓</span> Wrong audience → rejected
+
+  <span class="text-cyan">Result: 34 passed, 0 failed (300ms)</span></pre>
+      </div>
+
+      <!-- Provider matrix -->
+      <div class="space-y-6">
+        <div class="rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8">
+          <h3 class="font-bold text-lg mb-6">OIDC Provider Matrix</h3>
+          <div class="space-y-3 font-mono text-sm">
+            <div class="flex items-center gap-3"><span class="text-emerald-400">✓</span><span class="text-white/70">Generic OIDC (Mock)</span></div>
+            <div class="flex items-center gap-3"><span class="text-emerald-400">✓</span><span class="text-white/70">ZITADEL</span></div>
+            <div class="flex items-center gap-3"><span class="text-emerald-400">✓</span><span class="text-white/70">Keycloak</span></div>
+            <div class="flex items-center gap-3"><span class="text-emerald-400">✓</span><span class="text-white/70">Auth0</span></div>
+            <div class="flex items-center gap-3"><span class="text-emerald-400">✓</span><span class="text-white/70">Azure Entra ID</span></div>
+            <div class="flex items-center gap-3"><span class="text-emerald-400">✓</span><span class="text-white/70">Okta</span></div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-8">
+          <h3 class="font-bold text-lg mb-4">Interactive Lab UI</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-4">Chat with an LLM through FastAuthMCP-protected tools. See auth, authorization, and identity propagation in real time.</p>
+          <pre class="font-mono text-xs text-white/40 bg-white/[0.02] rounded-lg p-4">$ make lab-ui
+<span class="text-cyan">┌──────────┬───────────────────────────┐
+│ Config   │  👤 Who am I?             │
+│          │  🤖 Checking identity...  │
+│ Scenario │     🔧 whoami()           │
+│ [Zitadel]│     → sub: user-001      │
+│          │                           │
+│ LLM:     │  👤 Am I an admin?        │
+│ [OpenAI] │  🤖 Let me try...        │
+│          │     🔧 admin_action()     │
+│          │     → ❌ forbidden        │
+├──────────┴───────────────────────────┤
+│ 🔍 Logs                              │
+└──────────────────────────────────────┘</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run command -->
+    <div class="mt-12 text-center">
+      <div class="inline-flex items-center gap-4 font-mono text-sm text-white/50 bg-white/[0.02] border border-white/10 rounded-xl px-6 py-3">
+        <span class="text-white/30">$</span>
+        <span class="text-cyan">./lab.sh</span>
+        <span class="text-white/25">or</span>
+        <span class="text-cyan">make lab-ui</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== GUIDES — Integration docs ====== -->
+<section id="guides" class="relative py-32">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-20">
+      <p class="font-mono text-xs text-violet/80 tracking-[0.2em] uppercase mb-4">documentation</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Integration <span class="bg-gradient-to-r from-violet to-cyan bg-clip-text text-transparent">Guides</span></h2>
+      <p class="text-white/40 mt-6 max-w-2xl mx-auto text-lg">Step-by-step guides for every platform and identity provider. Complete with config files and client setup.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Claude Desktop -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/claude-desktop.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-cyan/30 hover:shadow-[0_0_40px_-15px_rgba(34,211,238,0.15)]">
+        <div class="text-2xl mb-3">🧠</div>
+        <h3 class="font-bold mb-2 group-hover:text-cyan transition-colors">Claude Desktop</h3>
+        <p class="text-white/40 text-sm">Local stdio + browser login</p>
+      </a>
+      <!-- Gemini -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/google-gemini.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-blue/30 hover:shadow-[0_0_40px_-15px_rgba(59,130,246,0.15)]">
+        <div class="text-2xl mb-3">✨</div>
+        <h3 class="font-bold mb-2 group-hover:text-blue-400 transition-colors">Google Gemini</h3>
+        <p class="text-white/40 text-sm">Cloud SSE + token exchange</p>
+      </a>
+      <!-- Cursor -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/cursor-ide.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-violet/30 hover:shadow-[0_0_40px_-15px_rgba(139,92,246,0.15)]">
+        <div class="text-2xl mb-3">⌨️</div>
+        <h3 class="font-bold mb-2 group-hover:text-violet-400 transition-colors">Cursor IDE</h3>
+        <p class="text-white/40 text-sm">Dev server with SSE transport</p>
+      </a>
+      <!-- Zitadel -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/idp-zitadel.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-white/20">
+        <div class="text-2xl mb-3">🔐</div>
+        <h3 class="font-bold mb-2 group-hover:text-white transition-colors">Zitadel</h3>
+        <p class="text-white/40 text-sm">PKCE, M2M, RFC 8693</p>
+      </a>
+      <!-- Keycloak -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/idp-keycloak.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-white/20">
+        <div class="text-2xl mb-3">🏰</div>
+        <h3 class="font-bold mb-2 group-hover:text-white transition-colors">Keycloak</h3>
+        <p class="text-white/40 text-sm">PKCE, M2M, RBAC</p>
+      </a>
+      <!-- Azure -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/idp-azure.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-white/20">
+        <div class="text-2xl mb-3">☁️</div>
+        <h3 class="font-bold mb-2 group-hover:text-white transition-colors">Azure Entra ID</h3>
+        <p class="text-white/40 text-sm">PKCE, M2M, On-Behalf-Of</p>
+      </a>
+      <!-- Auth0 -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/idp-auth0.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-white/20">
+        <div class="text-2xl mb-3">🔒</div>
+        <h3 class="font-bold mb-2 group-hover:text-white transition-colors">Auth0</h3>
+        <p class="text-white/40 text-sm">PKCE, M2M, Actions</p>
+      </a>
+      <!-- Okta -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/idp-okta.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-white/20">
+        <div class="text-2xl mb-3">🛡️</div>
+        <h3 class="font-bold mb-2 group-hover:text-white transition-colors">Okta</h3>
+        <p class="text-white/40 text-sm">PKCE, M2M, Auth Servers</p>
+      </a>
+      <!-- Google -->
+      <a href="https://github.com/enzomar/fastauthmcp/blob/main/docs/guides/idp-google.md" class="group rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-white/20">
+        <div class="text-2xl mb-3">🌐</div>
+        <h3 class="font-bold mb-2 group-hover:text-white transition-colors">Google Cloud</h3>
+        <p class="text-white/40 text-sm">OAuth2, Workload Identity</p>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ====== DEPLOYMENT SCENARIOS — The killer use cases ====== -->
 <section id="scenarios" class="relative py-32">
   <div class="max-w-6xl mx-auto px-6">
@@ -497,13 +650,13 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
 
           <!-- Pain without FastAuthMCP -->
           <div class="mb-6 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-            <p class="text-xs font-mono text-white/30 mb-2">WITHOUT CERAMIC</p>
+            <p class="text-xs font-mono text-white/30 mb-2">WITHOUT FASTAUTHMCP</p>
             <p class="text-white/50 text-sm leading-relaxed">Hand-roll OAuth PKCE, build a local callback server, manage token refresh, store credentials securely, wire the token into every HTTP call. Days of work before your first tool.</p>
           </div>
 
           <!-- Solution with FastAuthMCP -->
           <div class="mb-6 rounded-lg border border-cyan/20 bg-cyan/[0.03] p-4">
-            <p class="text-xs font-mono text-cyan/70 mb-2">WITH CERAMIC</p>
+            <p class="text-xs font-mono text-cyan/70 mb-2">WITH FASTAUTHMCP</p>
             <p class="text-white/60 text-sm leading-relaxed"><code class="text-cyan">fastauthmcp login</code> → browser opens → token stored in Keychain → every tool call authenticated. <strong class="text-white/80">30 seconds.</strong></p>
           </div>
 
@@ -544,13 +697,13 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
 
           <!-- Pain without FastAuthMCP -->
           <div class="mb-6 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-            <p class="text-xs font-mono text-white/30 mb-2">WITHOUT CERAMIC</p>
+            <p class="text-xs font-mono text-white/30 mb-2">WITHOUT FASTAUTHMCP</p>
             <p class="text-white/50 text-sm leading-relaxed">Implement RFC 8693 token exchange, parse upstream tokens, POST to IDP, handle errors, add retry logic, build a circuit breaker. Weeks of security-sensitive code.</p>
           </div>
 
           <!-- Solution with FastAuthMCP -->
           <div class="mb-6 rounded-lg border border-violet/20 bg-violet/[0.03] p-4">
-            <p class="text-xs font-mono text-violet/70 mb-2">WITH CERAMIC</p>
+            <p class="text-xs font-mono text-violet/70 mb-2">WITH FASTAUTHMCP</p>
             <p class="text-white/60 text-sm leading-relaxed">Platform passes user token → FastAuthMCP exchanges it at IDP → your tool gets a downstream-scoped token. <strong class="text-white/80">Same tool code as local.</strong></p>
           </div>
 

@@ -24,7 +24,6 @@ from fastauthmcp.observability import (
     get_telemetry_service,
 )
 
-
 # ---------------------------------------------------------------------------
 # TelemetryService core
 # ---------------------------------------------------------------------------
@@ -36,9 +35,7 @@ class TestTelemetryService:
 
     def test_start_span_creates_span(self):
         """start_span returns a non-None span."""
-        span = self.service.start_span(
-            tool_name="my_tool", request_id=str(uuid.uuid4())
-        )
+        span = self.service.start_span(tool_name="my_tool", request_id=str(uuid.uuid4()))
         assert span is not None
         span.end()
 

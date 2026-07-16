@@ -1,5 +1,7 @@
 """Audit logging: structured, immutable records of security-relevant events.
 
+Status: Planned — not yet wired into the middleware pipeline.
+
 Captures authentication, authorization, token exchange, and tool invocation
 events with full context for compliance and forensics.
 
@@ -47,9 +49,7 @@ class AuditEvent:
     """A single audit log entry."""
 
     event_type: AuditEventType
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     request_id: str | None = None
     subject: str | None = None
     email: str | None = None
@@ -99,9 +99,7 @@ class AuditLogger:
             except OSError as exc:
                 logger.error("Failed to write audit event to file: %s", exc)
 
-    def auth_success(
-        self, request_id: str | None, subject: str | None, email: str | None
-    ) -> None:
+    def auth_success(self, request_id: str | None, subject: str | None, email: str | None) -> None:
         """Record a successful authentication."""
         self.emit(
             AuditEvent(

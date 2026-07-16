@@ -24,7 +24,6 @@ from fastauthmcp.exceptions import (
 )
 from fastauthmcp.models import OIDCEndpoints, TokenSet
 
-
 # --- Fixtures ---
 
 
@@ -91,6 +90,16 @@ def _mock_async_client(response: MagicMock) -> AsyncMock:
     return client
 
 
+def _mock_sync_client(response: MagicMock) -> MagicMock:
+    """Create a mock httpx.Client (sync) context manager."""
+    client = MagicMock()
+    client.get = MagicMock(return_value=response)
+    client.post = MagicMock(return_value=response)
+    client.__enter__ = MagicMock(return_value=client)
+    client.__exit__ = MagicMock(return_value=None)
+    return client
+
+
 # --- PKCE Tests ---
 
 
@@ -101,9 +110,7 @@ class TestPKCE:
 
     def test_code_verifier_is_url_safe(self):
         verifier = _generate_code_verifier()
-        allowed = set(
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-        )
+        allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
         assert all(c in allowed for c in verifier)
 
     def test_code_verifier_uniqueness(self):
@@ -130,14 +137,10 @@ class TestDiscoverEndpoints:
     @pytest.mark.asyncio
     async def test_successful_discovery(self, oauth_service, discovery_response):
         mock_resp = _mock_httpx_response(discovery_response)
-        mock_client = _mock_async_client(mock_resp)
+        mock_client = _mock_sync_client(mock_resp)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
-            endpoints = await oauth_service.discover_endpoints(
-                "https://idp.example.com"
-            )
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
+            endpoints = await oauth_service.discover_endpoints("https://idp.example.com")
 
         assert endpoints.authorization_endpoint == "https://idp.example.com/authorize"
         assert endpoints.token_endpoint == "https://idp.example.com/token"
@@ -147,17 +150,13 @@ class TestDiscoverEndpoints:
     @pytest.mark.asyncio
     async def test_discovery_caches_endpoints(self, oauth_service, discovery_response):
         mock_resp = _mock_httpx_response(discovery_response)
-        mock_client = _mock_async_client(mock_resp)
+        mock_client = _mock_sync_client(mock_resp)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             await oauth_service.discover_endpoints("https://idp.example.com")
 
         assert oauth_service._endpoints is not None
-        assert (
-            oauth_service._endpoints.token_endpoint == "https://idp.example.com/token"
-        )
+        assert oauth_service._endpoints.token_endpoint == "https://idp.example.com/token"
 
     @pytest.mark.asyncio
     async def test_discovery_rejects_http_issuer(self, oauth_service):
@@ -172,26 +171,20 @@ class TestDiscoverEndpoints:
             "jwks_uri": "https://idp.example.com/.well-known/jwks.json",
         }
         mock_resp = _mock_httpx_response(insecure_response)
-        mock_client = _mock_async_client(mock_resp)
+        mock_client = _mock_sync_client(mock_resp)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             with pytest.raises(ConfigurationError, match="Non-TLS endpoint"):
                 await oauth_service.discover_endpoints("https://idp.example.com")
 
     @pytest.mark.asyncio
     async def test_discovery_provider_unreachable(self, oauth_service):
-        mock_client = AsyncMock()
-        mock_client.get = AsyncMock(
-            side_effect=httpx.ConnectError("Connection refused")
-        )
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client = MagicMock()
+        mock_client.get = MagicMock(side_effect=httpx.ConnectError("Connection refused"))
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=None)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             with pytest.raises(ProviderError, match="Failed to fetch OIDC discovery"):
                 await oauth_service.discover_endpoints("https://idp.example.com")
 
@@ -199,11 +192,9 @@ class TestDiscoverEndpoints:
     async def test_discovery_missing_required_fields(self, oauth_service):
         incomplete = {"authorization_endpoint": "https://idp.example.com/authorize"}
         mock_resp = _mock_httpx_response(incomplete)
-        mock_client = _mock_async_client(mock_resp)
+        mock_client = _mock_sync_client(mock_resp)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             with pytest.raises(ProviderError, match="missing required fields"):
                 await oauth_service.discover_endpoints("https://idp.example.com")
 
@@ -222,11 +213,9 @@ class TestExchangeCode:
         )
 
         mock_resp = _mock_httpx_response(token_response)
-        mock_client = _mock_async_client(mock_resp)
+        mock_client = _mock_sync_client(mock_resp)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             token_set = await oauth_service.exchange_code(
                 code="auth-code-123",
                 verifier="test-verifier",
@@ -246,12 +235,8 @@ class TestExchangeCode:
         assert body["grant_type"] == "authorization_code"
 
     @pytest.mark.asyncio
-    async def test_exchange_includes_client_secret(
-        self, provider_config, token_response
-    ):
-        config_with_secret = provider_config.model_copy(
-            update={"client_secret": "my-secret"}
-        )
+    async def test_exchange_includes_client_secret(self, provider_config, token_response):
+        config_with_secret = provider_config.model_copy(update={"client_secret": "my-secret"})
         service = OAuthService(provider_config=config_with_secret)
         service._endpoints = OIDCEndpoints(
             authorization_endpoint="https://idp.example.com/authorize",
@@ -261,11 +246,9 @@ class TestExchangeCode:
         )
 
         mock_resp = _mock_httpx_response(token_response)
-        mock_client = _mock_async_client(mock_resp)
+        mock_client = _mock_sync_client(mock_resp)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             await service.exchange_code(
                 code="auth-code",
                 verifier="verifier",
@@ -293,11 +276,9 @@ class TestExchangeCode:
             {"error": "invalid_grant", "error_description": "Code expired"},
             status_code=400,
         )
-        mock_client = _mock_async_client(error_resp)
+        mock_client = _mock_sync_client(error_resp)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             with pytest.raises(ProviderError, match="Code expired"):
                 await oauth_service.exchange_code(
                     code="bad-code",
@@ -320,14 +301,10 @@ class TestRefreshToken:
         )
 
         mock_resp = _mock_httpx_response(token_response)
-        mock_client = _mock_async_client(mock_resp)
+        mock_client = _mock_sync_client(mock_resp)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
-            token_set = await oauth_service.refresh_token(
-                refresh_token="old-refresh-token"
-            )
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
+            token_set = await oauth_service.refresh_token(refresh_token="old-refresh-token")
 
         assert isinstance(token_set, TokenSet)
         assert token_set.access_token == "eyJhbGciOiJSUzI1NiJ9.test-access"

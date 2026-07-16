@@ -20,7 +20,6 @@ from fastauthmcp.exceptions import ProviderError
 from fastauthmcp.models import OIDCEndpoints, TokenSet
 from fastauthmcp.resilience import CircuitBreaker, ResilientHttpClient
 
-
 # --- Fixtures ---
 
 
@@ -89,9 +88,7 @@ class TestDiscoverEndpointsWithHttpClient:
         mock_response.json.return_value = discovery_data
         mock_http_client.get.return_value = mock_response
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
         result = await service.discover_endpoints("https://idp.example.com")
 
         # Verify http_client.get was called with the discovery URL
@@ -104,9 +101,7 @@ class TestDiscoverEndpointsWithHttpClient:
         assert result.jwks_uri == "https://idp.example.com/.well-known/jwks.json"
 
     @pytest.mark.asyncio
-    async def test_discovery_with_trailing_slash(
-        self, provider_config, mock_http_client
-    ):
+    async def test_discovery_with_trailing_slash(self, provider_config, mock_http_client):
         """Trailing slash on issuer is stripped before appending discovery path."""
         discovery_data = {
             "authorization_endpoint": "https://idp.example.com/authorize",
@@ -117,9 +112,7 @@ class TestDiscoverEndpointsWithHttpClient:
         mock_response.json.return_value = discovery_data
         mock_http_client.get.return_value = mock_response
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
         await service.discover_endpoints("https://idp.example.com/")
 
         mock_http_client.get.assert_called_once_with(
@@ -140,9 +133,7 @@ class TestExchangeCodeWithHttpClient:
         """exchange_code routes through _post_token_request → http_client.post_token."""
         mock_http_client.post_token.return_value = token_set
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
         service._endpoints = endpoints
 
         result = await service.exchange_code(
@@ -177,9 +168,7 @@ class TestExchangeCodeWithHttpClient:
             "error", request=MagicMock(), response=mock_resp
         )
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
         service._endpoints = endpoints
 
         with pytest.raises(ProviderError, match="Code expired"):
@@ -201,9 +190,7 @@ class TestRefreshTokenWithHttpClient:
         """refresh_token routes through _post_token_request → http_client.post_token."""
         mock_http_client.post_token.return_value = token_set
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
         service._endpoints = endpoints
 
         result = await service.refresh_token(refresh_token="old-refresh-token")
@@ -231,9 +218,7 @@ class TestClientCredentialsWithHttpClient:
         """client_credentials routes through _post_token_request → http_client.post_token."""
         mock_http_client.post_token.return_value = token_set
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
         service._endpoints = endpoints
 
         result = await service.client_credentials()
@@ -264,9 +249,7 @@ class TestClientCredentialsWithHttpClient:
         mock_http_client.get.return_value = mock_response
         mock_http_client.post_token.return_value = token_set
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
 
         result = await service.client_credentials()
 
@@ -288,9 +271,7 @@ class TestTokenExchangeWithHttpClient:
         """token_exchange builds RFC 8693 body and posts through http_client."""
         mock_http_client.post_token.return_value = token_set
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
         service._endpoints = endpoints
 
         result = await service.token_exchange(subject_token="upstream-user-token")
@@ -303,14 +284,8 @@ class TestTokenExchangeWithHttpClient:
         assert url == "https://idp.example.com/token"
         assert body["grant_type"] == "urn:ietf:params:oauth:grant-type:token-exchange"
         assert body["subject_token"] == "upstream-user-token"
-        assert (
-            body["subject_token_type"]
-            == "urn:ietf:params:oauth:token-type:access_token"
-        )
-        assert (
-            body["requested_token_type"]
-            == "urn:ietf:params:oauth:token-type:access_token"
-        )
+        assert body["subject_token_type"] == "urn:ietf:params:oauth:token-type:access_token"
+        assert body["requested_token_type"] == "urn:ietf:params:oauth:token-type:access_token"
         assert body["client_id"] == "test-client"
         assert body["client_secret"] == "test-secret"
         assert body["audience"] == "https://api.example.com"
@@ -321,13 +296,9 @@ class TestTokenExchangeWithHttpClient:
         self, provider_config, mock_http_client, endpoints
     ):
         """RequestError from http_client is wrapped in ProviderError."""
-        mock_http_client.post_token.side_effect = httpx.ConnectError(
-            "Connection refused"
-        )
+        mock_http_client.post_token.side_effect = httpx.ConnectError("Connection refused")
 
-        service = OAuthService(
-            provider_config=provider_config, http_client=mock_http_client
-        )
+        service = OAuthService(provider_config=provider_config, http_client=mock_http_client)
         service._endpoints = endpoints
 
         with pytest.raises(ProviderError, match="Failed to reach token endpoint"):
@@ -340,7 +311,7 @@ class TestTokenExchangeWithHttpClient:
 class TestBackwardCompatibility:
     @pytest.mark.asyncio
     async def test_none_http_client_uses_raw_httpx(self, provider_config):
-        """When http_client is None, OAuthService uses raw httpx.AsyncClient."""
+        """When http_client is None, OAuthService uses sync httpx.Client in a thread."""
         service = OAuthService(provider_config=provider_config, http_client=None)
         service._endpoints = OIDCEndpoints(
             authorization_endpoint="https://idp.example.com/authorize",
@@ -359,23 +330,21 @@ class TestBackwardCompatibility:
         mock_resp.json.return_value = token_data
         mock_resp.raise_for_status = MagicMock()
 
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_resp)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client = MagicMock()
+        mock_client.post = MagicMock(return_value=mock_resp)
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=None)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             result = await service.refresh_token(refresh_token="old-token")
 
         assert result.access_token == "raw-httpx-token"
-        # Verify raw httpx was used
+        # Verify sync httpx.Client was used
         mock_client.post.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_none_http_client_discovery_uses_raw_httpx(self, provider_config):
-        """When http_client is None, discover_endpoints uses raw httpx.AsyncClient."""
+        """When http_client is None, discover_endpoints uses sync httpx.Client in a thread."""
         service = OAuthService(provider_config=provider_config, http_client=None)
 
         discovery_data = {
@@ -388,14 +357,12 @@ class TestBackwardCompatibility:
         mock_resp.json.return_value = discovery_data
         mock_resp.raise_for_status = MagicMock()
 
-        mock_client = AsyncMock()
-        mock_client.get = AsyncMock(return_value=mock_resp)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client = MagicMock()
+        mock_client.get = MagicMock(return_value=mock_resp)
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=None)
 
-        with patch(
-            "fastauthmcp.auth.oauth.httpx.AsyncClient", return_value=mock_client
-        ):
+        with patch("fastauthmcp.auth.oauth.httpx.Client", return_value=mock_client):
             result = await service.discover_endpoints("https://idp.example.com")
 
         assert result.token_endpoint == "https://idp.example.com/token"

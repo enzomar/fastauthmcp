@@ -29,7 +29,6 @@ from fastauthmcp.middleware.builtin import (
 from fastauthmcp.middleware.pipeline import MiddlewarePipeline, RequestContext
 from fastauthmcp.server import FastAuthMCP
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -81,9 +80,7 @@ class _TrackingPlugin:
         self.name = name
         self._before_called = False
 
-        async def before_request(
-            ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-        ) -> Any:
+        async def before_request(ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
             self._before_called = True
             return await next()
 
@@ -266,13 +263,9 @@ class TestPipelineExecution:
         # Create a valid (non-expired) token so AuthenticationMiddleware passes through
         claims = {"sub": "user-123", "email": "test@example.com"}
         header = (
-            base64.urlsafe_b64encode(json.dumps({"alg": "none"}).encode())
-            .rstrip(b"=")
-            .decode()
+            base64.urlsafe_b64encode(json.dumps({"alg": "none"}).encode()).rstrip(b"=").decode()
         )
-        payload = (
-            base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
-        )
+        payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
         jwt_token = f"{header}.{payload}."
         valid_token = TokenSet(
             access_token=jwt_token,

@@ -3,9 +3,9 @@
 Marked abstract by default — enabled via ./lab.sh --docker
 """
 
-from fastauthmcp.lab.scenario import Scenario
-from fastauthmcp.lab.providers.keycloak import KeycloakProvider
 from fastauthmcp.lab.gateway import LabGateway
+from fastauthmcp.lab.providers.keycloak import KeycloakProvider
+from fastauthmcp.lab.scenario import Scenario
 
 
 class TestKeycloakClientCredentials(Scenario):

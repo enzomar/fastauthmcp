@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from fastauthmcp.lab.runner.discovery import discover_scenarios
-from fastauthmcp.lab.runner.reporting import print_summary, generate_html_report
+from fastauthmcp.lab.runner.reporting import generate_html_report, print_summary
 
 
 @dataclass

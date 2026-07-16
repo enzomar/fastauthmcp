@@ -34,11 +34,9 @@ dependencies = [
     "click>=8.1.0",
     "httpx>=0.27.0",
     "pyjwt>=2.8.0",
-    "opentelemetry-api>=1.20.0",
-    "opentelemetry-sdk>=1.20.0",
-    "prometheus-client>=0.20.0",
+    "authlib>=1.3.0",
+    "tenacity>=8.2.0",
     "certifi>=2024.0.0",
-    "zeep>=4.2.0",
 ]
 
 [project.urls]
@@ -55,13 +53,26 @@ keyring = [
 crypto = [
     "cryptography>=42.0.0",
 ]
+observability = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "prometheus-client>=0.20.0",
+]
+soap = [
+    "zeep>=4.2.0",
+]
 dev = [
     "hypothesis>=6.100.0",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.0.0",
     "pytest-mock>=3.12.0",
     "textual>=0.70.0",
     "rich>=13.0.0",
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "prometheus-client>=0.20.0",
+    "zeep>=4.2.0",
 ]
 
 [project.scripts]
@@ -73,3 +84,11 @@ asyncio_mode = "auto"
 
 [tool.hatch.build.targets.wheel]
 packages = ["fastauthmcp"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501", "N802", "N806"]  # Line length handled by formatter; N802/N806 for intentional naming

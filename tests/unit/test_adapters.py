@@ -26,7 +26,6 @@ from fastauthmcp.exceptions import (
 from fastauthmcp.models import OIDCEndpoints, TokenSet
 from fastauthmcp.resilience import CircuitBreaker, ResilientHttpClient
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -112,10 +111,7 @@ class TestRFC8693Adapter:
         body = http_client.post_token.call_args[0][1]
         assert body["grant_type"] == "urn:ietf:params:oauth:grant-type:token-exchange"
         assert body["subject_token"] == "user-token"
-        assert (
-            body["subject_token_type"]
-            == "urn:ietf:params:oauth:token-type:access_token"
-        )
+        assert body["subject_token_type"] == "urn:ietf:params:oauth:token-type:access_token"
         assert body["client_id"] == "test-client"
         assert body["client_secret"] == "test-secret"
         assert body["audience"] == "https://api.example.com"
@@ -174,13 +170,8 @@ class TestGoogleSTSAdapter:
         assert url == "https://sts.googleapis.com/v1/token"
         assert body["grantType"] == "urn:ietf:params:oauth:grant-type:token-exchange"
         assert body["subjectToken"] == "user-token"
-        assert (
-            body["subjectTokenType"] == "urn:ietf:params:oauth:token-type:access_token"
-        )
-        assert (
-            body["requestedTokenType"]
-            == "urn:ietf:params:oauth:token-type:access_token"
-        )
+        assert body["subjectTokenType"] == "urn:ietf:params:oauth:token-type:access_token"
+        assert body["requestedTokenType"] == "urn:ietf:params:oauth:token-type:access_token"
         assert body["audience"] == "https://api.example.com"
         assert body["scope"] == "read write"
         assert result.access_token == "google-token"
@@ -193,9 +184,7 @@ class TestGoogleSTSAdapter:
             "error": "invalid_grant",
             "error_description": "Token has been revoked",
         }
-        exc = httpx.HTTPStatusError(
-            "Bad Request", request=MagicMock(), response=mock_response
-        )
+        exc = httpx.HTTPStatusError("Bad Request", request=MagicMock(), response=mock_response)
         http_client.post_form = AsyncMock(side_effect=exc)
 
         adapter = GoogleSTSAdapter(http_client)
@@ -233,10 +222,7 @@ class TestEntraOBOAdapter:
             result = await adapter.exchange("user-token", auth_config, endpoints)
 
             posted_data = mock_client.post.call_args[1]["data"]
-            assert (
-                posted_data["grant_type"]
-                == "urn:ietf:params:oauth:grant-type:jwt-bearer"
-            )
+            assert posted_data["grant_type"] == "urn:ietf:params:oauth:grant-type:jwt-bearer"
             assert posted_data["assertion"] == "user-token"
             assert posted_data["requested_token_use"] == "on_behalf_of"
             assert posted_data["client_id"] == "test-client"

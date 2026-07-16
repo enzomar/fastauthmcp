@@ -1,5 +1,7 @@
 """Graceful degradation: continue serving when auth infrastructure is unavailable.
 
+Status: Planned — not yet wired into the middleware pipeline.
+
 When the identity provider is down (circuit breaker open), FastAuthMCP can
 optionally degrade gracefully rather than rejecting all requests:
 
@@ -64,8 +66,7 @@ class DegradationState:
         if self._degraded_since is None:
             self._degraded_since = time.monotonic()
             logger.warning(
-                "Entering graceful degradation mode — "
-                "IdP unavailable, using cached identities"
+                "Entering graceful degradation mode — IdP unavailable, using cached identities"
             )
 
     def exit_degraded_mode(self) -> None:

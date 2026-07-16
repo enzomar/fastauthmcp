@@ -7,14 +7,13 @@ and verifies the state machine never reaches an invalid state.
 from __future__ import annotations
 
 import asyncio
-
-import httpx
-from hypothesis import given, settings, assume
-from hypothesis import strategies as st
 from unittest.mock import MagicMock
 
-from fastauthmcp.resilience import CircuitBreaker, CircuitState
+import httpx
+from hypothesis import assume, given, settings
+from hypothesis import strategies as st
 
+from fastauthmcp.resilience import CircuitBreaker, CircuitState
 
 # ---------------------------------------------------------------------------
 # Strategies
@@ -25,9 +24,7 @@ outcome_sequences = st.lists(st.booleans(), min_size=1, max_size=50)
 
 # Reasonable thresholds for the circuit breaker
 thresholds = st.integers(min_value=1, max_value=10)
-cooldowns = st.floats(
-    min_value=0.01, max_value=5.0, allow_nan=False, allow_infinity=False
-)
+cooldowns = st.floats(min_value=0.01, max_value=5.0, allow_nan=False, allow_infinity=False)
 
 
 # ---------------------------------------------------------------------------

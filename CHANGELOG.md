@@ -2,63 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
 
 ### Added
-- **Per-tool authorization decorators** — `@require_roles()`, `@require_groups()`, `@require_scopes()` with automatic policy enforcement before tool execution
-- **Authorization middleware** — Evaluates decorator-based and YAML-defined policies (glob patterns on tool names, AND semantics)
-- **Rate limiting** — Token bucket rate limiter with per-tool and per-user limits, configurable RPM and burst
-- **Audit logging** — Structured, immutable records of auth, authz, tool invocation, and token exchange events
-- **Downstream credential mapping** — Route tools to different downstream APIs with scope-aware token caching
-- **Secret management integration** — `${SECRET:backend:key}` syntax for resolving secrets from env, AWS, Vault
-- **Request-scoped context propagation** — `set_context()` / `get_context()` for passing correlation IDs, tenant context through the pipeline
-- **Multi-IdP support** — Route authentication to different providers based on issuer claim, tool mapping, or request header
-- **Graceful degradation** — Continue serving during IdP outages (trust stale sessions, allow public tools)
-- **Schema export** — Generate JSON/Markdown API documentation including auth requirements and rate limits
-- Token exchange adapter system: built-in adapters for RFC 8693 (default), Google STS, and Microsoft Entra OBO
-- `AdapterRegistry` for registering custom token exchange adapters
-- Resilient JWKS key management with request coalescing, stale-while-revalidate, and exponential backoff
-- Circuit breaker for all IDP HTTP calls (configurable failure threshold and cooldown)
-- `ResilientHttpClient` routing all outbound IDP calls through circuit breaker
-- `token_exchange_provider` config field for selecting token exchange adapter
-- `circuit_breaker` config section (failure_threshold, cooldown_seconds)
-- `jwks_cache_ttl` config field for JWKS key cache TTL
-- `AuthorizationError` exception for policy evaluation failures
+- Security & Interoperability Lab (34 scenarios, 5 providers)
+- Per-platform integration guides (Claude Desktop, Gemini, Cursor, etc.)
+- Per-IDP guides (Zitadel, Keycloak, Auth0, Azure Entra ID, Okta, Google)
+- Makefile with build, test, release, demo, and lab helpers
+- `extra="forbid"` on all config models — typos now raise errors
+- Cross-field validation: `client_credentials` requires `client_secret`, `token_exchange` requires `upstream_token_header`
+- Token exchange adapter system wired into `OAuthService.token_exchange()` — `google` and `entra` adapters now functional
+- `tenacity` for JWKS retry logic (replaces custom backoff loop)
+- `authlib` as a dependency (preparing for deeper OIDC integration)
+
+### Fixed
+- OAuth callback server `shutdown()` deadlock when browser sends `/favicon.ico`
+- Token exchange POST hanging under anyio event loop (now uses sync httpx in thread)
+- `callback_server.wait_for_callback()` no longer calls `shutdown()` internally
+- Duplicate `_parse_token_response()` in `resilience.py` removed (now imports from `oauth.py`)
 
 ### Changed
-- Improved `fastauthmcp doctor` diagnostics with actionable fix suggestions
-- Token exchange now routes through adapter system instead of direct HTTP calls
-- Middleware pipeline now includes authorization after authentication when auth is configured
-- Public API expanded with `require_roles`, `require_groups`, `require_scopes`, `get_context`, `set_context`, `request_context`
+- Demo default transport changed to stdio (most reliable)
+- `_post_token_request` and `discover_endpoints` use sync httpx in threads to avoid anyio conflicts
+- `zeep`, `opentelemetry-*`, `prometheus-client` moved to optional extras (`[soap]`, `[observability]`)
+- Core install is now lighter: only `authlib`, `httpx`, `pyjwt`, `tenacity`, `pydantic`, `click`, `certifi`
 
----
-
-## [0.1.0] — 2026-07-14
+## [0.1.3] — 2025-07-16
 
 ### Added
-- **Core framework** — `FastAuthMCP` drop-in replacement wrapping FastMCP via composition
-- **Authentication middleware** — OAuth2/OIDC with PKCE (authorization_code) and client_credentials grants
-- **Authorization middleware** — Role and group-based access control with `@require_roles` / `@require_groups` decorators
-- **Observability middleware** — OpenTelemetry traces, Prometheus metrics, structured JSON logging
-- **Session middleware** — Durable in-memory sessions with configurable TTL
-- **Identity propagation** — `identity()` function returning `IdentityContext` via contextvars
-- **Configuration system** — Single `fastauthmcp.yaml` with Pydantic validation, env var overrides, hot reload
-- **Token storage** — Platform-native backends (macOS Keychain, Windows Credential Manager, encrypted file)
-- **CLI** — `fastauthmcp run`, `fastauthmcp login`, `fastauthmcp logout`, `fastauthmcp whoami`, `fastauthmcp doctor`, `fastauthmcp config validate`
-- **Testing utilities** — `FastAuthMCPTestClient` and `MockIdentityProvider` for auth-free testing
-- **Security** — `LogRedactor` (sensitive field masking), `TLSEnforcer` (HTTPS in production)
-- **Plugin system** — Custom middleware via `app.use()` or `plugins:` config section
-- **Examples** — Basic server, auth server, migration example, full Zitadel E2E demo
-- **CI/CD** — GitHub Actions for testing (3.11/3.12/3.13), release automation, PyPI publishing
+- Initial public release
+- OAuth2/OIDC authentication (Authorization Code + PKCE, Client Credentials, Token Exchange)
+- Token exchange adapters (RFC 8693, Google STS, Entra OBO)
+- Middleware pipeline (Observability → Session → Authentication → Authorization)
+- Per-tool authorization decorators (`@require_roles`, `@require_groups`, `@require_scopes`)
+- Identity propagation via `identity()` and `access_token()`
+- Downstream API clients (HTTP + SOAP with automatic token injection)
+- Circuit breaker and resilient JWKS management
+- OpenTelemetry tracing and Prometheus metrics
+- Session management
+- CLI (`fastauthmcp login/logout/whoami/doctor/run`)
+- `FastAuthMCPTestClient` and `MockIdentityProvider` for testing
+- Platform-native token storage (macOS Keychain, Windows Credential Manager, encrypted file)
 
-### Security
-- PKCE enforced for all interactive OAuth flows
-- TLS 1.2+ required for IDP communication in production
-- Tokens, secrets, credentials automatically redacted from logs and traces
-- No sensitive values stored in plaintext (keyring or encrypted file backends)
-
-[Unreleased]: https://github.com/enzomar/fastauthmcp/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/enzomar/fastauthmcp/releases/tag/v0.1.0
+[Unreleased]: https://github.com/enzomar/fastauthmcp/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/enzomar/fastauthmcp/releases/tag/v0.1.3

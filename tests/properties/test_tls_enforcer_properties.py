@@ -6,7 +6,8 @@ Verifies: any URL not using HTTPS is always rejected.
 from __future__ import annotations
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from fastauthmcp.exceptions import ConfigurationError
 from fastauthmcp.security import TLSEnforcer

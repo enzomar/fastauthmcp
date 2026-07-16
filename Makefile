@@ -80,6 +80,9 @@ lab-list: ## List all lab scenarios
 lab-clean: ## Stop lab Docker services
 	./lab.sh clean
 
+lab-ui: ## Launch interactive Lab UI (TUI chat with LLM)
+	python -m fastauthmcp.lab.ui
+
 # ─── Versioning & Release ────────────────────────────────────────────────────
 
 VERSION := $(shell grep '^version' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
@@ -105,6 +108,7 @@ _release:
 		major) NEW="$$((MAJOR + 1)).0.0";; \
 	esac; \
 	echo "Bumping $$CURRENT → $$NEW ($(BUMP))"; \
+	# Note: sed -i '' is macOS syntax. The CI release workflow (release.yml) uses Linux sed -i.
 	sed -i '' "s/version = \"$$CURRENT\"/version = \"$$NEW\"/" pyproject.toml; \
 	git add pyproject.toml; \
 	git commit -m "release: v$$NEW"; \

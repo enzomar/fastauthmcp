@@ -44,10 +44,10 @@ Key design principles:
 | **Token forwarding to downstream APIs** | ✅ `access_token()` | Must build | Depends on gateway |
 | **Identity inside tool functions** | ✅ `identity()` | Must propagate manually | ❌ Not possible |
 | **Per-tool authorization** | ✅ Decorators + config | Must build | ❌ Route-level only |
-| **Rate limiting** | ✅ Per-tool & per-user | Must build | ✅ Usually available |
-| **Audit logging** | ✅ Structured events | Must build | Varies |
-| **Multi-IdP support** | ✅ Issuer routing | Must build | ❌ Single upstream |
-| **Schema export** | ✅ JSON + Markdown | Must build | ✅ OpenAPI |
+| **Rate limiting** | 🚧 Per-tool & per-user (planned) | Must build | ✅ Usually available |
+| **Audit logging** | 🚧 Structured events (planned) | Must build | Varies |
+| **Multi-IdP support** | 🚧 Issuer routing (planned) | Must build | ❌ Single upstream |
+| **Schema export** | 🚧 JSON + Markdown (planned) | Must build | ✅ OpenAPI |
 | **OpenTelemetry tracing** | ✅ Automatic | Must integrate | Varies |
 | **Prometheus metrics** | ✅ Zero config | Must build | ✅ Usually available |
 | **Session management** | ✅ Built-in | Must build | ❌ Stateless |
@@ -573,7 +573,7 @@ After-hooks execute in reverse order. Each layer is independent:
 | **Session** | `sessions:` section present | Restores identity from session, creates sessions on auth, enforces TTL |
 | **Authentication** | `auth:` section present | Validates token, auto-refreshes, initiates OAuth if needed |
 | **Authorization** | `auth:` section present | Evaluates per-tool decorator policies and YAML-defined policies |
-| **Rate Limiting** | `rate_limiting:` section present | Per-tool and per-user token bucket rate limiting |
+| **Rate Limiting** | `rate_limiting:` section present | 🚧 **Planned** — Per-tool and per-user token bucket rate limiting (module exists but not yet wired into config) |
 | **Plugins** | `plugins:` section present | Custom middleware registered via `app.use()` or config |
 
 ### Custom plugins
@@ -821,14 +821,14 @@ Utility commands:
 Demonstrates `access_token()` and token exchange for downstream API calls:
 
 ```bash
-# Interactive login + show token propagation to downstream APIs
-./scripts/demo-headless.sh interactive
+# Explain the architecture (token exchange flow diagram)
+./scripts/demo-headless.sh explain
 
-# Prove the token works by calling the IDP's userinfo endpoint
-./scripts/demo-headless.sh propagate
+# Start the headless MCP server (SSE, token exchange mode)
+./scripts/demo-headless.sh server
 
-# Explain the token exchange (RFC 8693) configuration for cloud deployments
-./scripts/demo-headless.sh exchange
+# Simulate a platform call with a user token
+./scripts/demo-headless.sh client
 ```
 
 ### Project structure
@@ -843,13 +843,13 @@ fastauthmcp/
 │   ├── identity.py           # IdentityContext + contextvars propagation
 │   ├── authorization.py      # Per-tool authorization decorators (@require_roles, etc.)
 │   ├── context.py            # Request-scoped context propagation (get_context/set_context)
-│   ├── audit.py              # Structured audit logging for security events
-│   ├── credential_mapping.py # Downstream credential mapping + scope-aware token cache
-│   ├── rate_limiting.py      # Token bucket rate limiter (per-tool, per-user)
-│   ├── secrets.py            # Secret management integration (env, AWS, Vault)
-│   ├── multi_idp.py          # Multi-IdP routing (issuer claim, tool mapping, header)
-│   ├── graceful_degradation.py # Continue serving during IdP outages
-│   ├── schema_export.py      # Export server schema as JSON/Markdown
+│   ├── audit.py              # 🚧 Planned: Structured audit logging for security events
+│   ├── credential_mapping.py # 🚧 Planned: Downstream credential mapping + scope-aware token cache
+│   ├── rate_limiting.py      # 🚧 Planned: Token bucket rate limiter (per-tool, per-user)
+│   ├── secrets.py            # 🚧 Planned: Secret management integration (env, AWS, Vault)
+│   ├── multi_idp.py          # 🚧 Planned: Multi-IdP routing (issuer claim, tool mapping, header)
+│   ├── graceful_degradation.py # 🚧 Planned: Continue serving during IdP outages
+│   ├── schema_export.py      # 🚧 Planned: Export server schema as JSON/Markdown
 │   ├── security.py           # LogRedactor, TLSEnforcer
 │   ├── exceptions.py         # Exception hierarchy
 │   ├── models.py             # TokenSet, Session, OIDCEndpoints, LogEntry
@@ -952,6 +952,16 @@ FastAuthMCP includes a built-in compatibility lab that validates the framework a
 ```
 
 Adding a new provider or scenario is just a Python class — no DSL, no YAML test definitions.
+
+### Interactive Lab UI
+
+Chat with an LLM through FastAuthMCP-protected tools in a terminal UI:
+
+```bash
+make lab-ui
+```
+
+Select a scenario (Zitadel, Keycloak, Auth0, Azure, Okta), configure your LLM (OpenAI, OpenRouter, GitHub Models, Anthropic, Ollama), and watch auth + authorization + identity propagation happen live as tools are called.
 
 ## Integration Guides
 

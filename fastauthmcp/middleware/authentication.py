@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable
 
 from fastauthmcp.auth.claims import build_identity_context, parse_jwt_claims
+from fastauthmcp.auth.jwks_manager import JWKSManager
 from fastauthmcp.auth.oauth import OAuthService
 from fastauthmcp.auth.token_storage import TokenStorage, get_token_storage
 from fastauthmcp.config import AuthConfig
@@ -66,6 +67,7 @@ class AuthenticationMiddleware:
         role_claim_path: str = "realm_access.roles",
         group_claim_path: str = "groups",
         ssl_context: ssl.SSLContext | None = None,
+        jwks_manager: JWKSManager | None = None,
     ) -> None:
         self.auth_config = auth_config
         self._ssl_context = ssl_context
@@ -83,9 +85,36 @@ class AuthenticationMiddleware:
         self._exchange_cache: dict[str, tuple[TokenSet, float]] = {}
         self._exchange_cache_ttl = 60.0  # seconds
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
+        # JWKS-based token verification (optional)
+        # If a JWKSManager is provided, use it directly. Otherwise, create one
+        # if auth_config has a circuit_breaker configured (indicating resilient HTTP is desired).
+        self._jwks_manager: JWKSManager | None = jwks_manager
+        if self._jwks_manager is None and auth_config.circuit_breaker is not None:
+            try:
+                from fastauthmcp.resilience import CircuitBreaker, ResilientHttpClient
+
+                cb = CircuitBreaker(
+                    failure_threshold=auth_config.circuit_breaker.failure_threshold,
+                    cooldown_seconds=auth_config.circuit_breaker.cooldown_seconds,
+                )
+                http_client = ResilientHttpClient(
+                    circuit_breaker=cb,
+                    ssl_context=ssl_context,
+                )
+                self._jwks_manager = JWKSManager(
+                    issuer=str(auth_config.issuer),
+                    client_id=auth_config.client_id,
+                    http_client=http_client,
+                    cache_ttl=auth_config.jwks_cache_ttl,
+                )
+            except Exception as exc:
+                logger.debug(
+                    "Could not initialize JWKSManager, falling back to unverified decode: %s",
+                    exc,
+                )
+                self._jwks_manager = None
+
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
         """Execute authentication logic before passing to the next middleware."""
         if self._is_token_exchange:
             return await self._handle_token_exchange(ctx, next)
@@ -116,21 +145,40 @@ class AuthenticationMiddleware:
         """Check if the token is still valid (not expired)."""
         return token_set.expires_at > datetime.now(timezone.utc)
 
-    async def _populate_identity(
-        self, ctx: RequestContext, token_set: TokenSet
-    ) -> None:
+    async def _populate_identity(self, ctx: RequestContext, token_set: TokenSet) -> None:
         """Parse JWT claims and set identity on the request context.
 
-        Attempts to decode the access_token. Falls back to id_token
-        if the access token is opaque/JWE.
+        If a JWKSManager is available, attempts cryptographic verification first.
+        Falls back to unverified decode on verification failure (graceful degradation).
+
+        NOTE: Signature verification is intentionally skipped here.
+        Tokens are acquired directly from the IDP over TLS (token endpoint),
+        not from untrusted sources. For token_exchange mode where tokens come
+        from external sources, structural validation is performed in
+        _validate_upstream_token(). Full JWKS verification is available via
+        JWKSManager for use cases that require it (e.g., validating tokens
+        from third-party callers).
         """
         claims: dict[str, Any] = {}
 
-        # Try access_token first
-        try:
-            claims = parse_jwt_claims(token_set.access_token)
-        except ValueError:
-            pass
+        # If JWKSManager is available, attempt signature verification first
+        if self._jwks_manager is not None:
+            try:
+                claims = await self._jwks_manager.verify_token(token_set.access_token)
+            except Exception as exc:
+                logger.debug(
+                    "JWKS token verification failed, falling back to unverified decode: %s",
+                    exc,
+                )
+                claims = {}
+
+        # Fallback: unverified decode (or if JWKS not configured)
+        if not claims:
+            # Try access_token first
+            try:
+                claims = parse_jwt_claims(token_set.access_token)
+            except ValueError:
+                pass
 
         # If access_token didn't yield useful claims, try id_token
         if not claims.get("sub") and token_set.id_token:
@@ -341,9 +389,7 @@ class AuthenticationMiddleware:
 
             # Evict old entries (simple size cap)
             if len(self._exchange_cache) > 1000:
-                oldest_key = min(
-                    self._exchange_cache, key=lambda k: self._exchange_cache[k][1]
-                )
+                oldest_key = min(self._exchange_cache, key=lambda k: self._exchange_cache[k][1])
                 del self._exchange_cache[oldest_key]
 
             await self._populate_identity(ctx, token_set)

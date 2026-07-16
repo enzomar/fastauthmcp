@@ -1,8 +1,8 @@
 """Authentication and identity propagation scenarios (mock provider)."""
 
-from fastauthmcp.lab.scenario import Scenario
-from fastauthmcp.lab.providers import MockProvider
 from fastauthmcp.lab.gateway import LabGateway
+from fastauthmcp.lab.providers import MockProvider
+from fastauthmcp.lab.scenario import Scenario
 
 
 class TestClientCredentialsFlow(Scenario):

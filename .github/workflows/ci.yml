@@ -41,10 +41,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev]" pytest-cov
 
       - name: Run tests
-        run: pytest -v --tb=short
+        run: pytest -v --tb=short --cov=fastauthmcp --cov-report=xml --cov-report=term-missing
 
       - name: Run property-based tests with extended examples
         run: pytest tests/properties/ -v --hypothesis-seed=0

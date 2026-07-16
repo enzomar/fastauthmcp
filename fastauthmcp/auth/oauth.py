@@ -88,9 +88,7 @@ class OAuthService:
 
                 def _sync_discover() -> dict:
                     with httpx.Client(verify=self._verify, timeout=30) as client:
-                        response = client.get(
-                            discovery_url, headers={"Accept": "application/json"}
-                        )
+                        response = client.get(discovery_url, headers={"Accept": "application/json"})
                         response.raise_for_status()
                         return response.json()
 
@@ -170,16 +168,13 @@ class OAuthService:
             "code_challenge_method": "S256",
             "prompt": "login",
         }
-        auth_url = (
-            f"{self._endpoints.authorization_endpoint}?{urllib.parse.urlencode(params)}"
-        )
+        auth_url = f"{self._endpoints.authorization_endpoint}?{urllib.parse.urlencode(params)}"
 
         # Open browser
         _open_browser(auth_url)
         logger.info("OAuth2 login URL: %s", auth_url)
         print(
-            f"\n🔐 Browser opened for authentication.\n"
-            f"   Waiting for login on port {port}...\n",
+            f"\n🔐 Browser opened for authentication.\n   Waiting for login on port {port}...\n",
             file=sys.stderr,
             flush=True,
         )
@@ -188,9 +183,7 @@ class OAuthService:
         import asyncio
 
         timeout = provider_config.callback_timeout
-        logger.info(
-            "Waiting for OAuth2 callback on port %d (timeout=%ds)...", port, timeout
-        )
+        logger.info("Waiting for OAuth2 callback on port %d (timeout=%ds)...", port, timeout)
         try:
             result = await asyncio.to_thread(callback_server.wait_for_callback, timeout)
             logger.info("OAuth2 callback received: keys=%s", list(result.keys()))
@@ -201,9 +194,7 @@ class OAuthService:
             )
         except TimeoutError as exc:
             callback_server.shutdown()
-            raise AuthenticationError(
-                f"OAuth2 callback timed out after {timeout} seconds"
-            ) from exc
+            raise AuthenticationError(f"OAuth2 callback timed out after {timeout} seconds") from exc
         except Exception as exc:
             callback_server.shutdown()
             logger.error("OAuth2 callback error: %s", exc, exc_info=True)
@@ -282,14 +273,10 @@ class OAuthService:
         """Obtain a token via client_credentials grant (M2M)."""
         config = provider_config or self._provider_config
         if config is None:
-            raise AuthenticationError(
-                "No provider configuration for client credentials"
-            )
+            raise AuthenticationError("No provider configuration for client credentials")
 
         if not config.client_secret:
-            raise AuthenticationError(
-                "client_credentials grant requires a client_secret"
-            )
+            raise AuthenticationError("client_credentials grant requires a client_secret")
 
         if self._endpoints is None:
             issuer_url = str(config.issuer).rstrip("/")
@@ -320,6 +307,9 @@ class OAuthService:
         the MCP transport layer) and exchange it at the IDP for a scoped
         downstream token.
 
+        When `token_exchange_provider` is set in the config, delegates to the
+        appropriate adapter (google, entra). Otherwise uses standard RFC 8693.
+
         Args:
             subject_token: The incoming user token to exchange.
             provider_config: Auth configuration (uses instance config if None).
@@ -345,6 +335,22 @@ class OAuthService:
             await self.discover_endpoints(issuer_url)
         assert self._endpoints is not None
 
+        # Delegate to provider-specific adapter if configured
+        adapter_id = config.token_exchange_provider
+        if adapter_id and adapter_id != "rfc8693" and self._http_client is not None:
+            from fastauthmcp.auth.adapters import AdapterRegistry
+
+            registry = AdapterRegistry(self._http_client)
+            adapter = registry.get_adapter(adapter_id)
+            return await adapter.exchange(
+                subject_token=subject_token,
+                config=config,
+                endpoints=self._endpoints,
+                audience=audience,
+                scope=scope,
+            )
+
+        # Default: standard RFC 8693 token exchange
         body: dict[str, str] = {
             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
             "client_id": config.client_id,
@@ -375,9 +381,7 @@ class OAuthService:
 
         if self._http_client is not None:
             try:
-                return await self._http_client.post_token(
-                    token_url, body, timeout=timeout
-                )
+                return await self._http_client.post_token(token_url, body, timeout=timeout)
             except httpx.HTTPStatusError as exc:
                 try:
                     error_body = exc.response.json()
@@ -411,9 +415,7 @@ class OAuthService:
         except httpx.HTTPStatusError as exc:
             try:
                 error_body = exc.response.json()
-                error_msg = error_body.get(
-                    "error_description", error_body.get("error", str(exc))
-                )
+                error_msg = error_body.get("error_description", error_body.get("error", str(exc)))
             except (ValueError, AttributeError):
                 error_msg = str(exc)
             raise ProviderError(f"Token endpoint error: {error_msg}") from exc
@@ -465,15 +467,11 @@ def _open_browser(url: str) -> None:
         logger.info("webbrowser.open() returned: %s", opened)
         if not opened:
             logger.info("webbrowser.open failed, trying 'open' command")
-            subprocess.Popen(
-                ["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
+            subprocess.Popen(["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as exc:
         logger.warning("webbrowser.open() raised: %s, trying 'open' command", exc)
         try:
-            subprocess.Popen(
-                ["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
+            subprocess.Popen(["open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as exc2:
             logger.error("All browser open methods failed: %s", exc2)
             print(

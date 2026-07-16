@@ -11,7 +11,6 @@ import pytest
 from fastauthmcp.identity import identity
 from fastauthmcp.testing import FastAuthMCPTestClient, MockIdentityProvider
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -111,9 +110,7 @@ class TestFastAuthMCPTestClientCallTool:
             return {"captured": True}
 
         mock_app._tool_functions["capture_tool"] = capture_tool
-        client = FastAuthMCPTestClient(
-            mock_app, email="test@example.com", roles=["tester"]
-        )
+        client = FastAuthMCPTestClient(mock_app, email="test@example.com", roles=["tester"])
 
         result = await client.call_tool("capture_tool")
         assert result == {"captured": True}

@@ -10,12 +10,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from fastauthmcp.auth.oauth import AuthResult, OAuthService
 from fastauthmcp.auth.claims import (
     build_identity_context,
     extract_nested_claim,
     parse_jwt_claims,
 )
+from fastauthmcp.auth.oauth import AuthResult, OAuthService
 from fastauthmcp.config import AuthConfig
 from fastauthmcp.exceptions import AuthenticationError, ProviderError
 from fastauthmcp.identity import _identity_context_var
@@ -25,7 +25,6 @@ from fastauthmcp.middleware.authentication import (
 )
 from fastauthmcp.middleware.pipeline import RequestContext
 from fastauthmcp.models import TokenSet
-
 
 # --- Helpers ---
 
@@ -37,9 +36,7 @@ def _make_jwt(claims: dict) -> str:
         .rstrip(b"=")
         .decode()
     )
-    payload = (
-        base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
-    )
+    payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
     signature = ""
     return f"{header}.{payload}.{signature}"
 
@@ -334,9 +331,7 @@ class TestMiddlewareTokenRefresh:
         result = await middleware(request_ctx, next_fn)
 
         assert result == {"result": "success"}
-        mock_oauth_service.refresh_token.assert_awaited_once_with(
-            refresh_token="refresh-token"
-        )
+        mock_oauth_service.refresh_token.assert_awaited_once_with(refresh_token="refresh-token")
         mock_token_storage.store.assert_awaited_once()
         next_fn.assert_awaited_once()
 
@@ -365,9 +360,7 @@ class TestMiddlewareTokenRefresh:
         """Should invalidate session and discard tokens on auth failure."""
         expired_token = _make_token_set(expired=True)
         mock_token_storage.retrieve.return_value = expired_token
-        mock_oauth_service.refresh_token.side_effect = AuthenticationError(
-            "Token revoked"
-        )
+        mock_oauth_service.refresh_token.side_effect = AuthenticationError("Token revoked")
 
         result = await middleware(request_ctx, next_fn)
 
@@ -382,9 +375,7 @@ class TestMiddlewareTokenRefresh:
         """Should preserve stored tokens on transient provider failures."""
         expired_token = _make_token_set(expired=True)
         mock_token_storage.retrieve.return_value = expired_token
-        mock_oauth_service.refresh_token.side_effect = ProviderError(
-            "Connection refused"
-        )
+        mock_oauth_service.refresh_token.side_effect = ProviderError("Connection refused")
 
         result = await middleware(request_ctx, next_fn)
 
@@ -452,9 +443,7 @@ class TestMiddlewareOAuthFlow:
     ):
         """Should return auth error when OAuth flow fails."""
         mock_token_storage.retrieve.return_value = None
-        mock_oauth_service.initiate_flow.side_effect = AuthenticationError(
-            "Callback timed out"
-        )
+        mock_oauth_service.initiate_flow.side_effect = AuthenticationError("Callback timed out")
 
         result = await middleware(request_ctx, next_fn)
 
@@ -468,9 +457,7 @@ class TestMiddlewareOAuthFlow:
     ):
         """Should preserve stored tokens on provider error during OAuth flow."""
         mock_token_storage.retrieve.return_value = None
-        mock_oauth_service.initiate_flow.side_effect = ProviderError(
-            "Provider unreachable"
-        )
+        mock_oauth_service.initiate_flow.side_effect = ProviderError("Provider unreachable")
 
         result = await middleware(request_ctx, next_fn)
 

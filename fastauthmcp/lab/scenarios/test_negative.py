@@ -2,9 +2,9 @@
 
 import time
 
-from fastauthmcp.lab.scenario import Scenario
-from fastauthmcp.lab.providers import MockProvider
 from fastauthmcp.lab.gateway import LabGateway
+from fastauthmcp.lab.providers import MockProvider
+from fastauthmcp.lab.scenario import Scenario
 from fastauthmcp.testing import MockIdentityProvider
 
 
@@ -132,7 +132,7 @@ class TestTokenExchangeStructuralValidation(Scenario):
         from fastauthmcp.middleware.authentication import AuthenticationMiddleware
 
         config = AuthConfig(
-            issuer="https://idp.example.com",
+            issuer="https://idp.example.com",  # type: ignore[arg-type]
             client_id="test-client",
             grant_type="token_exchange",
             upstream_token_header="x-user-token",
