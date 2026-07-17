@@ -31,7 +31,7 @@ jobs:
 
       - name: Audit dependencies for known vulnerabilities
         run: |
-          pip freeze | grep -v "^fastauthmcp==" > /tmp/requirements-audit.txt
+          pip freeze | grep -iv "^fastauthmcp" > /tmp/requirements-audit.txt
           pip-audit --strict --desc -r /tmp/requirements-audit.txt
 
   secret-scan:
