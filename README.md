@@ -37,13 +37,6 @@ Key design principles:
 - **Passthrough by default** — without a config file, FastAuthMCP behaves identically to vanilla FastMCP
 - **Composable middleware** — authentication, observability, and sessions are independent layers that activate based on config sections present
 
-## See It In Action
-
-<p align="center">
-  <img src="docs/demo.gif" alt="FastAuthMCP demo: login → authenticate → tool call succeeds" width="700">
-</p>
-
-> `fastauthmcp login` → browser opens → token stored → tool call authenticated. 30 seconds, zero code changes.
 
 ## Why FastAuthMCP? (Comparison)
 
