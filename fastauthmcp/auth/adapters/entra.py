@@ -67,15 +67,11 @@ class EntraOBOAdapter:
         timeout = config.token_exchange_timeout
 
         try:
-            resp = await self._http.post_form(
-                endpoints.token_endpoint, body, timeout=timeout
-            )
+            resp = await self._http.post_form(endpoints.token_endpoint, body, timeout=timeout)
         except httpx.HTTPStatusError as exc:
             try:
                 error_data = exc.response.json()
-                error_msg = error_data.get(
-                    "error_description", error_data.get("error", "")
-                )
+                error_msg = error_data.get("error_description", error_data.get("error", ""))
             except Exception:
                 error_msg = f"HTTP {exc.response.status_code}"
             raise ProviderError(error_msg) from exc
@@ -83,14 +79,10 @@ class EntraOBOAdapter:
         try:
             data = resp.json()
         except Exception:
-            raise ProviderError(
-                f"Entra OBO: unparseable response (HTTP {resp.status_code})"
-            )
+            raise ProviderError(f"Entra OBO: unparseable response (HTTP {resp.status_code})")
 
         if "access_token" not in data:
-            error_msg = data.get(
-                "error_description", data.get("error", "unknown error")
-            )
+            error_msg = data.get("error_description", data.get("error", "unknown error"))
             raise ProviderError(f"Entra OBO exchange failed: {error_msg}")
 
         expires_in = int(data.get("expires_in", 3600))

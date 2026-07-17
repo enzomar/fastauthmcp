@@ -41,12 +41,8 @@ def cli() -> None:
     default="stdio",
     help="Transport protocol (default: stdio)",
 )
-@click.option(
-    "--host", default="localhost", help="Host to bind to (for HTTP transports)"
-)
-@click.option(
-    "--port", default=8000, type=int, help="Port to bind to (for HTTP transports)"
-)
+@click.option("--host", default="localhost", help="Host to bind to (for HTTP transports)")
+@click.option("--port", default=8000, type=int, help="Port to bind to (for HTTP transports)")
 def run(config_path: str | None, transport: str, host: str, port: int) -> None:
     """Start the FastAuthMCP server."""
     try:
@@ -59,9 +55,7 @@ def run(config_path: str | None, transport: str, host: str, port: int) -> None:
         if transport == "stdio":
             click.echo("FastAuthMCP server starting (stdio transport)")
         else:
-            click.echo(
-                f"FastAuthMCP server ready on http://{host}:{port} ({transport} transport)"
-            )
+            click.echo(f"FastAuthMCP server ready on http://{host}:{port} ({transport} transport)")
 
         server.run(transport=transport, host=host, port=port)
     except ConfigurationError as exc:
@@ -80,9 +74,7 @@ def login() -> None:
         config = loader.load()
 
         if config.auth is None:
-            click.echo(
-                "Error: No auth configuration found in fastauthmcp.yaml", err=True
-            )
+            click.echo("Error: No auth configuration found in fastauthmcp.yaml", err=True)
             sys.exit(1)
 
         oauth = OAuthService(provider_config=config.auth)
@@ -261,10 +253,7 @@ def config_validate() -> None:
                 "Consider using environment variable FASTAUTHMCP_AUTH_CLIENT_SECRET instead."
             )
 
-        if (
-            loaded_config.observability
-            and loaded_config.observability.exporter == "otlp"
-        ):
+        if loaded_config.observability and loaded_config.observability.exporter == "otlp":
             if loaded_config.observability.otlp_endpoint.startswith("http://"):
                 warnings.append("Warning: OTLP endpoint uses HTTP instead of HTTPS.")
 

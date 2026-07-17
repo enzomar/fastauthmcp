@@ -165,9 +165,7 @@ class ConfigLoader:
 
                 # Block reload of auth and sessions — keep from previous config
                 merged_data = new_config.model_dump(mode="json", exclude_none=True)
-                prev_data = self._current_config.model_dump(
-                    mode="json", exclude_none=True
-                )
+                prev_data = self._current_config.model_dump(mode="json", exclude_none=True)
 
                 # For non-reloadable sections, retain previous values
                 non_reloadable = {"auth", "sessions"}

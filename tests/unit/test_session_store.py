@@ -68,9 +68,7 @@ class TestCreate:
 
 
 class TestGet:
-    async def test_returns_none_for_nonexistent(
-        self, store: InMemorySessionStore
-    ) -> None:
+    async def test_returns_none_for_nonexistent(self, store: InMemorySessionStore) -> None:
         result = await store.get("nonexistent-id")
         assert result is None
 
@@ -98,9 +96,7 @@ class TestGet:
     ) -> None:
         session_id = await store.create("user-1", token_set, ttl=60)
         # Backdate to expire
-        store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(
-            seconds=61
-        )
+        store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(seconds=61)
 
         await store.get(session_id)
         # Session should be removed from storage
@@ -111,9 +107,7 @@ class TestGet:
     ) -> None:
         session_id = await store.create("user-1", token_set, ttl=100)
         # Set created_at to just under TTL (99 seconds ago) — should still be valid
-        store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(
-            seconds=99
-        )
+        store._sessions[session_id].created_at = datetime.now(timezone.utc) - timedelta(seconds=99)
 
         result = await store.get(session_id)
         assert result is not None
@@ -133,9 +127,7 @@ class TestUpdate:
         assert session.token_set is new_token_set
         assert session.token_set.access_token == "new-access-789"
 
-    async def test_raises_session_error_for_nonexistent(
-        self, store: InMemorySessionStore
-    ) -> None:
+    async def test_raises_session_error_for_nonexistent(self, store: InMemorySessionStore) -> None:
         new_token_set = _make_token_set()
         with pytest.raises(SessionError):
             await store.update("nonexistent-id", new_token_set)
@@ -167,9 +159,7 @@ class TestInvalidate:
         result = await store.get(session_id)
         assert result is None
 
-    async def test_silently_succeeds_for_nonexistent(
-        self, store: InMemorySessionStore
-    ) -> None:
+    async def test_silently_succeeds_for_nonexistent(self, store: InMemorySessionStore) -> None:
         # Should not raise
         await store.invalidate("nonexistent-id")
 

@@ -88,11 +88,7 @@ def require_roles(*roles: str) -> Callable:
 
         @functools.wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            return (
-                await func(*args, **kwargs)
-                if _is_async(func)
-                else func(*args, **kwargs)
-            )
+            return await func(*args, **kwargs) if _is_async(func) else func(*args, **kwargs)
 
         # Preserve policies on the wrapper
         setattr(wrapper, _AUTHZ_POLICIES_ATTR, getattr(func, _AUTHZ_POLICIES_ATTR))
@@ -119,11 +115,7 @@ def require_groups(*groups: str) -> Callable:
 
         @functools.wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            return (
-                await func(*args, **kwargs)
-                if _is_async(func)
-                else func(*args, **kwargs)
-            )
+            return await func(*args, **kwargs) if _is_async(func) else func(*args, **kwargs)
 
         setattr(wrapper, _AUTHZ_POLICIES_ATTR, getattr(func, _AUTHZ_POLICIES_ATTR))
         return wrapper
@@ -149,11 +141,7 @@ def require_scopes(*scopes: str) -> Callable:
 
         @functools.wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            return (
-                await func(*args, **kwargs)
-                if _is_async(func)
-                else func(*args, **kwargs)
-            )
+            return await func(*args, **kwargs) if _is_async(func) else func(*args, **kwargs)
 
         setattr(wrapper, _AUTHZ_POLICIES_ATTR, getattr(func, _AUTHZ_POLICIES_ATTR))
         return wrapper

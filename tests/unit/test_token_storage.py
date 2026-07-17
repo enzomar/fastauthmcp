@@ -58,9 +58,7 @@ class TestSerialization:
         assert data["id_token"] == "id-token-789"
         assert "2025-06-15" in data["expires_at"]
 
-    def test_serialize_minimal_token_set(
-        self, sample_token_set_no_optional: TokenSet
-    ) -> None:
+    def test_serialize_minimal_token_set(self, sample_token_set_no_optional: TokenSet) -> None:
         raw = _serialize_token_set(sample_token_set_no_optional)
         data = json.loads(raw)
 
@@ -78,9 +76,7 @@ class TestSerialization:
         assert restored.token_type == sample_token_set.token_type
         assert restored.id_token == sample_token_set.id_token
 
-    def test_roundtrip_no_optional(
-        self, sample_token_set_no_optional: TokenSet
-    ) -> None:
+    def test_roundtrip_no_optional(self, sample_token_set_no_optional: TokenSet) -> None:
         raw = _serialize_token_set(sample_token_set_no_optional)
         restored = _deserialize_token_set(raw)
 
@@ -224,9 +220,7 @@ class TestEncryptedFileStorage:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_delete_removes_file(
-        self, tmp_path: Path, sample_token_set: TokenSet
-    ) -> None:
+    async def test_delete_removes_file(self, tmp_path: Path, sample_token_set: TokenSet) -> None:
         storage = EncryptedFileStorage(storage_dir=tmp_path)
         storage._has_crypto = False
 
@@ -246,9 +240,7 @@ class TestEncryptedFileStorage:
         await storage.delete("nonexistent")
 
     @pytest.mark.asyncio
-    async def test_file_permissions(
-        self, tmp_path: Path, sample_token_set: TokenSet
-    ) -> None:
+    async def test_file_permissions(self, tmp_path: Path, sample_token_set: TokenSet) -> None:
         """Verify files are created with mode 600."""
         storage = EncryptedFileStorage(storage_dir=tmp_path)
         storage._has_crypto = False
@@ -339,9 +331,7 @@ class TestGetTokenStorage:
         assert isinstance(storage, CredentialManagerStorage)
 
     @patch("fastauthmcp.auth.token_storage.sys")
-    def test_linux_returns_encrypted_file(
-        self, mock_sys: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_linux_returns_encrypted_file(self, mock_sys: MagicMock, tmp_path: Path) -> None:
         mock_sys.platform = "linux"
         storage = get_token_storage(storage_dir=tmp_path)
         assert isinstance(storage, EncryptedFileStorage)

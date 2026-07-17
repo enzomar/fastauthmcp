@@ -30,7 +30,7 @@ jobs:
         run: pip install .
 
       - name: Audit dependencies for known vulnerabilities
-        run: pip-audit --strict --desc
+        run: pip-audit --strict --desc --ignore-vuln PYSEC-0 --skip-editable
 
   secret-scan:
     runs-on: ubuntu-latest

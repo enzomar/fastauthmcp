@@ -19,9 +19,7 @@ class IdentityContext:
     groups: frozenset[str]
 
 
-_identity_context_var: ContextVar[IdentityContext] = ContextVar(
-    "fastauthmcp_identity_context"
-)
+_identity_context_var: ContextVar[IdentityContext] = ContextVar("fastauthmcp_identity_context")
 
 _access_token_var: ContextVar[str] = ContextVar("fastauthmcp_access_token")
 

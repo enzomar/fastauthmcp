@@ -35,9 +35,7 @@ class AuthorizationMiddleware:
         self._tool_functions = tool_functions or {}
         self._yaml_policies = yaml_policies or []
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
         """Evaluate authorization policies before tool execution."""
         tool_name = ctx.tool_name
 
@@ -60,9 +58,7 @@ class AuthorizationMiddleware:
             pattern = yaml_policy.get("tool", "")
             if fnmatch.fnmatch(tool_name, pattern):
                 if "require_role" in yaml_policy:
-                    policies.append(
-                        AuthzPolicy("roles", frozenset([yaml_policy["require_role"]]))
-                    )
+                    policies.append(AuthzPolicy("roles", frozenset([yaml_policy["require_role"]])))
                 if "require_group" in yaml_policy:
                     policies.append(
                         AuthzPolicy("groups", frozenset([yaml_policy["require_group"]]))
@@ -79,9 +75,7 @@ class AuthorizationMiddleware:
 
         # Policies exist but no identity = unauthorized
         if identity is None:
-            logger.warning(
-                "Authorization denied for tool '%s': no identity context", tool_name
-            )
+            logger.warning("Authorization denied for tool '%s': no identity context", tool_name)
             return {
                 "error": "authorization_required",
                 "message": f"Tool '{tool_name}' requires authentication.",

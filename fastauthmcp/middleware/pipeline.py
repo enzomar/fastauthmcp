@@ -69,9 +69,7 @@ class MiddlewareCallable(Protocol):
     - Raise an exception (routed to ``on_exception`` hooks).
     """
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any: ...
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any: ...
 
 
 @runtime_checkable

@@ -130,9 +130,7 @@ class TLSEnforcer:
 
         # Load client certificate + key for mTLS
         if not os.path.isfile(client_cert):
-            raise ConfigurationError(
-                f"mTLS client certificate not found at: {client_cert!r}"
-            )
+            raise ConfigurationError(f"mTLS client certificate not found at: {client_cert!r}")
         if client_key and not os.path.isfile(client_key):
             raise ConfigurationError(f"mTLS client key not found at: {client_key!r}")
 
@@ -142,12 +140,8 @@ class TLSEnforcer:
                 keyfile=client_key,
             )
         except ssl.SSLError as exc:
-            raise ConfigurationError(
-                f"Failed to load mTLS client certificate/key: {exc}"
-            ) from exc
+            raise ConfigurationError(f"Failed to load mTLS client certificate/key: {exc}") from exc
         except OSError as exc:
-            raise ConfigurationError(
-                f"Failed to read mTLS certificate files: {exc}"
-            ) from exc
+            raise ConfigurationError(f"Failed to read mTLS certificate files: {exc}") from exc
 
         return context

@@ -62,9 +62,7 @@ def _make_jwt(claims: dict) -> str:
         .rstrip(b"=")
         .decode()
     )
-    payload = (
-        base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
-    )
+    payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
     signature = base64.urlsafe_b64encode(b"fake-signature").rstrip(b"=").decode()
     return f"{header}.{payload}.{signature}"
 
@@ -106,9 +104,7 @@ class TestRunCommand:
         bad_path = str(tmp_path / "nonexistent.yaml")
         result = runner.invoke(cli, ["run", "--config", bad_path])
         assert result.exit_code != 0
-        assert "Error" in result.output or "Error" in (
-            result.output + (result.output or "")
-        )
+        assert "Error" in result.output or "Error" in (result.output + (result.output or ""))
 
     def test_run_exits_error_on_invalid_yaml(self, runner, tmp_path):
         """Test that `run` exits with error on invalid YAML."""
@@ -119,9 +115,7 @@ class TestRunCommand:
 
     @patch("fastauthmcp.cli.FastAuthMCP")
     @patch("fastauthmcp.cli.ConfigLoader")
-    def test_run_prints_ready_message(
-        self, mock_loader_cls, mock_server_cls, runner, tmp_path
-    ):
+    def test_run_prints_ready_message(self, mock_loader_cls, mock_server_cls, runner, tmp_path):
         """Test that `run` prints a ready message on success."""
         mock_loader = MagicMock()
         mock_config = MagicMock()
@@ -210,9 +204,7 @@ class TestLoginCommand:
         mock_loader_cls.return_value = mock_loader
 
         mock_oauth = MagicMock()
-        mock_oauth.discover_endpoints = AsyncMock(
-            side_effect=ProviderError("IDP unreachable")
-        )
+        mock_oauth.discover_endpoints = AsyncMock(side_effect=ProviderError("IDP unreachable"))
         mock_oauth_cls.return_value = mock_oauth
 
         mock_storage_fn.return_value = MagicMock()
@@ -329,9 +321,7 @@ class TestDoctorCommand:
 
     @patch("fastauthmcp.cli.get_token_storage")
     @patch("fastauthmcp.cli.ConfigLoader")
-    def test_doctor_reports_expired_token(
-        self, mock_loader_cls, mock_storage_fn, runner
-    ):
+    def test_doctor_reports_expired_token(self, mock_loader_cls, mock_storage_fn, runner):
         """Test doctor reports expired token."""
         mock_loader = MagicMock()
         mock_config = MagicMock()
@@ -350,9 +340,7 @@ class TestDoctorCommand:
 
     @patch("fastauthmcp.cli.get_token_storage")
     @patch("fastauthmcp.cli.ConfigLoader")
-    def test_doctor_reports_config_error(
-        self, mock_loader_cls, mock_storage_fn, runner
-    ):
+    def test_doctor_reports_config_error(self, mock_loader_cls, mock_storage_fn, runner):
         """Test doctor reports config error."""
         mock_loader = MagicMock()
         mock_loader.load.side_effect = ConfigurationError("Invalid YAML")
@@ -382,9 +370,7 @@ class TestDoctorCommand:
         mock_loader_cls.return_value = mock_loader
 
         mock_oauth = MagicMock()
-        mock_oauth.discover_endpoints = AsyncMock(
-            side_effect=ProviderError("Connection refused")
-        )
+        mock_oauth.discover_endpoints = AsyncMock(side_effect=ProviderError("Connection refused"))
         mock_oauth_cls.return_value = mock_oauth
 
         mock_storage = MagicMock()
@@ -393,10 +379,7 @@ class TestDoctorCommand:
 
         result = runner.invoke(cli, ["doctor"])
         assert result.exit_code != 0
-        assert (
-            "Identity provider" in result.output
-            or "Connection refused" in result.output
-        )
+        assert "Identity provider" in result.output or "Connection refused" in result.output
 
 
 class TestConfigValidateCommand:
@@ -425,9 +408,7 @@ class TestConfigValidateCommand:
         assert result.exit_code != 0
         assert "Error" in result.output
 
-    def test_config_validate_warnings_for_client_secret(
-        self, runner, tmp_path, monkeypatch
-    ):
+    def test_config_validate_warnings_for_client_secret(self, runner, tmp_path, monkeypatch):
         """Test validate shows warning when client_secret is in config."""
         content = """\
 auth:

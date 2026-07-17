@@ -302,8 +302,7 @@ class TestLogging:
                 time.sleep(2.5)
 
                 assert any(
-                    "Configuration reload failed" in record.message
-                    for record in caplog.records
+                    "Configuration reload failed" in record.message for record in caplog.records
                 )
             finally:
                 loader.stop_watching()

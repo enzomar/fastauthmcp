@@ -16,9 +16,7 @@ class TestValidateUrl:
 
     def test_valid_https_url_passes(self):
         """A well-formed HTTPS URL should not raise."""
-        self.enforcer.validate_url(
-            "https://idp.example.com/.well-known/openid-configuration"
-        )
+        self.enforcer.validate_url("https://idp.example.com/.well-known/openid-configuration")
 
     def test_http_url_raises(self):
         """An HTTP URL should raise ConfigurationError."""

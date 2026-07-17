@@ -24,9 +24,7 @@ class TelemetryServiceProtocol(Protocol):
     def start_span(self, tool_name: str, request_id: str) -> Any: ...
     def end_span(self, span: Any, outcome: str, duration_ms: float) -> None: ...
     def emit_log(self, entry: LogEntry) -> None: ...
-    def record_metric(
-        self, tool_name: str, duration_ms: float, error: bool
-    ) -> None: ...
+    def record_metric(self, tool_name: str, duration_ms: float, error: bool) -> None: ...
 
 
 class NullSpan:
@@ -157,9 +155,7 @@ class TelemetryService:
             )
             return span
         except Exception as exc:
-            logger.warning(
-                "Failed to start telemetry span for tool '%s': %s", tool_name, exc
-            )
+            logger.warning("Failed to start telemetry span for tool '%s': %s", tool_name, exc)
             return NullSpan()
 
     def end_span(self, span: Any, outcome: str, duration_ms: float) -> None:

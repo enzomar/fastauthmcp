@@ -34,9 +34,7 @@ class ObservabilityMiddleware:
         else:
             self._impl = None
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
         if self._impl is not None:
             return await self._impl(ctx, next)
         # Disabled: passthrough without importing telemetry libraries
@@ -63,9 +61,7 @@ class SessionMiddleware:
         else:
             self._impl = None
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
         if self._impl is not None:
             return await self._impl(ctx, next)
         return await next()
@@ -87,7 +83,5 @@ class AuthenticationMiddleware:
         self.config = config
         self._impl = _RealAuthMiddleware(auth_config=config, ssl_context=ssl_context)
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
         return await self._impl(ctx, next)

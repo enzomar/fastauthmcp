@@ -97,8 +97,7 @@ def get_projects() -> list[dict[str, Any]]:
     user = identity()
     _audit("list_projects", user.email or "unknown", "Listed all projects")
     return [
-        {"id": p["id"], "name": p["name"], "status": p["status"]}
-        for p in _projects_db.values()
+        {"id": p["id"], "name": p["name"], "status": p["status"]} for p in _projects_db.values()
     ]
 
 
@@ -182,9 +181,7 @@ def update_project_status(project_id: str, status: str) -> dict[str, Any]:
         user.email or "unknown",
         f"Project {project_id}: {old_status} → {status}",
     )
-    return {
-        "updated": {"id": project_id, "old_status": old_status, "new_status": status}
-    }
+    return {"updated": {"id": project_id, "old_status": old_status, "new_status": status}}
 
 
 # --- Admin role ---

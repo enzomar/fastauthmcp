@@ -154,8 +154,7 @@ def authenticated_soap_client(
         from zeep.transports import Transport
     except ImportError as exc:
         raise ImportError(
-            "SOAP support requires the 'zeep' package. "
-            "Install it with: pip install zeep"
+            "SOAP support requires the 'zeep' package. Install it with: pip install zeep"
         ) from exc
 
     # Create an httpx-based session with the auth header
@@ -235,12 +234,12 @@ def authenticated_soap_client_wsse(
             binding_options: Any,
         ) -> Any:
             """Inject WS-Security header before sending."""
-            WSSE_NS = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+            WSSE_NS = (
+                "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+            )
             header = envelope.find(f"{{{etree.QName(envelope).namespace}}}Header")
             if header is None:
-                header = etree.SubElement(
-                    envelope, f"{{{etree.QName(envelope).namespace}}}Header"
-                )
+                header = etree.SubElement(envelope, f"{{{etree.QName(envelope).namespace}}}Header")
 
             security = etree.SubElement(header, f"{{{WSSE_NS}}}Security")
             bst = etree.SubElement(security, f"{{{WSSE_NS}}}BinarySecurityToken")

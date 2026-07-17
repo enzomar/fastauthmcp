@@ -74,9 +74,7 @@ class GoogleSTSAdapter:
         data = resp.json()
 
         if "access_token" not in data:
-            raise ProviderError(
-                "Google STS response missing required 'access_token' field"
-            )
+            raise ProviderError("Google STS response missing required 'access_token' field")
 
         expires_in = int(data.get("expires_in", 3600))
         expires_at = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(

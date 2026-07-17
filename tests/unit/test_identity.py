@@ -55,9 +55,7 @@ class TestIdentityFunction:
 
         def _call():
             # Remove any value by running in a fresh context
-            with pytest.raises(
-                RuntimeError, match="outside of an active request context"
-            ):
+            with pytest.raises(RuntimeError, match="outside of an active request context"):
                 identity()
 
         new_ctx.run(_call)

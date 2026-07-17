@@ -46,9 +46,7 @@ class ObservabilityMiddleware:
         """Expose the underlying TelemetryService for testing/inspection."""
         return self._telemetry
 
-    async def __call__(
-        self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]
-    ) -> Any:
+    async def __call__(self, ctx: RequestContext, next: Callable[[], Awaitable[Any]]) -> Any:
         """Execute the observability middleware.
 
         If observability is disabled, simply calls next() without any
@@ -78,9 +76,7 @@ class ObservabilityMiddleware:
         from fastauthmcp.observability import NullSpan
 
         try:
-            span = self._telemetry.start_span(
-                tool_name=tool_name, request_id=ctx.request_id
-            )
+            span = self._telemetry.start_span(tool_name=tool_name, request_id=ctx.request_id)
         except Exception as exc:
             logger.warning("Failed to start observability span: %s", exc)
             span = NullSpan()
