@@ -27,10 +27,12 @@ jobs:
         run: pip install pip-audit
 
       - name: Install project dependencies
-        run: pip install -e .
+        run: pip install .
 
       - name: Audit dependencies for known vulnerabilities
-        run: pip-audit --strict --desc --skip-editable
+        run: |
+          pip freeze | grep -v "^fastauthmcp==" > /tmp/requirements-audit.txt
+          pip-audit --strict --desc -r /tmp/requirements-audit.txt
 
   secret-scan:
     runs-on: ubuntu-latest
