@@ -178,7 +178,7 @@ class LabApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        self._log("Lab UI started. Select a scenario and configure LLM to begin.")
+        self._emit_log("Lab UI started. Select a scenario and configure LLM to begin.")
         self._update_scenario()
 
     def on_select_changed(self, event: Select.Changed) -> None:
@@ -206,7 +206,7 @@ class LabApp(App):
             container.remove_children()
         except NoMatches:
             pass
-        self._log("Chat cleared")
+        self._emit_log("Chat cleared")
 
     # ─── Internal ────────────────────────────────────────────────────────
 
@@ -227,7 +227,7 @@ class LabApp(App):
                 f"email: {scenario.identity.get('email', 'N/A')}\n"
                 f"roles: {scenario.identity.get('roles', [])}"
             )
-            self._log(f"Scenario: {scenario.label} (provider: {scenario.provider})")
+            self._emit_log(f"Scenario: {scenario.label} (provider: {scenario.provider})")
         except NoMatches:
             pass
 
@@ -254,13 +254,13 @@ class LabApp(App):
 
     def _send_message(self, message: str) -> None:
         self._add_chat_message("user", message)
-        self._log(f"User: {message}")
+        self._emit_log(f"User: {message}")
         asyncio.create_task(self._process_message(message))
 
     async def _process_message(self, message: str) -> None:
         try:
             engine = self._get_engine()
-            self._log("Sending to LLM...")
+            self._emit_log("Sending to LLM...")
 
             async for event in engine.chat(message):
                 if event["type"] == "text":
@@ -270,18 +270,18 @@ class LabApp(App):
                         "tool",
                         f"🔧 Tool Call: {event['name']}({event.get('args', '')})",
                     )
-                    self._log(f"Tool call: {event['name']}({event.get('args', '')})")
+                    self._emit_log(f"Tool call: {event['name']}({event.get('args', '')})")
                 elif event["type"] == "tool_result":
                     self._add_chat_message("tool", f"   → {event['content']}")
-                    self._log(f"Tool result: {event['content'][:100]}")
+                    self._emit_log(f"Tool result: {event['content'][:100]}")
                 elif event["type"] == "error":
                     self._add_chat_message("error", f"❌ {event['content']}")
-                    self._log(f"ERROR: {event['content']}")
+                    self._emit_log(f"ERROR: {event['content']}")
 
         except Exception as exc:
             error_msg = f"{type(exc).__name__}: {exc}"
             self._add_chat_message("error", f"❌ {error_msg}")
-            self._log(f"ERROR: {error_msg}")
+            self._emit_log(f"ERROR: {error_msg}")
 
     def _get_engine(self) -> ChatEngine:
         try:
@@ -295,7 +295,7 @@ class LabApp(App):
             scenario = next((s for s in SCENARIOS if s.id == scenario_id), None)
 
             return ChatEngine(
-                provider=llm_select.value or "openai",
+                provider=str(llm_select.value or "openai"),
                 model=model_input.value or "gpt-4o",
                 api_key=apikey_input.value,
                 base_url=baseurl_input.value or None,
@@ -315,7 +315,7 @@ class LabApp(App):
         except NoMatches:
             pass
 
-    def _log(self, message: str) -> None:
+    def _emit_log(self, message: str) -> None:
         timestamp = datetime.now().strftime("%H:%M:%S")
         entry = f"[{timestamp}] {message}"
         self._log_entries.append(entry)

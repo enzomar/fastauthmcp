@@ -226,7 +226,11 @@ class ChatEngine:
         tools = TOOL_DEFINITIONS
         if self._scenario:
             available = set(self._scenario.tools)
-            tools = [t for t in TOOL_DEFINITIONS if t["function"]["name"] in available]
+            tools = [
+                t
+                for t in TOOL_DEFINITIONS
+                if t["function"]["name"] in available  # type: ignore[index]
+            ]
 
         # Call LLM
         try:
