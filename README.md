@@ -5,7 +5,6 @@
 </p>
 
 [![CI](https://github.com/enzomar/fastauthmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/enzomar/fastauthmcp/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/enzomar/fastauthmcp/branch/main/graph/badge.svg)](https://codecov.io/gh/enzomar/fastauthmcp)
 [![PyPI](https://img.shields.io/pypi/v/fastauthmcp.svg)](https://pypi.org/project/fastauthmcp/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
