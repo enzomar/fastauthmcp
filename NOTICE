@@ -1,0 +1,22 @@
+FastAuthMCP Framework
+Copyright 2026 FastAuthMCP Framework Contributors
+
+Licensed under the Apache License, Version 2.0.
+
+This product includes software developed by third-party projects:
+
+- FastMCP (https://github.com/jlowin/fastmcp) — MIT License
+- Pydantic (https://github.com/pydantic/pydantic) — MIT License
+- httpx (https://github.com/encode/httpx) — BSD 3-Clause License
+- PyJWT (https://github.com/jpadilla/pyjwt) — MIT License
+- Authlib (https://github.com/lepture/authlib) — BSD 3-Clause License
+- Tenacity (https://github.com/jd/tenacity) — Apache License 2.0
+- Click (https://github.com/pallets/click) — BSD 3-Clause License
+- PyYAML (https://github.com/yaml/pyyaml) — MIT License
+
+Optional dependencies:
+- OpenTelemetry (https://github.com/open-telemetry/opentelemetry-python) — Apache License 2.0
+- Prometheus Client (https://github.com/prometheus/client_python) — Apache License 2.0
+- Zeep (https://github.com/mvantellingen/python-zeep) — MIT License
+- Keyring (https://github.com/jaraco/keyring) — MIT License
+- Cryptography (https://github.com/pyca/cryptography) — Apache License 2.0 / BSD 3-Clause

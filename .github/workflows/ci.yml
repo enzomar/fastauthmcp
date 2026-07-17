@@ -46,6 +46,14 @@ jobs:
       - name: Run tests
         run: pytest -v --tb=short --cov=fastauthmcp --cov-report=xml --cov-report=term-missing
 
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Run property-based tests with extended examples
         run: pytest tests/properties/ -v --hypothesis-seed=0
 

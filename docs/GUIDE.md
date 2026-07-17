@@ -112,7 +112,7 @@ Each layer is independent and activates only when its corresponding section is p
 pip install fastauthmcp
 ```
 
-Core dependencies installed automatically: FastMCP, httpx, PyJWT, OpenTelemetry, Prometheus client, zeep (SOAP support), and more.
+Core dependencies installed automatically: FastMCP, httpx, PyJWT, Authlib, Pydantic, Click, Tenacity, and PyYAML.
 
 Optional extras:
 
@@ -250,7 +250,7 @@ export FASTAUTHMCP_CONFIG="/path/to/fastauthmcp.yaml"
 
 ## Authentication
 
-FastAuthMCP supports two OAuth2/OIDC grant types:
+FastAuthMCP supports three OAuth2/OIDC grant types:
 
 ### Interactive Mode (authorization_code + PKCE)
 
@@ -383,7 +383,7 @@ def get_claim(claim_id: str) -> dict:
     return {"claim_id": result.Id, "claimant": result.Claimant, "amount": result.Amount}
 ```
 
-Both clients use `zeep` under the hood (installed automatically with FastAuthMCP). You can also specify `service_name` and `port_name` when the WSDL defines multiple services or ports.
+Both clients use `zeep` under the hood (install with `pip install fastauthmcp[soap]`). You can also specify `service_name` and `port_name` when the WSDL defines multiple services or ports.
 
 ### Token Exchange (RFC 8693) — Headless/Cloud Deployments
 

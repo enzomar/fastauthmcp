@@ -5,11 +5,24 @@
 </p>
 
 [![CI](https://github.com/enzomar/fastauthmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/enzomar/fastauthmcp/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/enzomar/fastauthmcp/branch/main/graph/badge.svg)](https://codecov.io/gh/enzomar/fastauthmcp)
 [![PyPI](https://img.shields.io/pypi/v/fastauthmcp.svg)](https://pypi.org/project/fastauthmcp/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 **A production-grade Python framework built on top of [FastMCP](https://github.com/jlowin/fastmcp) — adding authentication, observability, and session management with a single import change.**
+
+---
+
+## Quick Navigation
+
+| Your scenario | Guide |
+|---|---|
+| Using **Claude Desktop** (local stdio, browser login) | [Claude Desktop guide](docs/guides/claude-desktop.md) |
+| Deploying on **Google Gemini** (cloud, token exchange) | [Google Gemini guide](docs/guides/google-gemini.md) |
+| Using **Cursor IDE** | [Cursor guide](docs/guides/cursor-ide.md) |
+| Running a **live demo** with Zitadel | [Zitadel example](examples/zitadel/) |
+| Configuring your **IdP** (Auth0, Okta, Keycloak, Entra, Zitadel) | [IdP guides](docs/guides/) |
 
 ---
 
@@ -44,10 +57,10 @@ Key design principles:
 | **Token forwarding to downstream APIs** | ✅ `access_token()` | Must build | Depends on gateway |
 | **Identity inside tool functions** | ✅ `identity()` | Must propagate manually | ❌ Not possible |
 | **Per-tool authorization** | ✅ Decorators + config | Must build | ❌ Route-level only |
-| **Rate limiting** | 🚧 Per-tool & per-user (planned) | Must build | ✅ Usually available |
-| **Audit logging** | 🚧 Structured events (planned) | Must build | Varies |
-| **Multi-IdP support** | 🚧 Issuer routing (planned) | Must build | ❌ Single upstream |
-| **Schema export** | 🚧 JSON + Markdown (planned) | Must build | ✅ OpenAPI |
+| **Rate limiting** | 🚧 Planned | Must build | ✅ Usually available |
+| **Audit logging** | 🚧 Planned | Must build | Varies |
+| **Multi-IdP support** | 🚧 Planned | Must build | ❌ Single upstream |
+| **Schema export** | 🚧 Planned | Must build | ✅ OpenAPI |
 | **OpenTelemetry tracing** | ✅ Automatic | Must integrate | Varies |
 | **Prometheus metrics** | ✅ Zero config | Must build | ✅ Usually available |
 | **Session management** | ✅ Built-in | Must build | ❌ Stateless |
@@ -57,6 +70,8 @@ Key design principles:
 | **Infrastructure required** | None (runs in-process) | None | Separate service |
 | **Language** | Python | Any | Any |
 | **Cost** | Free (Apache 2.0) | Engineering time | $ to $$$$ |
+
+> 🚧 = **Planned** — feature is on the roadmap but not yet shipped. See [CHANGELOG.md](CHANGELOG.md) for what's currently available.
 
 ### When to use what
 
@@ -156,14 +171,16 @@ The platform passes the user's token → FastAuthMCP exchanges it at the IDP →
 pip install fastauthmcp
 ```
 
-Core dependencies installed automatically: FastMCP, httpx, PyJWT, OpenTelemetry, Prometheus client, zeep (SOAP support), and more.
+Core dependencies installed automatically: FastMCP, httpx, PyJWT, Authlib, Pydantic, Click, Tenacity, and PyYAML.
 
 Optional extras:
 
 ```bash
-pip install fastauthmcp[keyring]   # Platform-native token storage (macOS Keychain, etc.)
-pip install fastauthmcp[crypto]    # Encrypted file-based token storage (Linux)
-pip install fastauthmcp[dev]       # Development dependencies (pytest, hypothesis, etc.)
+pip install fastauthmcp[keyring]        # Platform-native token storage (macOS Keychain, etc.)
+pip install fastauthmcp[crypto]         # Encrypted file-based token storage (Linux)
+pip install fastauthmcp[observability]  # OpenTelemetry tracing + Prometheus metrics
+pip install fastauthmcp[soap]           # SOAP/XML downstream client (zeep)
+pip install fastauthmcp[dev]            # Development dependencies (pytest, hypothesis, etc.)
 ```
 
 ## Quick Start
@@ -223,9 +240,15 @@ if __name__ == "__main__":
 
 ## How Authentication Works
 
-FastAuthMCP supports two authentication modes depending on your deployment:
+FastAuthMCP supports three authentication modes, selected by the `grant_type` field in `fastauthmcp.yaml`:
 
-### Interactive (authorization_code — default)
+| Mode | `grant_type` | Best for | User interaction |
+|---|---|---|---|
+| Interactive | `authorization_code` (default) | Local/CLI — Claude Desktop, Cursor | Browser login once |
+| Machine-to-Machine | `client_credentials` | Headless servers, service accounts | None |
+| Token Exchange | `token_exchange` | Cloud — Gemini, remote MCP hosts | None (platform passes token) |
+
+### 1. Interactive (authorization_code — default)
 
 Uses **OAuth2 + OIDC with PKCE** for user authentication. Best for CLI and local/stdio deployments:
 
@@ -235,7 +258,7 @@ Uses **OAuth2 + OIDC with PKCE** for user authentication. Best for CLI and local
 
 Once authenticated, sessions persist and tokens auto-refresh transparently.
 
-### Machine-to-Machine (client_credentials)
+### 2. Machine-to-Machine (client_credentials)
 
 Uses the **OAuth2 client_credentials grant** for service-to-service authentication. Best for remote/headless server deployments (SSE, HTTP) where no browser is available:
 
@@ -258,7 +281,7 @@ auth:
 
 This is the recommended mode when running FastAuthMCP as a remote MCP server (e.g., `fastauthmcp run --transport sse` or `--transport streamable-http`) since the server cannot open a browser for interactive login.
 
-### Token Exchange (headless/cloud with user-scoped tokens)
+### 3. Token Exchange (headless/cloud with user-scoped tokens)
 
 Uses the **OAuth 2.0 Token Exchange grant** (RFC 8693) for cloud MCP deployments where the calling platform (Claude, Gemini, etc.) passes a user token in the request. FastAuthMCP exchanges it at the IDP for a downstream-scoped token:
 

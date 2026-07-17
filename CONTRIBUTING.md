@@ -117,3 +117,17 @@ FastAuthMCP uses composition (not inheritance) over FastMCP. The key architectur
 4. **contextvars** propagate request-scoped state (identity, session, trace)
 
 See `.kiro/specs/fastauthmcp-framework/design.md` for the full design document.
+
+## Dependency & Compatibility Testing
+
+FastAuthMCP uses `>=` lower-bound pins (e.g., `fastmcp>=2.0.0`) to maximize compatibility. Our CI validates against:
+
+- **Python 3.11, 3.12, and 3.13** on every push and PR
+- **Latest versions** of all dependencies (installed fresh in CI)
+- **Security audit** via `pip-audit` on a weekly schedule and on every PR
+
+If you add or bump a dependency:
+1. Use `>=` with the minimum version you've tested against
+2. Run `pip-audit` locally to check for known vulnerabilities: `pip install pip-audit && pip-audit`
+3. Document in your PR description why the dependency is needed and the minimum version chosen
+4. The Compatibility Lab (`make lab`) exercises integration points with mocked IdP responses to catch regressions

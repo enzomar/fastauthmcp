@@ -11,7 +11,7 @@ license = {text = "Apache-2.0"}
 requires-python = ">=3.11"
 keywords = ["mcp", "fastmcp", "enterprise", "authentication", "authorization", "observability", "oauth2", "oidc", "security", "middleware"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
