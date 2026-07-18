@@ -1,4 +1,8 @@
-"""FastAuthMCP Framework - Enterprise capabilities on top of FastMCP."""
+"""FastAuthMCP — Identity infrastructure for AI agents.
+
+Authenticate users, propagate identity into MCP tool functions,
+and forward user-scoped tokens to downstream APIs.
+"""
 
 from fastauthmcp.authorization import (
     require_group,

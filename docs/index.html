@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FastAuthMCP — Enterprise Authentication for FastMCP (Python)</title>
-<meta name="description" content="FastAuthMCP is a production-grade Python framework built on top of FastMCP that adds authentication, observability and enterprise security to any MCP application." />
+<title>FastAuthMCP — Identity Infrastructure for AI Agents</title>
+<meta name="description" content="FastAuthMCP is the identity runtime for AI agents built on MCP. Authenticate users, propagate identity into tool functions, forward user-scoped tokens to downstream APIs." />
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -100,14 +100,14 @@ body {
 
     <!-- Headline with typewriter shimmer -->
     <h1 class="hero-fade text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[0.9] mb-8" style="animation-delay:0.2s">
-      <span class="block">Secure your</span>
-      <span class="block mt-2 bg-gradient-to-r from-cyan via-blue to-violet bg-clip-text text-transparent animate-gradient-x bg-[length:200%_auto]">FastMCP server</span>
-      <span class="block mt-2 text-3xl sm:text-4xl lg:text-5xl font-bold text-white/40">in two lines of Python</span>
+      <span class="block">The identity layer</span>
+      <span class="block mt-2 bg-gradient-to-r from-cyan via-blue to-violet bg-clip-text text-transparent animate-gradient-x bg-[length:200%_auto]">for AI agents</span>
+      <span class="block mt-2 text-3xl sm:text-4xl lg:text-5xl font-bold text-white/40">Authenticate. Propagate. Forward.</span>
     </h1>
 
     <!-- Sub -->
     <p class="hero-fade max-w-2xl mx-auto text-lg sm:text-xl text-white/50 leading-relaxed mb-12" style="animation-delay:0.4s">
-      A production-grade framework <strong class="text-white/80">built on top of FastMCP</strong> — authentication, observability, and sessions activate with a single config file.
+      When AI agents call enterprise APIs through MCP, they need to authenticate as the human — not a service account. FastAuthMCP is the identity runtime that handles the full lifecycle. <strong class="text-white/80">One config file. Zero changes to your tools.</strong>
     </p>
 
     <!-- CTA -->
@@ -141,8 +141,8 @@ body {
   <div class="max-w-6xl mx-auto px-6 relative z-10">
     <div class="text-center mb-20">
       <p class="font-mono text-xs text-cyan/80 tracking-[0.2em] uppercase mb-4">the change</p>
-      <h2 class="text-4xl sm:text-6xl font-black tracking-tight">Two lines. <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">That's it.</span></h2>
-      <p class="text-white/40 mt-6 max-w-xl mx-auto text-lg">Point FastAuthMCP at your FastMCP app. Every tool call is now authenticated and observed.</p>
+      <h2 class="text-4xl sm:text-6xl font-black tracking-tight">One import. <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">Identity everywhere.</span></h2>
+      <p class="text-white/40 mt-6 max-w-xl mx-auto text-lg">Point FastAuthMCP at your FastMCP app. Every tool call now knows who the human is.</p>
     </div>
 
     <!-- Code comparison with morphing animation -->
@@ -273,7 +273,7 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
   <div class="max-w-7xl mx-auto px-6">
     <div class="text-center mb-20">
       <p class="font-mono text-xs text-emerald/80 tracking-[0.2em] uppercase mb-4">capabilities</p>
-      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Everything your MCP deployment <span class="bg-gradient-to-r from-emerald to-cyan bg-clip-text text-transparent">needs</span></h2>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Everything AI agents need to <span class="bg-gradient-to-r from-emerald to-cyan bg-clip-text text-transparent">be trusted</span></h2>
     </div>
 
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -382,8 +382,8 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
   <div class="max-w-6xl mx-auto px-6">
     <div class="text-center mb-20">
       <p class="font-mono text-xs text-violet/80 tracking-[0.2em] uppercase mb-4">comparison</p>
-      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Why FastAuthMCP over <span class="bg-gradient-to-r from-violet to-cyan bg-clip-text text-transparent">alternatives?</span></h2>
-      <p class="text-white/40 mt-6 max-w-lg mx-auto">How FastAuthMCP compares to rolling your own auth or using an API gateway.</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Why not just <span class="bg-gradient-to-r from-violet to-cyan bg-clip-text text-transparent">build it yourself?</span></h2>
+      <p class="text-white/40 mt-6 max-w-lg mx-auto">Every team hits the same wall. Here's what happens when you don't use shared infrastructure.</p>
     </div>
 
     <div class="rounded-2xl border border-white/[0.06] bg-panel/60 backdrop-blur-xl overflow-hidden">
@@ -627,9 +627,9 @@ app = FastMCP(<span class="text-[#79b8ff]">"Weather"</span>, config=<span class=
 <section id="scenarios" class="relative py-32">
   <div class="max-w-6xl mx-auto px-6">
     <div class="text-center mb-20">
-      <p class="font-mono text-xs text-cyan/80 tracking-[0.2em] uppercase mb-4">deployment scenarios</p>
-      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">One codebase. <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">Two deployment modes.</span></h2>
-      <p class="text-white/40 mt-6 max-w-2xl mx-auto text-lg">Your MCP tools call downstream APIs on behalf of the user. FastAuthMCP handles authentication for both local and cloud — same tool code, different config.</p>
+      <p class="font-mono text-xs text-cyan/80 tracking-[0.2em] uppercase mb-4">deployment</p>
+      <h2 class="text-4xl sm:text-5xl font-black tracking-tight">Same code. <span class="bg-gradient-to-r from-cyan to-violet bg-clip-text text-transparent">Local or cloud.</span></h2>
+      <p class="text-white/40 mt-6 max-w-2xl mx-auto text-lg">AI agents call downstream APIs on behalf of the user. FastAuthMCP handles identity for both local and cloud — same tool code, different config.</p>
     </div>
 
     <div class="grid lg:grid-cols-2 gap-6">
